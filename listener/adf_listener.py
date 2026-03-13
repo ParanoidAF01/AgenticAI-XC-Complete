@@ -45,13 +45,13 @@ class ADFListener:
         # How far back to look on first run
         self.last_check_time = datetime.now(timezone.utc) - timedelta(minutes=5)
 
-        print(f"✅ Connected to ADF: {AzureConfig.FACTORY_NAME}")
-        print(f"📋 Resource Group: {AzureConfig.RESOURCE_GROUP}")
+        print(f"[OK] Connected to ADF: {AzureConfig.FACTORY_NAME}")
+        print(f"[INFO] Resource Group: {AzureConfig.RESOURCE_GROUP}")
 
     def check_for_failures(self):
         """Poll ADF for any pipeline runs that failed since last check."""
         now = datetime.now(timezone.utc)
-        print(f"\n🔍 [{now.strftime('%H:%M:%S')}] Checking for failed pipeline runs...")
+        print(f"\n[POLL] [{now.strftime('%H:%M:%S')}] Checking for failed pipeline runs...")
 
         try:
             # Query pipeline runs in the time window
@@ -77,9 +77,9 @@ class ADFListener:
             failed_runs = runs.value if runs.value else []
 
             if not failed_runs:
-                print("   ✅ No failures detected.")
+                print("   [OK] No failures detected.")
             else:
-                print(f"   ⚠️  Found {len(failed_runs)} failed run(s)!")
+                print(f"   [ALERT] Found {len(failed_runs)} failed run(s)!")
 
                 for run in failed_runs:
                     # Skip if already processed
@@ -87,7 +87,7 @@ class ADFListener:
                         continue
 
                     self.processed_runs.add(run.run_id)
-                    print(f"\n   🔴 FAILED: Pipeline '{run.pipeline_name}' (Run ID: {run.run_id})")
+                    print(f"\n   [FAILED] Pipeline '{run.pipeline_name}' (Run ID: {run.run_id})")
 
                     # Get detailed activity logs for this run
                     error_details = self._get_activity_errors(run)
@@ -99,7 +99,7 @@ class ADFListener:
             self.last_check_time = now
 
         except Exception as e:
-            print(f"   ❌ Error polling ADF: {str(e)}")
+            print(f"   [ERROR] Error polling ADF: {str(e)}")
 
     def _get_activity_errors(self, pipeline_run):
         """Get activity-level error details for a failed pipeline run."""
@@ -160,7 +160,7 @@ class ADFListener:
 def start_listener():
     """Start the listener service."""
     print("=" * 60)
-    print("🚀 ADF Self-Healing Listener — Starting...")
+    print("[START] ADF Self-Healing Listener - Starting...")
     print("=" * 60)
 
     listener = ADFListener()

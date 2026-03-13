@@ -12,14 +12,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from config.settings import PineconeConfig, CompanyAPIConfig
 
 # Initialize the OpenAI-compatible embedding client
-print("📦 Initializing embedding model via Company API...")
+print("[INIT] Initializing embedding model via Company API...")
 embedding_client = OpenAI(
     base_url=CompanyAPIConfig.BASE_URL,
     api_key=CompanyAPIConfig.API_KEY
 )
 EMBEDDING_MODEL = CompanyAPIConfig.EMBEDDING_MODEL
 EMBEDDING_DIMS = 3072  # text-embedding-3-large outputs 3072 dimensions
-print(f"✅ Embedding model ready: {EMBEDDING_MODEL}")
+print(f"[OK] Embedding model ready: {EMBEDDING_MODEL}")
 
 # Initialize Pinecone client
 pc = Pinecone(api_key=PineconeConfig.API_KEY)
@@ -32,14 +32,14 @@ if INDEX_NAME in existing_indexes:
     # Check if dimensions match
     desc = pc.describe_index(INDEX_NAME)
     if desc.dimension != EMBEDDING_DIMS:
-        print(f"⚠️  Index exists with {desc.dimension} dims, need {EMBEDDING_DIMS}. Deleting and recreating...")
+        print(f"[WARN] Index exists with {desc.dimension} dims, need {EMBEDDING_DIMS}. Deleting and recreating...")
         pc.delete_index(INDEX_NAME)
         import time
         time.sleep(5)  # Wait for deletion to propagate
         existing_indexes = []
 
 if INDEX_NAME not in pc.list_indexes().names():
-    print(f"📌 Creating Pinecone index: {INDEX_NAME} ({EMBEDDING_DIMS} dimensions)...")
+    print(f"[INIT] Creating Pinecone index: {INDEX_NAME} ({EMBEDDING_DIMS} dimensions)...")
     pc.create_index(
         name=INDEX_NAME,
         dimension=EMBEDDING_DIMS,
@@ -49,7 +49,7 @@ if INDEX_NAME not in pc.list_indexes().names():
     # Wait for index to be ready
     import time
     time.sleep(10)
-    print("✅ Index created.")
+    print("[OK] Index created.")
 
 # Connect to the index
 index = pc.Index(INDEX_NAME)
@@ -79,7 +79,7 @@ def store_error(error_id: str, error_text: str, metadata: dict, namespace: str =
         vectors=[{"id": error_id, "values": vector, "metadata": metadata}],
         namespace=namespace
     )
-    print(f"   📌 Stored error embedding in Pinecone (namespace: {namespace})")
+    print(f"   [STORE] Stored error embedding in Pinecone (namespace: {namespace})")
 
 
 def search_similar_errors(error_text: str, namespace: str = "default", top_k: int = 5):

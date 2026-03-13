@@ -44,7 +44,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("✅ Database initialized successfully.")
+    print("[OK] Database initialized successfully.")
 
 
 def add_pipeline(name, description, owner_name, owner_email, schedule="manual", criticality="medium"):

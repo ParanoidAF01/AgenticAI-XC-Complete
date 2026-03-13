@@ -42,20 +42,20 @@ def process_error(error_details: dict):
     print(f"{'=' * 50}")
 
     # Step 1: Search for similar past errors
-    print("   🔍 Searching for similar past errors...")
+    print("   [SEARCH] Searching for similar past errors...")
     similar_errors = search_similar_errors(
         error_text=error_text,
         namespace=pipeline_name,
         top_k=5
     )
-    print(f"   📊 Found {len(similar_errors)} similar past errors.")
+    print(f"   [SEARCH] Found {len(similar_errors)} similar past errors.")
 
     # Step 2: Get pipeline metadata
-    print("   📋 Fetching pipeline metadata...")
+    print("   [META] Fetching pipeline metadata...")
     pipeline_metadata = get_pipeline(pipeline_name)
 
     # Step 3: Classify the error
-    print("   🧠 Classifying error with Gemini...")
+    print("   [CLASSIFY] Classifying error with LLM...")
     classification = classify_error(error_details, similar_errors, pipeline_metadata)
 
     # Step 4: Store in Pinecone with classification metadata
@@ -86,7 +86,7 @@ def process_error(error_details: dict):
     else:
         _handle_escalation(error_details, classification, pipeline_metadata)
 
-    print(f"   ✅ Processing complete for run: {run_id}")
+    print(f"   [DONE] Processing complete for run: {run_id}")
 
 
 def _handle_auto_restart(error_details, classification, pipeline_metadata):
@@ -104,22 +104,22 @@ def _handle_auto_restart(error_details, classification, pipeline_metadata):
 
     strategy, wait_secs = strategies.get(error_type, ("Retry pipeline", 60))
 
-    print(f"   🟢 AUTO-RECOVERABLE — Type {error_type} ({type_name})")
-    print(f"   🔧 Strategy: {strategy}")
-    print(f"   ⏱️  Wait: {wait_secs}s before restart")
+    print(f"   [AUTO-RECOVER] Type {error_type} ({type_name})")
+    print(f"   [STRATEGY] {strategy}")
+    print(f"   [WAIT] {wait_secs}s before restart")
 
     # Actually restart the pipeline via Azure REST API
-    print(f"   🔄 Restarting pipeline '{pipeline_name}' via Azure REST API...")
+    print(f"   [RESTART] Restarting pipeline '{pipeline_name}' via Azure REST API...")
     try:
         from listener.azure_client import restart_pipeline
         result = restart_pipeline(pipeline_name)
 
         if result["success"]:
-            print(f"   ✅ Pipeline restarted! New Run ID: {result['run_id']}")
+            print(f"   [OK] Pipeline restarted. New Run ID: {result['run_id']}")
         else:
-            print(f"   ⚠️ Restart failed: {result['message']}")
+            print(f"   [WARN] Restart failed: {result['message']}")
     except Exception as e:
-        print(f"   ⚠️ Restart error: {str(e)}")
+        print(f"   [ERROR] Restart error: {str(e)}")
 
 
 def _handle_escalation(error_details, classification, pipeline_metadata):
@@ -128,11 +128,11 @@ def _handle_escalation(error_details, classification, pipeline_metadata):
     type_name = classification["error_type_name"]
     pipeline_name = error_details.get("pipeline_name", "unknown")
 
-    print(f"   🔴 ESCALATION REQUIRED — Type {error_type} ({type_name})")
+    print(f"   [ESCALATE] ESCALATION REQUIRED - Type {error_type} ({type_name})")
 
     # Generate error resolution document
     doc_path = None
-    print(f"   📄 Generating error resolution document...")
+    print(f"   [DOC] Generating error resolution document...")
     try:
         from listener.doc_generator import generate_error_document
         payload = {
@@ -144,9 +144,9 @@ def _handle_escalation(error_details, classification, pipeline_metadata):
             "failed_activities": error_details.get("failed_activities", []),
         }
         doc_path = generate_error_document(payload)
-        print(f"   📄 Document saved: {doc_path}")
+        print(f"   [DOC] Document saved: {doc_path}")
     except Exception as e:
-        print(f"   ⚠️ Doc generation skipped: {str(e)}")
+        print(f"   [WARN] Doc generation skipped: {str(e)}")
 
     # Send email notification
     recipient = (pipeline_metadata or {}).get("owner_email", NotificationConfig.NOTIFY_RECIPIENT)
@@ -160,7 +160,7 @@ def _send_email_notification(pipeline_name, classification, error_details, doc_p
     recipient = recipient or NotificationConfig.NOTIFY_RECIPIENT
 
     if not all([smtp_email, smtp_password, recipient]):
-        print("   ⚠️ Email not configured (missing SMTP credentials in .env)")
+        print("   [WARN] Email not configured (missing SMTP credentials in .env)")
         return
 
     error_type = classification["error_type"]
@@ -227,17 +227,17 @@ def _send_email_notification(pipeline_name, classification, error_details, doc_p
                 f"attachment; filename={pdf_filename}"
             )
             msg.attach(pdf_attachment)
-            print(f"   📎 PDF attached: {pdf_filename}")
+            print(f"   [ATTACH] PDF attached: {pdf_filename}")
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
             server.login(smtp_email, smtp_password)
             server.send_message(msg)
-        print(f"   📧 Email with PDF sent to {recipient}")
+        print(f"   [EMAIL] Email with PDF sent to {recipient}")
     except smtplib.SMTPAuthenticationError:
-        print(f"   ⚠️ Email auth failed — use a Gmail App Password in .env (not your regular password)")
-        print(f"      Get one at: https://myaccount.google.com/apppasswords")
+        print(f"   [ERROR] Email auth failed - use a Gmail App Password in .env (not your regular password)")
+        print(f"           Get one at: https://myaccount.google.com/apppasswords")
     except Exception as e:
-        print(f"   ⚠️ Email failed: {str(e)}")
+        print(f"   [ERROR] Email failed: {str(e)}")
 

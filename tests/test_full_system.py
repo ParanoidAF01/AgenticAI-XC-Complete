@@ -30,7 +30,7 @@ def setup_test_pipelines():
     ]
     for p in pipelines:
         add_pipeline(*p)
-    print("✅ Test pipelines registered.\n")
+    print("[OK] Test pipelines registered.\n")
 
 
 # ── Define all 6 error scenarios ──
@@ -201,7 +201,7 @@ SIMULATED_ERRORS = [
 def run_all_tests():
     """Run all 6 error simulations."""
     print("=" * 60)
-    print("🧪 FULL SYSTEM TEST — Simulating All 6 Error Types")
+    print("FULL SYSTEM TEST - Simulating All 6 Error Types")
     print("=" * 60)
     print()
     print("  Types 1-4: Auto-recoverable (restart/fix)")
@@ -213,15 +213,15 @@ def run_all_tests():
 
     for i, scenario in enumerate(SIMULATED_ERRORS, 1):
         print(f"\n{'─' * 60}")
-        print(f"🔬 Test {i}/6: {scenario['name']}")
+        print(f"Test {i}/6: {scenario['name']}")
         print(f"   Expected: {scenario['expected_action']}")
         print(f"{'─' * 60}")
 
         try:
             process_error(scenario["details"])
-            results.append({"test": scenario["name"], "status": "✅ PASSED"})
+            results.append({"test": scenario["name"], "status": "PASSED"})
         except Exception as e:
-            results.append({"test": scenario["name"], "status": f"❌ FAILED: {str(e)}"})
+            results.append({"test": scenario["name"], "status": f"FAILED: {str(e)}"})
 
         # Small delay between tests (respect Gemini rate limits)
         time.sleep(2)

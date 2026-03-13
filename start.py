@@ -13,16 +13,16 @@ from listener.adf_listener import start_listener
 
 def main():
     print("=" * 60)
-    print("🚀 Self-Healing ADF System — Starting")
+    print("Self-Healing ADF System - Starting")
     print("=" * 60)
     print()
     print("  Components:")
-    print("  • ADF Listener      — Polls Azure for pipeline failures")
-    print("  • Gemini Classifier  — Classifies errors into 6 types")
-    print("  • Pinecone Store     — Similarity search for past errors")
-    print("  • Azure Restart      — Auto-restarts recoverable pipelines")
-    print("  • PDF Doc Generator  — Creates resolution docs for escalations")
-    print("  • Email Notifier     — Sends PDF reports to pipeline owners")
+    print("  - ADF Listener       Polls Azure for pipeline failures")
+    print("  - LLM Classifier     Classifies errors into 6 types")
+    print("  - Pinecone Store     Similarity search for past errors")
+    print("  - Azure Restart      Auto-restarts recoverable pipelines")
+    print("  - PDF Doc Generator  Creates resolution docs for escalations")
+    print("  - Email Notifier     Sends PDF reports to pipeline owners")
     print()
 
     # Start the ADF listener (blocks main thread)

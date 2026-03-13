@@ -244,7 +244,7 @@ def generate_error_document(payload: dict) -> str:
     filepath = os.path.join(DOC_OUTPUT_DIR, filename)
     pdf.output(filepath)
 
-    print(f"   📄 PDF report saved: {filepath}")
+    print(f"   [DOC] PDF report saved: {filepath}")
     return filepath
 
 

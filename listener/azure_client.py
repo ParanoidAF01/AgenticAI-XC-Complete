@@ -30,10 +30,10 @@ def get_azure_token():
         if response.status_code == 200:
             return response.json().get("access_token")
         else:
-            print(f"   ⚠️ Azure auth failed ({response.status_code}): {response.text[:200]}")
+            print(f"   [ERROR] Azure auth failed ({response.status_code}): {response.text[:200]}")
             return None
     except Exception as e:
-        print(f"   ⚠️ Azure auth error: {str(e)}")
+        print(f"   [ERROR] Azure auth error: {str(e)}")
         return None
 
 

@@ -109,13 +109,13 @@ def classify_error(error_details: dict, similar_errors: list, pipeline_metadata:
 
         result = json.loads(result_text)
         print(
-            f"   🧠 Classification: Type {result['error_type']} "
-            f"({result['error_type_name']}) — Confidence: {result['confidence']}"
+            f"   [CLASSIFY] Type {result['error_type']} "
+            f"({result['error_type_name']}) - Confidence: {result['confidence']}"
         )
         return result
 
     except Exception as e:
-        print(f"   ❌ Classification failed: {str(e)}")
+        print(f"   [ERROR] Classification failed: {str(e)}")
         # Default to non-recoverable if classification fails
         return {
             "error_type": 6,

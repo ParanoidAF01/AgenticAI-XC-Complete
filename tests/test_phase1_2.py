@@ -32,7 +32,7 @@ def test_metadata_store():
     print(f"   Pipeline: {result['pipeline_name']}")
     print(f"   Owner: {result['owner_name']}")
     print(f"   Criticality: {result['criticality']}")
-    print("   ✅ PASSED")
+    print("   PASSED")
 
 
 def test_pinecone():
@@ -60,7 +60,7 @@ def test_pinecone():
     print(f"   Found {len(results)} similar errors")
     if results:
         print(f"   Top match score: {results[0]['score']:.4f}")
-    print("   ✅ PASSED")
+    print("   PASSED")
 
 
 def test_classifier():
@@ -85,7 +85,7 @@ def test_classifier():
     print(f"   Type: {result['error_type']} ({result['error_type_name']})")
     print(f"   Auto-recoverable: {result['is_auto_recoverable']}")
     print(f"   Priority: {result['priority']}")
-    print("   ✅ PASSED")
+    print("   PASSED")
 
 
 def test_full_pipeline():
@@ -117,11 +117,11 @@ def test_full_pipeline():
     }
 
     process_error(fake_error)
-    print("   ✅ PASSED")
+    print("   PASSED")
 
 
 if __name__ == "__main__":
-    print("🧪 Running Phase 1 & 2 Tests...\n")
+    print("Running Phase 1 & 2 Tests...\n")
     test_metadata_store()
     test_pinecone()
     test_classifier()
