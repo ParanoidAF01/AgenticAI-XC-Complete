@@ -152,8 +152,10 @@ def process_error(error_details: dict):
     )
 
     # Step 5: Determine action
-    is_auto = classification["is_auto_recoverable"]
+    # Types 3, 4, 5 are auto-recoverable (transient/environment issues)
+    # Types 1, 2, 6 require immediate escalation (definition-level / infrastructure bugs)
     error_type = classification["error_type"]
+    is_auto = error_type in (3, 4, 5)
 
     if is_auto:
         # Check restart attempts before restarting
@@ -184,7 +186,7 @@ def process_error(error_details: dict):
 
 
 def _handle_auto_restart(error_details, classification, pipeline_metadata):
-    """Handle auto-recoverable errors (Types 1-4): restart the pipeline via Azure REST API."""
+    """Handle auto-recoverable errors (Types 3, 4, 5): restart the pipeline via Azure REST API."""
     error_type = classification["error_type"]
     type_name = classification["error_type_name"]
     pipeline_name = error_details.get("pipeline_name", "unknown")
@@ -194,10 +196,9 @@ def _handle_auto_restart(error_details, classification, pipeline_metadata):
     attempt_count = restart_tracker.get_attempt_count(pipeline_name, error_type) + 1
 
     strategies = {
-        1: ("Fix parameters from metadata", 30),
-        2: ("Apply dataset type corrections", 30),
-        3: ("Rotate expired credentials/tokens", 60),
-        4: ("Enable chunking / increase timeout", 120),
+        3: ("Retry after credential rotation/refresh", 60),
+        4: ("Retry with delay for transient timeout", 120),
+        5: ("Retry after server recovery window", 90),
     }
 
     strategy, wait_secs = strategies.get(error_type, ("Retry pipeline", 60))

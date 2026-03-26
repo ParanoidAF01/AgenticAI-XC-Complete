@@ -23,12 +23,12 @@ CLASSIFICATION_PROMPT = """You are an Azure Data Factory error classification ex
 
 Analyze the following ADF pipeline error and classify it into EXACTLY ONE of these 6 categories:
 
-**Category 1 - Parameter Errors** (★★★★★ Self-heal suitability): Incorrect or missing pipeline parameters, wrong parameter values, parameter type mismatches, null parameters, default parameter issues. Extremely frequent, repeatable, easy to self-heal.
-**Category 2 - Dataset Type Errors** (★★★★★ Self-heal suitability): Wrong dataset types, schema mismatches, column mapping failures, data type conversion errors, format mismatches between source and sink. Common, predictable corrections.
-**Category 3 - Credentials Expired** (★★★★ Self-heal suitability): Expired service principal secrets, expired SAS tokens, expired Key Vault secrets, expired managed identity tokens, expired connection strings. Simple automated fix, high repeatability.
-**Category 4 - Large Data / Timeout** (★★★★ Self-heal suitability): Data volume too large for single run, copy activity timeouts, data flow timeouts, memory exceeded due to data size, integration runtime timeouts. Heavy effort savings, predictable chunking.
-**Category 5 - Server Slow** (★★★ Self-heal suitability): Slow source/sink servers, high latency connections, throttled APIs, overloaded databases, Azure service degradation. Needs smart retries/load management.
-**Category 6 - Subscription Corrupt** (★★ Self-heal suitability): Corrupted Azure subscription settings, broken resource group configurations, invalid ARM templates, corrupted linked services, broken integration runtime configs. Template-based regeneration possible.
+**Category 1 - Parameter Errors** (Escalate): Incorrect or missing pipeline parameters, wrong parameter values, parameter type mismatches, null parameters, default parameter issues. These are definition-level bugs that require human correction — restarting will not fix bad parameters.
+**Category 2 - Dataset Type Errors** (Escalate): Wrong dataset types, schema mismatches, column mapping failures, data type conversion errors, format mismatches between source and sink. These are structural issues baked into the pipeline config — restarting repeats the same failure.
+**Category 3 - Credentials Expired** (Auto-restart): Expired service principal secrets, expired SAS tokens, expired Key Vault secrets, expired managed identity tokens, expired connection strings. Often resolved by credential rotation services; restart picks up refreshed tokens.
+**Category 4 - Large Data / Timeout** (Auto-restart): Data volume too large for single run, copy activity timeouts, data flow timeouts, memory exceeded due to data size, integration runtime timeouts. Transient load issues that often resolve on retry.
+**Category 5 - Server Slow** (Auto-restart): Slow source/sink servers, high latency connections, throttled APIs, overloaded databases, Azure service degradation. Transient infrastructure issues that typically self-resolve.
+**Category 6 - Subscription Corrupt** (Escalate): Corrupted Azure subscription settings, broken resource group configurations, invalid ARM templates, corrupted linked services, broken integration runtime configs. Infrastructure-level issues requiring manual repair.
 
 === ERROR DETAILS ===
 Pipeline: {pipeline_name}
@@ -48,7 +48,7 @@ Respond in this exact JSON format (no other text):
     "error_type_name": "<name of the category>",
     "confidence": <0.0 to 1.0>,
     "root_cause_summary": "<2-3 sentence explanation of what went wrong>",
-    "is_auto_recoverable": <true if type 1, 2, 3, or 4 — false if type 5 or 6>,
+    "is_auto_recoverable": <true if type 3, 4, or 5 — false if type 1, 2, or 6>,
     "recommended_action": "<what should be done>",
     "priority": "<P1/P2/P3/P4>"
 }}"""
