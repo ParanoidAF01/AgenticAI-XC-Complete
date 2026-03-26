@@ -16,7 +16,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from config.settings import AzureConfig, POLL_INTERVAL
-from intelligence.error_processor import process_error
+from intelligence.error_processor import process_error, restart_tracker
 
 
 class ADFListener:
@@ -24,7 +24,7 @@ class ADFListener:
 
     def __init__(self):
         """Initialize Azure credentials and ADF client."""
-        print("🔌 Connecting to Azure Data Factory...")
+        print("[INIT] Connecting to Azure Data Factory...")
 
         # Create Azure credential using Service Principal
         self.credential = ClientSecretCredential(
@@ -87,7 +87,13 @@ class ADFListener:
                         continue
 
                     self.processed_runs.add(run.run_id)
-                    print(f"\n   [FAILED] Pipeline '{run.pipeline_name}' (Run ID: {run.run_id})")
+
+                    # Check if this run was created by a restart (child of a previous failure)
+                    is_retry = restart_tracker.is_restart_child(run.run_id)
+                    if is_retry:
+                        print(f"\n   [RETRY-FAIL] Pipeline '{run.pipeline_name}' failed again (Run ID: {run.run_id})")
+                    else:
+                        print(f"\n   [FAILED] Pipeline '{run.pipeline_name}' (Run ID: {run.run_id})")
 
                     # Get detailed activity logs for this run
                     error_details = self._get_activity_errors(run)
@@ -172,13 +178,13 @@ def start_listener():
     listener.check_for_failures()
 
     # Keep running forever
-    print(f"\n⏰ Polling every {POLL_INTERVAL} seconds. Press Ctrl+C to stop.\n")
+    print(f"\n[INFO] Polling every {POLL_INTERVAL} seconds. Press Ctrl+C to stop.\n")
     try:
         while True:
             schedule.run_pending()
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\n\n🛑 Listener stopped.")
+        print("\n\n[STOP] Listener stopped.")
 
 
 if __name__ == "__main__":
