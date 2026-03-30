@@ -19,3 +19,6 @@ sqlite-utils>=3.35
 
 # Document Generation (PDF)
 fpdf2>=2.7.0
+
+# Azure SQL Connectivity
+pyodbc>=4.0.39

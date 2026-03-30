@@ -25,6 +25,14 @@ class PineconeConfig:
     INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "adf-error-logs")
 
 
+class SqlConfig:
+    """Azure SQL connection settings for PipelineRunLog table."""
+    SERVER = os.getenv("SQL_SERVER")
+    DATABASE = os.getenv("SQL_DATABASE")
+    USERNAME = os.getenv("SQL_USERNAME")
+    PASSWORD = os.getenv("SQL_PASSWORD")
+
+
 class CompanyAPIConfig:
     """Company's OpenAI-compatible API settings."""
     BASE_URL = os.getenv("COMPANY_API_BASE_URL")

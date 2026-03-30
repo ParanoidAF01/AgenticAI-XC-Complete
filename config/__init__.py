@@ -1,1 +1,1 @@
-from .settings import AzureConfig, PineconeConfig, CompanyAPIConfig, NotificationConfig, POLL_INTERVAL
+from .settings import AzureConfig, PineconeConfig, SqlConfig, CompanyAPIConfig, NotificationConfig, POLL_INTERVAL

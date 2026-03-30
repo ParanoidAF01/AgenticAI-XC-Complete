@@ -1,6 +1,6 @@
 """
 Master startup script.
-Starts the ADF pipeline listener that polls for errors and processes them.
+Starts the SQL table listener that polls PipelineRunLog for errors and processes them.
 Doc generation + email notifications are handled inline by the error processor.
 """
 import sys
@@ -8,7 +8,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from listener.adf_listener import start_listener
+from listener.sql_listener import start_listener
 
 
 def main():
@@ -17,7 +17,7 @@ def main():
     print("=" * 60)
     print()
     print("  Components:")
-    print("  - ADF Listener       Polls Azure for pipeline failures")
+    print("  - SQL Listener       Polls PipelineRunLog for failures")
     print("  - LLM Classifier     Classifies errors into 6 types")
     print("  - Pinecone Store     Similarity search for past errors")
     print("  - Azure Restart      Auto-restarts recoverable pipelines")
@@ -25,7 +25,7 @@ def main():
     print("  - Email Notifier     Sends PDF reports to pipeline owners")
     print()
 
-    # Start the ADF listener (blocks main thread)
+    # Start the SQL listener (blocks main thread)
     start_listener()
 
 
