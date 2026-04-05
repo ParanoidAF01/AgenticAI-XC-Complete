@@ -140,7 +140,7 @@ def process_error(error_details: dict):
         error_text=error_text,
         metadata={
             "pipeline_name": pipeline_name,
-            "error_type": classification["error_type"],
+            "error_type": f"{classification['error_type']} - {classification['error_type_name']}",
             "error_type_name": classification["error_type_name"],
             "error_message": error_text[:500],
             "root_cause": classification["root_cause_summary"][:500],
@@ -155,6 +155,7 @@ def process_error(error_details: dict):
     # Types 3, 4, 5 are auto-recoverable (transient/environment issues)
     # Types 1, 2, 6 require immediate escalation (definition-level / infrastructure bugs)
     error_type = classification["error_type"]
+    error_type_name = classification["error_type_name"]
     is_auto = error_type in (3, 4, 5)
 
     if is_auto:
@@ -164,12 +165,12 @@ def process_error(error_details: dict):
 
         if can_restart:
             action = "auto_restart"
-            log_error(pipeline_name, run_id, error_type, error_text[:1000], action)
+            log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
             _handle_auto_restart(error_details, classification, pipeline_metadata)
         else:
             # Max retries exhausted — escalate
             action = "escalate_max_retries"
-            log_error(pipeline_name, run_id, error_type, error_text[:1000], action)
+            log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
             print(f"   [LIMIT] Restart limit reached ({MAX_RESTART_ATTEMPTS}/{MAX_RESTART_ATTEMPTS}) "
                   f"for pipeline '{pipeline_name}' + Type {error_type}")
             print(f"   [LIMIT] Escalating to human review instead of restarting.")
@@ -179,7 +180,7 @@ def process_error(error_details: dict):
             restart_tracker.reset(pipeline_name, error_type)
     else:
         action = "escalate_to_human"
-        log_error(pipeline_name, run_id, error_type, error_text[:1000], action)
+        log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
         _handle_escalation(error_details, classification, pipeline_metadata)
 
     print(f"   [DONE] Processing complete for run: {run_id}")

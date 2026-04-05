@@ -34,6 +34,7 @@ def init_db():
             pipeline_name TEXT,
             run_id TEXT,
             error_type INTEGER,
+            error_type_name TEXT,
             error_message TEXT,
             action_taken TEXT,
             resolved BOOLEAN DEFAULT FALSE,
@@ -41,6 +42,12 @@ def init_db():
             FOREIGN KEY (pipeline_name) REFERENCES pipelines(pipeline_name)
         )
     """)
+
+    # Migration: add error_type_name column if it doesn't exist (for existing DBs)
+    try:
+        cursor.execute("ALTER TABLE error_history ADD COLUMN error_type_name TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
 
     conn.commit()
     conn.close()
@@ -81,13 +88,13 @@ def get_all_pipelines():
     return [dict(r) for r in rows]
 
 
-def log_error(pipeline_name, run_id, error_type, error_message, action_taken):
+def log_error(pipeline_name, run_id, error_type, error_message, action_taken, error_type_name=""):
     """Log an error occurrence to history."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO error_history (pipeline_name, run_id, error_type, error_message, action_taken) VALUES (?, ?, ?, ?, ?)",
-        (pipeline_name, run_id, error_type, error_message, action_taken)
+        "INSERT INTO error_history (pipeline_name, run_id, error_type, error_type_name, error_message, action_taken) VALUES (?, ?, ?, ?, ?, ?)",
+        (pipeline_name, run_id, error_type, error_type_name, error_message, action_taken)
     )
     conn.commit()
     conn.close()
