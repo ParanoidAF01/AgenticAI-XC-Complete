@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from config.metadata_store import add_pipeline, get_pipeline, init_db
-from intelligence.pinecone_store import store_error, search_similar_errors
+from intelligence.chroma_store import store_error, search_similar_errors
 from intelligence.error_classifier import classify_error
 from intelligence.error_processor import process_error
 
@@ -35,10 +35,10 @@ def test_metadata_store():
     print("   PASSED")
 
 
-def test_pinecone():
-    """Test 2: Pinecone embedding + search."""
+def test_chroma():
+    """Test 2: ChromaDB embedding + search."""
     print("\n" + "=" * 40)
-    print("TEST 2: Pinecone Store")
+    print("TEST 2: ChromaDB Store")
     print("=" * 40)
 
     # Store a sample error
@@ -123,7 +123,7 @@ def test_full_pipeline():
 if __name__ == "__main__":
     print("Running Phase 1 & 2 Tests...\n")
     test_metadata_store()
-    test_pinecone()
+    test_chroma()
     test_classifier()
     test_full_pipeline()
     print("\n\n🎉 All tests passed! Phase 1 & 2 are working.")

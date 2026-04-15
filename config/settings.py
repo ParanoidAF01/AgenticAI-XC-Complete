@@ -19,10 +19,10 @@ class AzureConfig:
     FACTORY_NAME = os.getenv("ADF_FACTORY_NAME")
 
 
-class PineconeConfig:
-    """Pinecone vector database settings."""
-    API_KEY = os.getenv("PINECONE_API_KEY")
-    INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "adf-error-logs")
+class ChromaConfig:
+    """ChromaDB vector database settings."""
+    PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR",
+        os.path.join(os.path.dirname(__file__), "..", "chroma_db"))
 
 
 class SqlConfig:

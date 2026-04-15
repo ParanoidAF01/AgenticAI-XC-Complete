@@ -1,6 +1,6 @@
 """
 RAG (Retrieval-Augmented Generation) Pipeline.
-Searches Pinecone for relevant errors, then uses company's LLM to answer questions.
+Searches ChromaDB for relevant errors, then uses company's LLM to answer questions.
 """
 from openai import OpenAI
 import sys
@@ -8,7 +8,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from intelligence.pinecone_store import search_similar_errors
+from intelligence.chroma_store import search_similar_errors
 from config.metadata_store import get_pipeline, get_error_history
 from config.settings import CompanyAPIConfig
 
@@ -56,7 +56,7 @@ def query(question: str, pipeline_name: str = None) -> str:
     Returns:
         LLM-generated answer as a string
     """
-    # Step 1: Search Pinecone for relevant errors
+    # Step 1: Search ChromaDB for relevant errors
     namespace = pipeline_name if pipeline_name else "default"
 
     # Search across the given namespace

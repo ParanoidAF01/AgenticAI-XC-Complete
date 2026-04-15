@@ -63,7 +63,7 @@ def main():
     print("  Components:")
     print(f"  - {info['label']:<20s} {info['description']}")
     print("  - LLM Classifier      Classifies errors into 6 types")
-    print("  - Pinecone Store       Similarity search for past errors")
+    print("  - ChromaDB Store       Similarity search for past errors")
     print("  - Azure Restart        Auto-restarts recoverable pipelines")
     print("  - PDF Doc Generator    Creates resolution docs for escalations")
     print("  - Email Notifier       Sends PDF reports to pipeline owners")

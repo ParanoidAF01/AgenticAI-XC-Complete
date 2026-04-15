@@ -19,7 +19,7 @@ from email import encoders
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from intelligence.pinecone_store import store_error, search_similar_errors
+from intelligence.chroma_store import store_error, search_similar_errors
 from intelligence.error_classifier import classify_error
 from config.metadata_store import get_pipeline, log_error
 from config.settings import NotificationConfig
@@ -102,10 +102,10 @@ restart_tracker = RestartTracker()
 def process_error(error_details: dict):
     """
     Full error processing pipeline:
-    1. Search for similar past errors in Pinecone
+    1. Search for similar past errors in ChromaDB
     2. Get pipeline metadata from SQLite
     3. Classify the error using LLM
-    4. Store the error + classification in Pinecone
+    4. Store the error + classification in ChromaDB
     5. Log to SQLite
     6. Take action: auto-restart (if attempts < 3) OR escalate
     """
@@ -134,7 +134,7 @@ def process_error(error_details: dict):
     print("   [CLASSIFY] Classifying error with LLM...")
     classification = classify_error(error_details, similar_errors, pipeline_metadata)
 
-    # Step 4: Store in Pinecone with classification metadata
+    # Step 4: Store in ChromaDB with classification metadata
     store_error(
         error_id=run_id,
         error_text=error_text,
