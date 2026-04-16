@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aurelian Mono | Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#004e5e",
+                        "on-secondary-fixed-variant": "#474746",
+                        "inverse-surface": "#2f3131",
+                        "surface-container-highest": "#e2e2e2",
+                        "secondary": "#5f5e5e",
+                        "on-surface-variant": "#4e4633",
+                        "secondary-container": "#e2dfde",
+                        "outline": "#807660",
+                        "outline-variant": "#d1c5ac",
+                        "on-tertiary-container": "#005e70",
+                        "surface-dim": "#dadada",
+                        "surface-container-high": "#e8e8e8",
+                        "error": "#ba1a1a",
+                        "surface-container-low": "#f3f3f3",
+                        "on-primary-fixed": "#241a00",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e2e2e2",
+                        "on-primary-container": "#695200",
+                        "primary-container": "#f5c518",
+                        "tertiary-fixed-dim": "#42d7fb",
+                        "surface": "#f9f9f9",
+                        "surface-tint": "#745b00",
+                        "tertiary-fixed": "#b0ecff",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-secondary-container": "#636262",
+                        "surface-container": "#eeeeee",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#001f27",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "primary-fixed": "#ffe08b",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#f0c110",
+                        "primary": "#745b00",
+                        "on-surface": "#1a1c1c",
+                        "on-primary-fixed-variant": "#584400",
+                        "on-error": "#ffffff",
+                        "background": "#f9f9f9",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#00687c",
+                        "primary-fixed-dim": "#f0c110",
+                        "surface-bright": "#f9f9f9",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#49dbff",
+                        "on-background": "#1a1c1c",
+                        "on-secondary-fixed": "#1c1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+    </style>
+
+<style>
+#main-sidebar { transition: width 0.25s ease, padding 0.25s ease; overflow-x: hidden; }
+#main-content { transition: margin-left 0.25s ease; }
+.collapse-toggle { 
+    background: none; border: none; cursor: pointer; 
+    color: #807660; padding: 4px; border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.collapse-toggle:hover { background: #e2e2e2; }
+.dark .collapse-toggle:hover { background: #334155; }
+.collapse-toggle span { font-size: 18px; }
+.nav-item { white-space: nowrap; }
+</style>
+</head>
+<body class="bg-surface text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar Component -->
+<aside id="main-sidebar" class="w-[240px] h-screen fixed left-0 top-0 bg-[#f3f3f3] dark:bg-slate-900 flex flex-col py-8 px-4 flex-shrink-0 z-50 shadow-[2px_0_12px_rgba(0,0,0,0.05)] border-r border-[#e2e2e2] dark:border-slate-800">
+<div class="mb-12 px-2 flex items-center justify-between">
+<div class="overflow-hidden">
+<h1 class="text-xl font-bold tracking-tighter text-[#1a1c1c] dark:text-white logo-text whitespace-nowrap">ADF Healer</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#745b00] dark:text-[#f5c518] font-bold mt-1 logo-text whitespace-nowrap">Self-Healing Engine</p>
+</div>
+<button class="collapse-toggle ml-2" onclick="toggleSidebar()" title="Collapse sidebar">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="dashboard.html">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="text-sm nav-label">Dashboard</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="pipelines.html">
+<span class="material-symbols-outlined shrink-0" data-icon="account_tree">account_tree</span>
+<span class="text-sm nav-label">Pipelines</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="chatbot.html">
+<span class="material-symbols-outlined shrink-0" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-sm nav-label">Chatbot</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="reports.html">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="text-sm nav-label">Reports</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#1a1c1c] dark:text-white font-bold border-l-4 border-[#f5c518] pl-4 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 bg-[#e2e2e2]/50 dark:bg-slate-800/50" href="settings.html">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="text-sm nav-label">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2 pt-6 refresh-btn-container">
+<button class="w-full py-3 bg-[#f5c518] text-[#1a1c1c] font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+<span class="nav-label">Refresh</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all" id="main-content">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center px-12 w-full sticky top-0 z-50 bg-[#f9f9f9]/80 dark:bg-slate-950/80 backdrop-blur-xl h-20">
+<h2 class="font-['Inter'] font-bold text-2xl tracking-tighter text-[#1a1c1c] dark:text-white">Listener Control</h2>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-[#f5c518] dark:hover:text-[#f5c518] transition-all active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-[#f5c518] dark:hover:text-[#f5c518] transition-all active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="contrast">contrast</span>
+</button>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-surface-container-highest">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="professional portrait of a tech professional with short hair and glasses wearing a minimalist dark shirt" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABn5YE-uZYlEWxbprT6quAAnm7mMAGoyobH0oiy87cudO6t-2DXC22O_zDUGO1KkgkgOwFBaYWcAA3C8engmakSVFdfUHQu6J-1J2GZtLhDi35R7b1aoqVGlAlSkauPUzQDhvRN_OU3i9tQXNkQFovTi5qZxXXrmEEFF0MsH126iXsMKT0xKDGqZssxw0wTOapL_bSDWYURYFAWYWE4mCmKUt0IkBZQ-3X3_7lCn0G7-S741zp7xyfm6Jvafe2Giwjx1Jr5B-7LVc"/>
+</div>
+</div>
+</header>
+<div class="p-12 space-y-16 max-w-7xl">
+<!-- 1. LISTENER MODE CARD -->
+<section>
+<header class="mb-8">
+<h3 class="text-[32px] font-extrabold tracking-tighter mb-2">Active Listener</h3>
+<p class="text-on-surface-variant font-medium">Select the polling mechanism for failure detection</p>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+<!-- ADF SDK (Selected) -->
+<div class="group cursor-pointer p-6 rounded-xl bg-surface-container-lowest border-2 border-primary-container flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary-container text-3xl" data-icon="hub">hub</span>
+<div class="w-5 h-5 rounded-full border-4 border-primary-container"></div>
+</div>
+<div>
+<h4 class="font-bold text-lg mb-1">ADF SDK Listener</h4>
+<p class="text-sm text-on-surface-variant leading-relaxed">Polls Azure Data Factory SDK for failed pipeline runs in real-time.</p>
+</div>
+</div>
+<!-- SQL Table -->
+<div class="group cursor-pointer p-6 rounded-xl bg-surface-container-lowest border-2 border-transparent hover:border-outline-variant/30 transition-all flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-on-surface-variant text-3xl" data-icon="database">database</span>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant"></div>
+</div>
+<div>
+<h4 class="font-bold text-lg mb-1 text-on-surface-variant">SQL Table Listener</h4>
+<p class="text-sm text-on-surface-variant/70 leading-relaxed">Polls PipelineRunLog table for failed pipeline runs via SQL query.</p>
+</div>
+</div>
+<!-- Databricks (Coming Soon) -->
+<div class="p-6 rounded-xl bg-surface-container-low/50 opacity-60 flex flex-col gap-4 relative overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant text-3xl" data-icon="dataset">dataset</span>
+<div>
+<h4 class="font-bold text-lg mb-1">Databricks</h4>
+<p class="text-xs font-bold uppercase tracking-widest text-primary">Coming Soon</p>
+</div>
+</div>
+<!-- Snowflake (Coming Soon) -->
+<div class="p-6 rounded-xl bg-surface-container-low/50 opacity-60 flex flex-col gap-4 relative overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant text-3xl" data-icon="ac_unit">ac_unit</span>
+<div>
+<h4 class="font-bold text-lg mb-1">Snowflake</h4>
+<p class="text-xs font-bold uppercase tracking-widest text-primary">Coming Soon</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. CONTROL ROW -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+<!-- Start Button -->
+<button class="bg-[#10b981] hover:bg-[#059669] text-white flex items-center justify-center gap-3 py-6 rounded-xl transition-all shadow-lg shadow-emerald-500/10 active:scale-[0.98]">
+<span class="material-symbols-outlined fill" data-icon="play_circle" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+<span class="text-lg font-bold tracking-tight">Start Listener</span>
+</button>
+<!-- Status Card -->
+<div class="bg-surface-container-lowest p-6 rounded-xl flex items-center gap-6">
+<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+<div class="w-4 h-4 bg-emerald-500 rounded-full status-pulse"></div>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-bold text-xl">Running</span>
+</div>
+<p class="text-sm text-on-surface-variant">Last poll: 2 minutes ago</p>
+</div>
+</div>
+<!-- Dropdown -->
+<div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col justify-center">
+<label class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-2">Polling Interval</label>
+<div class="relative">
+<select class="w-full bg-surface-container-highest border-none rounded-xl py-3 px-4 text-on-surface font-semibold focus:ring-2 focus:ring-primary-container/50 appearance-none">
+<option>15 seconds</option>
+<option selected="">30 seconds</option>
+<option>60 seconds</option>
+<option>5 minutes</option>
+</select>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</section>
+<!-- 3. CONNECTION HEALTH -->
+<section>
+<header class="mb-8">
+<h3 class="text-[32px] font-extrabold tracking-tighter">Connection Health</h3>
+</header>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+<!-- Health Item -->
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-y-[-2px] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="key">key</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500" data-icon="check_circle">check_circle</span>
+</div>
+<h5 class="font-bold text-sm mb-1">Azure AD Auth</h5>
+<p class="text-[10px] text-on-surface-variant font-medium">Synced: 12:44 PM</p>
+</div>
+<!-- Health Item -->
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-y-[-2px] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="cloud">cloud</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500" data-icon="check_circle">check_circle</span>
+</div>
+<h5 class="font-bold text-sm mb-1">ADF SDK</h5>
+<p class="text-[10px] text-on-surface-variant font-medium">Ready: 12:45 PM</p>
+</div>
+<!-- Health Item -->
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-y-[-2px] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="dns">dns</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500" data-icon="check_circle">check_circle</span>
+</div>
+<h5 class="font-bold text-sm mb-1">SQL Server</h5>
+<p class="text-[10px] text-on-surface-variant font-medium">Connected: 12:40 PM</p>
+</div>
+<!-- Health Item -->
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-y-[-2px] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="memory">memory</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500" data-icon="check_circle">check_circle</span>
+</div>
+<h5 class="font-bold text-sm mb-1">ChromaDB</h5>
+<p class="text-[10px] text-on-surface-variant font-medium">Alive: 12:45 PM</p>
+</div>
+<!-- Health Item -->
+<div class="bg-surface-container-lowest p-6 rounded-xl hover:translate-y-[-2px] transition-transform duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-sm" data-icon="psychology">psychology</span>
+</div>
+<span class="material-symbols-outlined text-emerald-500" data-icon="check_circle">check_circle</span>
+</div>
+<h5 class="font-bold text-sm mb-1">LLM API (Claude)</h5>
+<p class="text-[10px] text-on-surface-variant font-medium">Latency: 420ms</p>
+</div>
+</div>
+</section>
+<!-- 4. POLL HISTORY LOG -->
+<section class="pb-12">
+<header class="flex items-end justify-between mb-8">
+<h3 class="text-[32px] font-extrabold tracking-tighter">Recent Polls</h3>
+<p class="text-xs font-bold text-primary tracking-widest uppercase mb-2">Real-time Stream</p>
+</header>
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden">
+<div class="max-h-[400px] overflow-y-auto">
+<table class="w-full text-left border-collapse">
+<thead class="sticky top-0 bg-surface-container-lowest z-10">
+<tr class="border-b border-surface-container-low">
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Timestamp</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Service</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Message</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container-low">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:44:02 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found. Scanning partition P_2023_10.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:43:32 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">2 failures detected in 'Ingest_Production_Blob'. Healing initiated.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-[#f5c518] text-lg" data-icon="warning">warning</span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:43:02 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:42:32 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:42:02 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:41:32 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">1 failure found in 'Daily_Archive_Cleanup'.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-[#f5c518] text-lg" data-icon="warning">warning</span>
+</td>
+</tr>
+<!-- Row 7 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:41:02 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 8 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:40:32 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 9 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:40:02 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+<!-- Row 10 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-8 py-5 text-sm font-medium tabular-nums">12:39:32 PM</td>
+<td class="px-8 py-5 text-sm font-bold">SQL Listener</td>
+<td class="px-8 py-5 text-sm text-on-surface-variant">0 failures found.</td>
+<td class="px-8 py-5 text-right">
+<span class="material-symbols-outlined text-emerald-500 text-lg" data-icon="check">check</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+</div>
+
+<script>
+// Collapse sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const mainContent = document.getElementById('main-content');
+    if (!sidebar) return;
+    const labels = sidebar.querySelectorAll('.nav-label');
+    const logo = sidebar.querySelectorAll('.logo-text');
+    const btn = sidebar.querySelector('.collapse-toggle');
+    const refreshBtn = sidebar.querySelector('.refresh-btn-container');
+    
+    sidebar.classList.toggle('sidebar-collapsed');
+    const collapsed = sidebar.classList.contains('sidebar-collapsed');
+    
+    if (collapsed) {
+        sidebar.style.width = '72px';
+        sidebar.classList.remove('w-[240px]');
+        labels.forEach(l => l.style.display = 'none');
+        logo.forEach(l => l.style.display = 'none');
+        if (refreshBtn) refreshBtn.style.display = 'none';
+        if (btn) btn.querySelector('span').textContent = 'chevron_right';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[240px]');
+            mainContent.classList.add('ml-[72px]');
+        }
+    } else {
+        sidebar.style.width = '240px';
+        sidebar.classList.add('w-[240px]');
+        labels.forEach(l => l.style.display = '');
+        logo.forEach(l => l.style.display = '');
+        if (refreshBtn) refreshBtn.style.display = '';
+        if (btn) btn.querySelector('span').textContent = 'chevron_left';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[72px]');
+            mainContent.classList.add('ml-[240px]');
+        }
+    }
+}
+
+// Theme toggle
+function toggleTheme() {
+    const html = document.documentElement;
+    const icon = document.getElementById('themeToggleIcon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        if (icon) icon.textContent = 'dark_mode';
+    } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        if (icon) icon.textContent = 'light_mode';
+    }
+}
+</script>
+</body></html>

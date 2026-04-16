@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ADF Monitor | Self-Healing Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#ffdad6",
+                      "surface-container-lowest": "#ffffff",
+                      "on-tertiary-container": "#005e70",
+                      "on-background": "#1a1c1c",
+                      "on-tertiary": "#ffffff",
+                      "surface-dim": "#dadada",
+                      "on-error-container": "#93000a",
+                      "surface-container-highest": "#e2e2e2",
+                      "error": "#ba1a1a",
+                      "on-surface": "#1a1c1c",
+                      "secondary-fixed": "#e5e2e1",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "on-secondary": "#ffffff",
+                      "surface-container-high": "#e8e8e8",
+                      "on-primary": "#ffffff",
+                      "primary-fixed": "#ffe08b",
+                      "outline": "#807660",
+                      "on-primary-container": "#695200",
+                      "on-error": "#ffffff",
+                      "on-tertiary-fixed": "#001f27",
+                      "on-secondary-fixed-variant": "#474746",
+                      "primary": "#745b00",
+                      "surface": "#f9f9f9",
+                      "primary-container": "#f5c518",
+                      "outline-variant": "#d1c5ac",
+                      "on-primary-fixed-variant": "#584400",
+                      "surface-bright": "#f9f9f9",
+                      "inverse-surface": "#2f3131",
+                      "surface-container": "#eeeeee",
+                      "surface-variant": "#e2e2e2",
+                      "primary-fixed-dim": "#f0c110",
+                      "on-secondary-container": "#636262",
+                      "surface-container-low": "#f3f3f3",
+                      "tertiary": "#00687c",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "inverse-primary": "#f0c110",
+                      "secondary": "#5f5e5e",
+                      "secondary-container": "#e2dfde",
+                      "tertiary-fixed": "#b0ecff",
+                      "inverse-on-surface": "#f1f1f1",
+                      "background": "#f9f9f9",
+                      "on-tertiary-fixed-variant": "#004e5e",
+                      "on-primary-fixed": "#241a00",
+                      "tertiary-fixed-dim": "#42d7fb",
+                      "on-surface-variant": "#4e4633",
+                      "tertiary-container": "#49dbff",
+                      "surface-tint": "#745b00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "fontFamily": {
+                      "headline": ["Inter"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+      </style>
+
+<style>
+#main-sidebar { transition: width 0.25s ease, padding 0.25s ease; overflow-x: hidden; }
+#main-content { transition: margin-left 0.25s ease; }
+.collapse-toggle { 
+    background: none; border: none; cursor: pointer; 
+    color: #807660; padding: 4px; border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.collapse-toggle:hover { background: #e2e2e2; }
+.dark .collapse-toggle:hover { background: #334155; }
+.collapse-toggle span { font-size: 18px; }
+.nav-item { white-space: nowrap; }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- SideNavBar Component -->
+<aside id="main-sidebar" class="w-[240px] h-screen fixed left-0 top-0 bg-[#f3f3f3] dark:bg-slate-900 flex flex-col py-8 px-4 flex-shrink-0 z-50 shadow-[2px_0_12px_rgba(0,0,0,0.05)] border-r border-[#e2e2e2] dark:border-slate-800">
+<div class="mb-12 px-2 flex items-center justify-between">
+<div class="overflow-hidden">
+<h1 class="text-xl font-bold tracking-tighter text-[#1a1c1c] dark:text-white logo-text whitespace-nowrap">ADF Healer</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#745b00] dark:text-[#f5c518] font-bold mt-1 logo-text whitespace-nowrap">Self-Healing Engine</p>
+</div>
+<button class="collapse-toggle ml-2" onclick="toggleSidebar()" title="Collapse sidebar">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+
+<a class="nav-item flex items-center gap-3 text-[#1a1c1c] dark:text-white font-bold border-l-4 border-[#f5c518] pl-4 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 bg-[#e2e2e2]/50 dark:bg-slate-800/50" href="dashboard.html">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="text-sm nav-label">Dashboard</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="pipelines.html">
+<span class="material-symbols-outlined shrink-0" data-icon="account_tree">account_tree</span>
+<span class="text-sm nav-label">Pipelines</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="chatbot.html">
+<span class="material-symbols-outlined shrink-0" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-sm nav-label">Chatbot</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="reports.html">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="text-sm nav-label">Reports</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="settings.html">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="text-sm nav-label">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2 pt-6 refresh-btn-container">
+<button class="w-full py-3 bg-[#f5c518] text-[#1a1c1c] font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+<span class="nav-label">Refresh</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-w-0 ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all" id="main-content">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center px-8 w-full sticky top-0 z-50 bg-[#f9f9f9]/80 dark:bg-slate-950/80 backdrop-blur-md h-16 shadow-sm dark:shadow-none">
+<div class="flex items-center gap-4">
+<h2 class="text-lg font-black text-[#1a1c1c] dark:text-white">Dashboard</h2>
+<div class="h-4 w-[1px] bg-outline-variant/30"></div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-full">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-[11px] font-medium text-on-surface-variant">SQL Listener • Running • 2 min ago</span>
+</div>
+</div>
+<!-- Time Range Pills -->
+<div class="hidden md:flex items-center bg-surface-container-high p-1 rounded-xl">
+<button class="px-4 py-1.5 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all">Today</button>
+<button class="px-4 py-1.5 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all">1 Week</button>
+<button class="px-4 py-1.5 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all">15 Days</button>
+<button class="px-4 py-1.5 text-xs font-bold bg-primary-container text-on-primary-container rounded-lg shadow-sm">1 Month</button>
+<button class="px-4 py-1.5 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all">4 Months</button>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="contrast">contrast</span>
+</button>
+<img alt="Admin profile" class="w-8 h-8 rounded-full border border-outline-variant/20 object-cover" data-alt="professional portrait of a tech executive in a clean minimalist office setting with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2GqFQE4yuWezICFGnkeYqYP_FnbosH_U56GpZeIPZnAnhlw-8g325LucJJP7kkXh88XcxgX7-EP_lm7sAkcguKL8xSypLR_eSjt-IchGHFzQ4oUIBvJeuTUbNuNBZFAzX5p0wXbvRhs7BLNqI8yWa6zpQkfGRToTKKOzNQ-cSxpSYTHJRUPMb-RHcPzfr6kcE46VvsFQHBolfKZVnhiCOZYHIYlrXeRGiaiVSod4mE8Duoa1f55zHff4KBpZ1028prNGIkHKE6oM"/>
+</div>
+</header>
+<div class="p-8 space-y-8 overflow-y-auto no-scrollbar">
+<!-- Section 1: Hero Header Banner -->
+<section class="relative bg-surface-container-low p-10 rounded-xl overflow-hidden">
+<div class="relative z-10 max-w-2xl">
+<div class="flex gap-2 mb-6">
+<span class="px-3 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider rounded-full">Detect</span>
+<span class="px-3 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider rounded-full">Classify</span>
+<span class="px-3 py-1 bg-primary-container text-on-primary-container text-[10px] font-bold uppercase tracking-wider rounded-full">Heal</span>
+</div>
+<h1 class="text-4xl font-black tracking-tight text-on-surface mb-4 leading-tight">Self-Healing ADF Pipelines</h1>
+<p class="text-on-surface-variant text-lg max-w-lg font-medium leading-relaxed opacity-80">Intelligent error detection, classification &amp; auto-recovery for Azure Data Factory. Monitor and repair workflows in real-time.</p>
+</div>
+<button class="absolute top-6 right-6 p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+<div class="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-primary-container/20 to-transparent pointer-events-none"></div>
+</section>
+<!-- Section 2: Stats Row -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:bg-surface-container-low group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-on-surface-variant text-sm font-semibold">Total Failures</span>
+<div class="flex items-center text-error font-bold text-xs">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_downward">arrow_downward</span>
+                            12%
+                        </div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black tracking-tighter text-on-surface">47</span>
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Events</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:bg-surface-container-low group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-on-surface-variant text-sm font-semibold">Auto-Healed</span>
+<div class="flex items-center text-green-600 font-bold text-xs">
+<span class="material-symbols-outlined text-sm" data-icon="arrow_upward">arrow_upward</span>
+                            84%
+                        </div>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black tracking-tighter text-on-surface">35</span>
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Resolved</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:bg-surface-container-low group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-on-surface-variant text-sm font-semibold">Escalated</span>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="bolt">bolt</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black tracking-tighter text-on-surface">12</span>
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Manual</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-container-lowest p-6 rounded-xl transition-all hover:bg-surface-container-low group">
+<div class="flex justify-between items-start mb-4">
+<span class="text-on-surface-variant text-sm font-semibold">Active Pipelines</span>
+<span class="material-symbols-outlined text-green-500" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-5xl font-black tracking-tighter text-on-surface">28</span>
+<span class="text-on-surface-variant text-xs font-bold uppercase tracking-widest">Live</span>
+</div>
+</div>
+</section>
+<!-- Section 3: Charts Row -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Large Line Chart Placeholder -->
+<div class="lg:col-span-2 bg-surface-container-lowest p-8 rounded-xl">
+<div class="flex justify-between items-center mb-10">
+<h3 class="text-xl font-bold tracking-tight">Failure Trend</h3>
+<span class="text-xs text-on-surface-variant font-medium">Last 30 Days</span>
+</div>
+<div class="h-64 flex items-end gap-2 relative">
+<!-- Simulated Chart Grid -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-5">
+<div class="w-full h-[1px] bg-on-surface"></div>
+<div class="w-full h-[1px] bg-on-surface"></div>
+<div class="w-full h-[1px] bg-on-surface"></div>
+<div class="w-full h-[1px] bg-on-surface"></div>
+</div>
+<!-- Simulated Line Path (using CSS Clipping) -->
+<div class="absolute bottom-0 left-0 w-full h-full">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,30 T100,10" fill="none" stroke="#F5C518" stroke-linecap="round" stroke-width="3"></path>
+<path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,30 T100,10 V100 H0 Z" fill="url(#gradient)" opacity="0.1"></path>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#F5C518;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#F5C518;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+</div>
+</div>
+<!-- Donut Chart Placeholder -->
+<div class="bg-surface-container-lowest p-8 rounded-xl flex flex-col items-center justify-center text-center">
+<h3 class="text-xl font-bold tracking-tight mb-8 self-start">Success vs Failure</h3>
+<div class="relative w-48 h-48">
+<svg class="w-full h-full" viewbox="0 0 36 36">
+<circle cx="18" cy="18" fill="transparent" r="15.9" stroke="#ffdad6" stroke-width="3"></circle>
+<circle cx="18" cy="18" fill="transparent" r="15.9" stroke="#22c55e" stroke-dasharray="94.2 100" stroke-linecap="round" stroke-width="3" transform="rotate(-90 18 18)"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-3xl font-black tracking-tighter">94.2%</span>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Health</span>
+</div>
+</div>
+<div class="mt-8 flex gap-6">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-green-500"></span>
+<span class="text-xs font-semibold">Success</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-error"></span>
+<span class="text-xs font-semibold">Failed</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 4: Row 3 Breakdown & Activity -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
+<!-- Breakdown Chart -->
+<div class="bg-surface-container-lowest p-8 rounded-xl">
+<h3 class="text-xl font-bold tracking-tight mb-8">Error Type Breakdown</h3>
+<div class="space-y-5">
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Parameter Errors</span>
+<span>24</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 85%;"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Dataset Errors</span>
+<span>18</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 65%;"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Credentials Expired</span>
+<span>12</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 45%;"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Timeout</span>
+<span>9</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 35%;"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Server Slow</span>
+<span>7</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 25%;"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-xs font-bold text-on-surface-variant">
+<span>Subscription Corrupt</span>
+<span>3</span>
+</div>
+<div class="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden">
+<div class="bg-primary-container h-full rounded-full" style="width: 15%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="bg-surface-container-lowest p-8 rounded-xl flex flex-col">
+<h3 class="text-xl font-bold tracking-tight mb-8">Recent Activity</h3>
+<div class="flex-1 space-y-6">
+<!-- Activity 1 -->
+<div class="flex items-center justify-between group cursor-pointer" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="text-[10px] font-bold">14:20</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">PL_Finance_Extract</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Timeout Error detected</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded-lg">Error</span>
+<span class="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg">Healed</span>
+</div>
+</div>
+<!-- Activity 2 -->
+<div class="flex items-center justify-between group cursor-pointer" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="text-[10px] font-bold">13:45</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">PL_CRM_Sync</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Credential Mismatch</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded-lg">Error</span>
+<span class="px-3 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-lg">Escalated</span>
+</div>
+</div>
+<!-- Activity 3 -->
+<div class="flex items-center justify-between group cursor-pointer" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="text-[10px] font-bold">12:10</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">PL_Legacy_Load</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Missing Parameter</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded-lg">Error</span>
+<span class="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg">Healed</span>
+</div>
+</div>
+<!-- Activity 4 -->
+<div class="flex items-center justify-between group cursor-pointer" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="text-[10px] font-bold">11:55</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">PL_Daily_Cleanup</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">System Idle Check</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-surface-container-high text-on-surface-variant text-[10px] font-bold rounded-lg">Stable</span>
+<span class="px-3 py-1 bg-primary-container/20 text-on-primary-container text-[10px] font-bold rounded-lg">Log</span>
+</div>
+</div>
+<!-- Activity 5 -->
+<div class="flex items-center justify-between group cursor-pointer" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'" onclick="window.location.href='pipeline_detail.html'">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="text-[10px] font-bold">10:30</span>
+</div>
+<div>
+<h4 class="text-sm font-bold">PL_HR_Portal_Data</h4>
+<p class="text-[11px] text-on-surface-variant font-medium">Dataset Access Denied</p>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="px-3 py-1 bg-error-container text-on-error-container text-[10px] font-bold rounded-lg">Error</span>
+<span class="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-lg">Healed</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+
+<script>
+// Collapse sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const mainContent = document.getElementById('main-content');
+    if (!sidebar) return;
+    const labels = sidebar.querySelectorAll('.nav-label');
+    const logo = sidebar.querySelectorAll('.logo-text');
+    const btn = sidebar.querySelector('.collapse-toggle');
+    const refreshBtn = sidebar.querySelector('.refresh-btn-container');
+    
+    sidebar.classList.toggle('sidebar-collapsed');
+    const collapsed = sidebar.classList.contains('sidebar-collapsed');
+    
+    if (collapsed) {
+        sidebar.style.width = '72px';
+        sidebar.classList.remove('w-[240px]');
+        labels.forEach(l => l.style.display = 'none');
+        logo.forEach(l => l.style.display = 'none');
+        if (refreshBtn) refreshBtn.style.display = 'none';
+        if (btn) btn.querySelector('span').textContent = 'chevron_right';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[240px]');
+            mainContent.classList.add('ml-[72px]');
+        }
+    } else {
+        sidebar.style.width = '240px';
+        sidebar.classList.add('w-[240px]');
+        labels.forEach(l => l.style.display = '');
+        logo.forEach(l => l.style.display = '');
+        if (refreshBtn) refreshBtn.style.display = '';
+        if (btn) btn.querySelector('span').textContent = 'chevron_left';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[72px]');
+            mainContent.classList.add('ml-[240px]');
+        }
+    }
+}
+
+// Theme toggle
+function toggleTheme() {
+    const html = document.documentElement;
+    const icon = document.getElementById('themeToggleIcon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        if (icon) icon.textContent = 'dark_mode';
+    } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        if (icon) icon.textContent = 'light_mode';
+    }
+}
+</script>
+</body></html>

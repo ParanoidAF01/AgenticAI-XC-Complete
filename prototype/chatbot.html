@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Assistant - ADF Pipeline Monitoring</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f1f1f1",
+                        "tertiary": "#00687c",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#004e5e",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e2e2e2",
+                        "primary-fixed-dim": "#f0c110",
+                        "primary-container": "#f5c518",
+                        "surface-dim": "#dadada",
+                        "on-secondary-container": "#636262",
+                        "secondary-fixed": "#e5e2e1",
+                        "secondary": "#5f5e5e",
+                        "secondary-container": "#e2dfde",
+                        "on-surface": "#1a1c1c",
+                        "tertiary-fixed": "#b0ecff",
+                        "on-primary-fixed": "#241a00",
+                        "error-container": "#ffdad6",
+                        "outline-variant": "#d1c5ac",
+                        "on-surface-variant": "#4e4633",
+                        "tertiary-container": "#49dbff",
+                        "on-tertiary-fixed": "#001f27",
+                        "surface-bright": "#f9f9f9",
+                        "inverse-primary": "#f0c110",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e2e2e2",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-primary-fixed-variant": "#584400",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "surface": "#f9f9f9",
+                        "on-error-container": "#93000a",
+                        "primary": "#745b00",
+                        "on-background": "#1a1c1c",
+                        "primary-fixed": "#ffe08b",
+                        "surface-container": "#eeeeee",
+                        "tertiary-fixed-dim": "#42d7fb",
+                        "surface-container-high": "#e8e8e8",
+                        "on-primary-container": "#695200",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#f3f3f3",
+                        "background": "#f9f9f9",
+                        "surface-tint": "#745b00",
+                        "on-tertiary-container": "#005e70",
+                        "inverse-surface": "#2f3131",
+                        "outline": "#807660"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chat-container::-webkit-scrollbar { width: 6px; }
+        .chat-container::-webkit-scrollbar-track { background: transparent; }
+        .chat-container::-webkit-scrollbar-thumb { background: #e2e2e2; border-radius: 10px; }
+    </style>
+
+<style>
+#main-sidebar { transition: width 0.25s ease, padding 0.25s ease; overflow-x: hidden; }
+#main-content { transition: margin-left 0.25s ease; }
+.collapse-toggle { 
+    background: none; border: none; cursor: pointer; 
+    color: #807660; padding: 4px; border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.collapse-toggle:hover { background: #e2e2e2; }
+.dark .collapse-toggle:hover { background: #334155; }
+.collapse-toggle span { font-size: 18px; }
+.nav-item { white-space: nowrap; }
+</style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- Side Navigation Bar -->
+<aside id="main-sidebar" class="w-[240px] h-screen fixed left-0 top-0 bg-[#f3f3f3] dark:bg-slate-900 flex flex-col py-8 px-4 flex-shrink-0 z-50 shadow-[2px_0_12px_rgba(0,0,0,0.05)] border-r border-[#e2e2e2] dark:border-slate-800">
+<div class="mb-12 px-2 flex items-center justify-between">
+<div class="overflow-hidden">
+<h1 class="text-xl font-bold tracking-tighter text-[#1a1c1c] dark:text-white logo-text whitespace-nowrap">ADF Healer</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#745b00] dark:text-[#f5c518] font-bold mt-1 logo-text whitespace-nowrap">Self-Healing Engine</p>
+</div>
+<button class="collapse-toggle ml-2" onclick="toggleSidebar()" title="Collapse sidebar">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="dashboard.html">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="text-sm nav-label">Dashboard</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="pipelines.html">
+<span class="material-symbols-outlined shrink-0" data-icon="account_tree">account_tree</span>
+<span class="text-sm nav-label">Pipelines</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#1a1c1c] dark:text-white font-bold border-l-4 border-[#f5c518] pl-4 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 bg-[#e2e2e2]/50 dark:bg-slate-800/50" href="chatbot.html">
+<span class="material-symbols-outlined shrink-0" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-sm nav-label">Chatbot</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="reports.html">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="text-sm nav-label">Reports</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="settings.html">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="text-sm nav-label">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2 pt-6 refresh-btn-container">
+<button class="w-full py-3 bg-[#f5c518] text-[#1a1c1c] font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+<span class="nav-label">Refresh</span>
+</button>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class=" min-h-screen flex flex-col bg-surface ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all" id="main-content">
+<!-- Top Navigation Bar -->
+<header class="flex justify-between items-center w-full px-8 py-4 h-16 bg-[#f9f9f9] dark:bg-zinc-950 sticky top-0 z-40">
+<div class="flex items-center gap-6">
+<span class="text-xl font-black text-[#1a1c1c] dark:text-zinc-100 tracking-tight">AI Assistant</span>
+<div class="relative group">
+<button class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-low text-on-surface text-sm font-medium hover:bg-surface-container-high transition-colors">
+                        All Pipelines
+                        <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-primary font-semibold text-sm px-4 py-2 hover:bg-primary-container/10 rounded-xl transition-colors">Clear Chat</button>
+<div class="flex items-center gap-1">
+<button class="p-2 text-on-surface-variant hover:bg-[#e2e2e2] rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-[#e2e2e2] rounded-full transition-colors">
+<span class="material-symbols-outlined">contrast</span>
+</button>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Close up portrait of a professional male software engineer with short hair and a confident expression in a tech office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAU1g3jOAEIKJLt2MWPhzV-GcM_VaUvXV7uf9BTaZFcroYcsjPXJ9RSQ5HsSEEGScPyRHlEpvr-x5lBXN8jswXQ4sZX--8MGjkMREnAosG_f0zxvDvx4Baqfi3M7ze4kC849WFpJMeT1E60PchFNDj9z9cqi8wU2cx0B5dA_P7cTziupDqSdkfDKpAry_HbwN98gT-1-SEu_Y4SRmFHRybVm6fiKND1y0XR6WVG-ywzfh62p7UtEvdsm8vqPQHYiQm6L07Q3ULEJZs"/>
+</div>
+</div>
+</header>
+<!-- Chat Content Area -->
+<div class="flex-1 flex flex-col px-8 pt-8 pb-32 max-w-5xl mx-auto w-full gap-8 chat-container overflow-y-auto">
+<!-- Bot Welcome -->
+<div class="flex flex-col items-start gap-2 max-w-[80%]">
+<div class="p-5 bg-surface-container-low text-on-surface rounded-2xl rounded-tl-none shadow-sm">
+<p class="body-md leading-relaxed">👋 Hi! I'm your ADF Pipeline Assistant. I can help you understand pipeline errors, find root causes, and suggest fixes. Ask me anything!</p>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-2">Just now</span>
+</div>
+<!-- User Message 1 -->
+<div class="flex flex-col items-end gap-2 self-end max-w-[80%]">
+<div class="p-5 bg-on-surface text-surface rounded-2xl rounded-tr-none shadow-lg">
+<p class="body-md font-medium">Why did PL_Template_Quarterly_Error_Credentials fail so many times?</p>
+</div>
+<span class="text-[10px] text-on-surface-variant mr-2">10:42 AM</span>
+</div>
+<!-- Bot Response 1 -->
+<div class="flex flex-col items-start gap-2 max-w-[90%] w-full">
+<div class="bg-surface-container-low text-on-surface rounded-2xl rounded-tl-none border-l-4 border-primary-container p-6 shadow-sm overflow-hidden">
+<h2 class="text-xl font-bold mb-4 headline-lg tracking-tight">PL_Template_Quarterly_Error_Credentials Analysis</h2>
+<div class="space-y-4">
+<ul class="space-y-2 list-none">
+<li class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="body-md">Credential mismatch detected in activity 'Auth_Service_Task'</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="body-md">Secret 'ADF-Client-Secret' expired in Production Key Vault</span>
+</li>
+<li class="flex items-center gap-3">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="body-md">Retry limit reached (3/3) for current execution block</span>
+</li>
+</ul>
+<div class="mt-6 overflow-hidden rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container">
+<tr>
+<th class="px-4 py-3 text-sm font-bold text-on-surface-variant uppercase tracking-wider">Error Type</th>
+<th class="px-4 py-3 text-sm font-bold text-on-surface-variant uppercase tracking-wider text-right">Occurrence Count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-surface-container">
+<td class="px-4 py-3 body-md font-medium">Type 3 - Credentials</td>
+<td class="px-4 py-3 body-md text-right font-bold text-primary">18</td>
+</tr>
+<tr>
+<td class="px-4 py-3 body-md font-medium">Timeout</td>
+<td class="px-4 py-3 body-md text-right font-bold text-on-surface-variant">4</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-6">
+<p class="font-bold mb-3 text-sm uppercase tracking-widest text-on-surface-variant">Recommended Fix Steps</p>
+<ol class="space-y-3 list-decimal list-inside marker:text-primary marker:font-bold">
+<li class="body-md pl-2">Check the secret expiration date in **Azure Key Vault** (Vault: `kv-prod-01`).</li>
+<li class="body-md pl-2">Update the **ADF Linked Service** credentials with the new secret value.</li>
+<li class="body-md pl-2">Trigger a **Manual Run** to verify the connection.</li>
+</ol>
+</div>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-2">10:43 AM</span>
+</div>
+<!-- User Message 2 -->
+<div class="flex flex-col items-end gap-2 self-end max-w-[80%]">
+<div class="p-5 bg-on-surface text-surface rounded-2xl rounded-tr-none shadow-lg">
+<p class="body-md font-medium">How can I fix the credential errors?</p>
+</div>
+<span class="text-[10px] text-on-surface-variant mr-2">10:45 AM</span>
+</div>
+<!-- Bot Response 2 -->
+<div class="flex flex-col items-start gap-2 max-w-[80%]">
+<div class="p-6 bg-surface-container-low text-on-surface rounded-2xl rounded-tl-none border-l-4 border-primary-container shadow-sm">
+<div class="space-y-4">
+<p class="body-md">To resolve the credential errors permanently, follow this step-by-step procedure focusing on **Azure Key Vault rotation**:</p>
+<ol class="space-y-4">
+<li class="flex gap-4">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-surface text-xs font-bold flex items-center justify-center">1</span>
+<p class="body-md">Generate a new secret in the App Registration and save it to Key Vault as a new version.</p>
+</li>
+<li class="flex gap-4">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-surface text-xs font-bold flex items-center justify-center">2</span>
+<p class="body-md">Ensure the ADF Managed Identity has 'Key Vault Secrets User' permissions.</p>
+</li>
+<li class="flex gap-4">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-surface text-xs font-bold flex items-center justify-center">3</span>
+<p class="body-md">Update the Linked Service in ADF to reference the secret without a static version number to allow auto-rotation.</p>
+</li>
+</ol>
+</div>
+</div>
+<span class="text-[10px] text-on-surface-variant ml-2">10:45 AM</span>
+</div>
+</div>
+<!-- Sticky Footer for Input & Quick Questions -->
+<div class="fixed bottom-0 left-64 right-0 p-8 bg-surface/80 backdrop-blur-xl border-t border-surface-container-high/20 z-40">
+<div class="max-w-4xl mx-auto space-y-6">
+<!-- Quick Questions Chips -->
+<div class="flex flex-wrap gap-2 justify-center">
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-surface-container-high text-xs font-medium text-on-surface hover:bg-primary-container hover:text-on-primary-container transition-all">Most common errors this week</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-surface-container-high text-xs font-medium text-on-surface hover:bg-primary-container hover:text-on-primary-container transition-all">Why did PL_Template fail?</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-surface-container-high text-xs font-medium text-on-surface hover:bg-primary-container hover:text-on-primary-container transition-all">How to fix Type 3 errors?</button>
+<button class="px-4 py-2 rounded-full bg-surface-container-lowest border border-surface-container-high text-xs font-medium text-on-surface hover:bg-primary-container hover:text-on-primary-container transition-all">Which pipelines need attention?</button>
+</div>
+<!-- Input Bar -->
+<div class="relative flex items-center">
+<input class="w-full pl-6 pr-16 py-4 bg-surface-container-highest rounded-2xl border-none focus:ring-2 focus:ring-primary-container/50 text-on-surface placeholder:text-on-surface-variant/60 shadow-inner" placeholder="Ask about pipeline errors..." type="text"/>
+<button class="absolute right-3 p-3 bg-primary-container text-on-primary-container rounded-xl hover:scale-105 active:scale-95 transition-transform flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_upward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+
+<script>
+// Collapse sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const mainContent = document.getElementById('main-content');
+    if (!sidebar) return;
+    const labels = sidebar.querySelectorAll('.nav-label');
+    const logo = sidebar.querySelectorAll('.logo-text');
+    const btn = sidebar.querySelector('.collapse-toggle');
+    const refreshBtn = sidebar.querySelector('.refresh-btn-container');
+    
+    sidebar.classList.toggle('sidebar-collapsed');
+    const collapsed = sidebar.classList.contains('sidebar-collapsed');
+    
+    if (collapsed) {
+        sidebar.style.width = '72px';
+        sidebar.classList.remove('w-[240px]');
+        labels.forEach(l => l.style.display = 'none');
+        logo.forEach(l => l.style.display = 'none');
+        if (refreshBtn) refreshBtn.style.display = 'none';
+        if (btn) btn.querySelector('span').textContent = 'chevron_right';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[240px]');
+            mainContent.classList.add('ml-[72px]');
+        }
+    } else {
+        sidebar.style.width = '240px';
+        sidebar.classList.add('w-[240px]');
+        labels.forEach(l => l.style.display = '');
+        logo.forEach(l => l.style.display = '');
+        if (refreshBtn) refreshBtn.style.display = '';
+        if (btn) btn.querySelector('span').textContent = 'chevron_left';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[72px]');
+            mainContent.classList.add('ml-[240px]');
+        }
+    }
+}
+
+// Theme toggle
+function toggleTheme() {
+    const html = document.documentElement;
+    const icon = document.getElementById('themeToggleIcon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        if (icon) icon.textContent = 'dark_mode';
+    } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        if (icon) icon.textContent = 'light_mode';
+    }
+}
+</script>
+</body></html>

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ADF Sentinel - Reports &amp; Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface": "#f9f9f9",
+                        "primary": "#745b00",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-primary-fixed-variant": "#584400",
+                        "surface-tint": "#745b00",
+                        "secondary-fixed": "#e5e2e1",
+                        "tertiary-container": "#49dbff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-container": "#695200",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#dadada",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#001f27",
+                        "background": "#f9f9f9",
+                        "tertiary-fixed-dim": "#42d7fb",
+                        "outline": "#807660",
+                        "outline-variant": "#d1c5ac",
+                        "primary-fixed": "#ffe08b",
+                        "on-surface-variant": "#4e4633",
+                        "on-secondary-container": "#636262",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#474746",
+                        "inverse-primary": "#f0c110",
+                        "tertiary": "#00687c",
+                        "on-background": "#1a1c1c",
+                        "on-primary-fixed": "#241a00",
+                        "surface-variant": "#e2e2e2",
+                        "primary-fixed-dim": "#f0c110",
+                        "inverse-surface": "#2f3131",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e2e2e2",
+                        "surface-bright": "#f9f9f9",
+                        "on-tertiary-fixed-variant": "#004e5e",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container-low": "#f3f3f3",
+                        "secondary": "#5f5e5e",
+                        "on-primary": "#ffffff",
+                        "tertiary-fixed": "#b0ecff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#eeeeee",
+                        "surface-container-high": "#e8e8e8",
+                        "on-tertiary-container": "#005e70",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#f5c518",
+                        "on-surface": "#1a1c1c",
+                        "secondary-container": "#e2dfde"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom scrollbar for gallery feel */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e2e2; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c8c6c5; }
+    </style>
+
+<style>
+#main-sidebar { transition: width 0.25s ease, padding 0.25s ease; overflow-x: hidden; }
+#main-content { transition: margin-left 0.25s ease; }
+.collapse-toggle { 
+    background: none; border: none; cursor: pointer; 
+    color: #807660; padding: 4px; border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.collapse-toggle:hover { background: #e2e2e2; }
+.dark .collapse-toggle:hover { background: #334155; }
+.collapse-toggle span { font-size: 18px; }
+.nav-item { white-space: nowrap; }
+</style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar (Shell) -->
+<aside id="main-sidebar" class="w-[240px] h-screen fixed left-0 top-0 bg-[#f3f3f3] dark:bg-slate-900 flex flex-col py-8 px-4 flex-shrink-0 z-50 shadow-[2px_0_12px_rgba(0,0,0,0.05)] border-r border-[#e2e2e2] dark:border-slate-800">
+<div class="mb-12 px-2 flex items-center justify-between">
+<div class="overflow-hidden">
+<h1 class="text-xl font-bold tracking-tighter text-[#1a1c1c] dark:text-white logo-text whitespace-nowrap">ADF Healer</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#745b00] dark:text-[#f5c518] font-bold mt-1 logo-text whitespace-nowrap">Self-Healing Engine</p>
+</div>
+<button class="collapse-toggle ml-2" onclick="toggleSidebar()" title="Collapse sidebar">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="dashboard.html">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="text-sm nav-label">Dashboard</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="pipelines.html">
+<span class="material-symbols-outlined shrink-0" data-icon="account_tree">account_tree</span>
+<span class="text-sm nav-label">Pipelines</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="chatbot.html">
+<span class="material-symbols-outlined shrink-0" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-sm nav-label">Chatbot</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#1a1c1c] dark:text-white font-bold border-l-4 border-[#f5c518] pl-4 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 bg-[#e2e2e2]/50 dark:bg-slate-800/50" href="reports.html">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="text-sm nav-label">Reports</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="settings.html">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="text-sm nav-label">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2 pt-6 refresh-btn-container">
+<button class="w-full py-3 bg-[#f5c518] text-[#1a1c1c] font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+<span class="nav-label">Refresh</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class=" min-h-screen pb-24 ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all ml-[240px] transition-all" id="main-content">
+<!-- TopNavBar (Shell) -->
+<header class="flex justify-between items-center px-12 py-8 bg-surface/80 backdrop-blur-xl sticky top-0 z-40">
+<div>
+<h1 class="text-3xl font-black tracking-tight text-on-surface">Reports &amp; Analytics</h1>
+</div>
+<!-- Time Range Selector -->
+<div class="flex items-center gap-1 bg-surface-container-low p-1.5 rounded-full">
+<button class="px-5 py-2 rounded-full text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">Today</button>
+<button class="px-5 py-2 rounded-full text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">1 Week</button>
+<button class="px-5 py-2 rounded-full text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">15 Days</button>
+<button class="px-5 py-2 rounded-full text-sm font-bold text-on-surface bg-surface-container-lowest shadow-[0_2px_12px_-4px_rgba(26,28,28,0.1)] transition-transform scale-[0.98]">1 Month</button>
+<button class="px-5 py-2 rounded-full text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">4 Months</button>
+</div>
+<!-- Actions & Profile -->
+<div class="flex items-center gap-5">
+<div class="flex items-center gap-2">
+<button class="bg-surface-container-high text-on-surface px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-surface-container-highest transition-colors">Export CSV</button>
+<button class="bg-gradient-to-r from-primary-container to-inverse-primary text-on-primary-container px-5 py-2.5 rounded-xl text-sm font-bold shadow-[0_8px_32px_-8px_rgba(240,193,16,0.4)] hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                        Export PDF
+                    </button>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant/30 mx-2"></div>
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border-2 border-surface-container-lowest shadow-sm">
+<img alt="System Monitor Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsu9L2ld3H8Bq5wUkyYXjiD1MHrlPWif5oEedJbpR3mQ48z97XorL3a7w1RvMediZDYWOdK9gilHyR1rxJUzVRC2ijTo8PKwLth1vb6Xhrd9BWe4sISpAGpWLzqRBPc9qGisSmZnZbfMLllq-m9SR5Bf_NXIrfLZ7BdAOzDAVNb3J9TTnIMFkj-l3SuojLSVbSR9Gw0rQRXaJ79hji2efQdz0_KAa1WiQl4yEpe2woT-0hVa0rY9gx5qTIvsU5gGKxifxaye22BUY"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="px-12 mt-4 space-y-12">
+<!-- ROW 1: Key Metrics (Bento Grid) -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-8 relative overflow-hidden group">
+<div class="absolute -right-6 -top-6 w-32 h-32 bg-primary-container/10 rounded-full blur-3xl group-hover:bg-primary-container/20 transition-colors"></div>
+<p class="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-6">MTTR</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-5xl font-black tracking-tighter text-on-surface">4.2</h3>
+<span class="text-lg font-medium text-on-surface-variant">min</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-sm text-on-surface-variant">Average Resolution</span>
+<div class="flex items-center gap-1 text-[#006837] bg-[#006837]/10 px-2.5 py-1 rounded-md text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]">arrow_downward</span>
+                            15%
+                        </div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-8 relative overflow-hidden group">
+<p class="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-6">Auto-Heal Rate</p>
+<div class="flex items-baseline gap-1">
+<h3 class="text-5xl font-black tracking-tighter text-on-surface">74.5</h3>
+<span class="text-2xl font-bold text-inverse-primary">%</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-sm text-on-surface-variant">Success without manual intervention</span>
+<div class="flex items-center gap-1 text-[#006837] bg-[#006837]/10 px-2.5 py-1 rounded-md text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+                            2.4%
+                        </div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-8 relative overflow-hidden group">
+<p class="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-6">Estimated Savings</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-5xl font-black tracking-tighter text-on-surface">12.5</h3>
+<span class="text-lg font-medium text-on-surface-variant">hrs</span>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-sm text-on-surface-variant">Developer time saved this month</span>
+</div>
+</div>
+<!-- Card 4 (Spotlight) -->
+<div class="bg-gradient-to-br from-surface-container-highest to-surface-container-low rounded-xl p-8 relative overflow-hidden group">
+<p class="text-sm font-semibold text-on-surface-variant uppercase tracking-wider mb-6">Total Errors</p>
+<div class="flex items-baseline gap-2">
+<h3 class="text-5xl font-black tracking-tighter text-on-surface">47</h3>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<span class="text-sm text-on-surface-variant">This period</span>
+<span class="material-symbols-outlined text-inverse-primary text-[28px] opacity-80">warning</span>
+</div>
+</div>
+</section>
+<!-- ROW 2: Visualizations -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left: Heatmap (60%) -->
+<div class="lg:col-span-7 bg-surface-container-lowest rounded-xl p-8">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-lg font-bold text-on-surface">Error Type Heatmap</h3>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="overflow-x-auto">
+<div class="min-w-[500px]">
+<!-- X Axis Labels -->
+<div class="flex ml-12 mb-3 text-xs font-medium text-on-surface-variant">
+<div class="flex-1 text-center">Type 1</div>
+<div class="flex-1 text-center">Type 2</div>
+<div class="flex-1 text-center">Type 3</div>
+<div class="flex-1 text-center">Type 4</div>
+<div class="flex-1 text-center">Type 5</div>
+<div class="flex-1 text-center">Type 6</div>
+</div>
+<!-- Grid -->
+<div class="flex flex-col gap-2">
+<!-- Mon -->
+<div class="flex items-center gap-3">
+<span class="w-9 text-xs font-medium text-on-surface-variant text-right">Mon</span>
+<div class="flex-1 grid grid-cols-6 gap-2 h-10">
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-primary-fixed/40 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-inverse-primary/80 rounded-md shadow-sm"></div>
+<div class="bg-primary-fixed/20 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+</div>
+</div>
+<!-- Tue -->
+<div class="flex items-center gap-3">
+<span class="w-9 text-xs font-medium text-on-surface-variant text-right">Tue</span>
+<div class="flex-1 grid grid-cols-6 gap-2 h-10">
+<div class="bg-primary-fixed/20 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-inverse-primary rounded-md shadow-md"></div>
+<div class="bg-primary-fixed/50 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-primary-fixed/30 rounded-md"></div>
+</div>
+</div>
+<!-- Wed -->
+<div class="flex items-center gap-3">
+<span class="w-9 text-xs font-medium text-on-surface-variant text-right">Wed</span>
+<div class="flex-1 grid grid-cols-6 gap-2 h-10">
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-primary-fixed/40 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-inverse-primary/60 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+</div>
+</div>
+<!-- Thu -->
+<div class="flex items-center gap-3">
+<span class="w-9 text-xs font-medium text-on-surface-variant text-right">Thu</span>
+<div class="flex-1 grid grid-cols-6 gap-2 h-10">
+<div class="bg-primary-fixed/60 rounded-md"></div>
+<div class="bg-inverse-primary rounded-md shadow-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-primary-fixed/20 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+</div>
+</div>
+<!-- Fri -->
+<div class="flex items-center gap-3">
+<span class="w-9 text-xs font-medium text-on-surface-variant text-right">Fri</span>
+<div class="flex-1 grid grid-cols-6 gap-2 h-10">
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-primary-fixed/30 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-primary-fixed/80 rounded-md"></div>
+<div class="bg-surface-container rounded-md"></div>
+<div class="bg-inverse-primary/40 rounded-md"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Bar Chart (40%) -->
+<div class="lg:col-span-5 bg-surface-container-lowest rounded-xl p-8">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-lg font-bold text-on-surface">Most Error-Prone Pipelines</h3>
+</div>
+<div class="space-y-6">
+<!-- Bar 1 -->
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="font-semibold text-on-surface truncate pr-4">pl_ingest_salesforce_daily</span>
+<span class="font-bold text-on-surface-variant">18</span>
+</div>
+<div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-inverse-primary rounded-full w-[85%]"></div>
+</div>
+</div>
+<!-- Bar 2 -->
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="font-semibold text-on-surface truncate pr-4">pl_transform_erp_finance</span>
+<span class="font-bold text-on-surface-variant">12</span>
+</div>
+<div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-inverse-primary/80 rounded-full w-[60%]"></div>
+</div>
+</div>
+<!-- Bar 3 -->
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="font-semibold text-on-surface truncate pr-4">pl_export_analytics_dw</span>
+<span class="font-bold text-on-surface-variant">8</span>
+</div>
+<div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-inverse-primary/60 rounded-full w-[40%]"></div>
+</div>
+</div>
+<!-- Bar 4 -->
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="font-semibold text-on-surface truncate pr-4">pl_sync_user_profiles</span>
+<span class="font-bold text-on-surface-variant">5</span>
+</div>
+<div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-inverse-primary/40 rounded-full w-[25%]"></div>
+</div>
+</div>
+<!-- Bar 5 -->
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="font-semibold text-on-surface truncate pr-4">pl_cleanup_temp_blobs</span>
+<span class="font-bold text-on-surface-variant">4</span>
+</div>
+<div class="h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary-container to-inverse-primary/30 rounded-full w-[15%]"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ROW 3: Tables -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Left: Top Root Causes -->
+<div class="bg-surface-container-lowest rounded-xl p-8">
+<h3 class="text-lg font-bold text-on-surface mb-6">Top Root Causes</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr>
+<th class="py-4 px-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant w-12">#</th>
+<th class="py-4 px-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Root Cause Summary</th>
+<th class="py-4 px-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant text-right">Occurrences</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="hover:bg-surface-container-low transition-colors group rounded-xl">
+<td class="py-4 px-2 font-bold text-inverse-primary">1</td>
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface">SAS token expired in Key Vault</p>
+<p class="text-xs text-on-surface-variant mt-1">Affects: 3 pipelines</p>
+</td>
+<td class="py-4 px-2 text-right font-medium">14</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-2 font-bold text-on-surface-variant">2</td>
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface">Connection timeout to SQL Server</p>
+<p class="text-xs text-on-surface-variant mt-1">Affects: 1 pipeline</p>
+</td>
+<td class="py-4 px-2 text-right font-medium">9</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-2 font-bold text-on-surface-variant">3</td>
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface">Data format mismatch (Date parsing)</p>
+<p class="text-xs text-on-surface-variant mt-1">Affects: 2 pipelines</p>
+</td>
+<td class="py-4 px-2 text-right font-medium">6</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors group">
+<td class="py-4 px-2 font-bold text-on-surface-variant">4</td>
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface">API Rate Limit Exceeded (Salesforce)</p>
+<p class="text-xs text-on-surface-variant mt-1">Affects: 1 pipeline</p>
+</td>
+<td class="py-4 px-2 text-right font-medium">4</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right: Restart Exhaustion -->
+<div class="bg-surface-container-lowest rounded-xl p-8">
+<h3 class="text-lg font-bold text-on-surface mb-6">Restart Exhaustion Report</h3>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr>
+<th class="py-4 px-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Pipeline</th>
+<th class="py-4 px-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Attempts</th>
+<th class="py-4 px-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant text-right">Status</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface truncate max-w-[180px]">pl_ingest_salesforce_daily</p>
+<p class="text-xs text-on-surface-variant mt-1">API Timeout</p>
+</td>
+<td class="py-4 px-2">
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<span class="text-xs text-on-surface-variant mt-1 block">3/3 failed</span>
+</td>
+<td class="py-4 px-2 text-right">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-error-container text-on-error-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]">build</span>
+                                            Needs Manual Fix
+                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface truncate max-w-[180px]">pl_transform_erp_finance</p>
+<p class="text-xs text-on-surface-variant mt-1">Schema Drift</p>
+</td>
+<td class="py-4 px-2">
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<span class="text-xs text-on-surface-variant mt-1 block">3/3 failed</span>
+</td>
+<td class="py-4 px-2 text-right">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-error-container text-on-error-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]">build</span>
+                                            Needs Manual Fix
+                                        </span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-2">
+<p class="font-semibold text-on-surface truncate max-w-[180px]">pl_sync_user_profiles</p>
+<p class="text-xs text-on-surface-variant mt-1">Auth Failure</p>
+</td>
+<td class="py-4 px-2">
+<div class="flex gap-1">
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+<div class="w-2 h-2 rounded-full bg-error"></div>
+</div>
+<span class="text-xs text-on-surface-variant mt-1 block">3/3 failed</span>
+</td>
+<td class="py-4 px-2 text-right">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-error-container text-on-error-container text-xs font-bold">
+<span class="material-symbols-outlined text-[14px]">build</span>
+                                            Needs Manual Fix
+                                        </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+
+<script>
+// Collapse sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const mainContent = document.getElementById('main-content');
+    if (!sidebar) return;
+    const labels = sidebar.querySelectorAll('.nav-label');
+    const logo = sidebar.querySelectorAll('.logo-text');
+    const btn = sidebar.querySelector('.collapse-toggle');
+    const refreshBtn = sidebar.querySelector('.refresh-btn-container');
+    
+    sidebar.classList.toggle('sidebar-collapsed');
+    const collapsed = sidebar.classList.contains('sidebar-collapsed');
+    
+    if (collapsed) {
+        sidebar.style.width = '72px';
+        sidebar.classList.remove('w-[240px]');
+        labels.forEach(l => l.style.display = 'none');
+        logo.forEach(l => l.style.display = 'none');
+        if (refreshBtn) refreshBtn.style.display = 'none';
+        if (btn) btn.querySelector('span').textContent = 'chevron_right';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[240px]');
+            mainContent.classList.add('ml-[72px]');
+        }
+    } else {
+        sidebar.style.width = '240px';
+        sidebar.classList.add('w-[240px]');
+        labels.forEach(l => l.style.display = '');
+        logo.forEach(l => l.style.display = '');
+        if (refreshBtn) refreshBtn.style.display = '';
+        if (btn) btn.querySelector('span').textContent = 'chevron_left';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[72px]');
+            mainContent.classList.add('ml-[240px]');
+        }
+    }
+}
+
+// Theme toggle
+function toggleTheme() {
+    const html = document.documentElement;
+    const icon = document.getElementById('themeToggleIcon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        if (icon) icon.textContent = 'dark_mode';
+    } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        if (icon) icon.textContent = 'light_mode';
+    }
+}
+</script>
+</body></html>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pipeline Detail - ADF Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#1a1c1c",
+                        "inverse-on-surface": "#f1f1f1",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#e2dfde",
+                        "secondary-fixed": "#e5e2e1",
+                        "primary": "#745b00",
+                        "tertiary-fixed": "#b0ecff",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-surface": "#2f3131",
+                        "on-primary-container": "#695200",
+                        "on-error": "#ffffff",
+                        "outline": "#807660",
+                        "on-secondary-container": "#636262",
+                        "tertiary": "#00687c",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-container": "#005e70",
+                        "tertiary-container": "#49dbff",
+                        "on-secondary-fixed-variant": "#474746",
+                        "outline-variant": "#d1c5ac",
+                        "on-background": "#1a1c1c",
+                        "surface-container-low": "#f3f3f3",
+                        "surface-container-high": "#e8e8e8",
+                        "tertiary-fixed-dim": "#42d7fb",
+                        "on-tertiary-fixed-variant": "#004e5e",
+                        "surface-container": "#eeeeee",
+                        "background": "#f9f9f9",
+                        "on-primary-fixed": "#241a00",
+                        "surface-container-highest": "#e2e2e2",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#f0c110",
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed-variant": "#584400",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "secondary": "#5f5e5e",
+                        "inverse-primary": "#f0c110",
+                        "surface-variant": "#e2e2e2",
+                        "surface-bright": "#f9f9f9",
+                        "primary-container": "#f5c518",
+                        "surface-tint": "#745b00",
+                        "on-tertiary-fixed": "#001f27",
+                        "on-surface-variant": "#4e4633",
+                        "surface-dim": "#dadada",
+                        "surface": "#f9f9f9",
+                        "primary-fixed": "#ffe08b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+
+<style>
+#main-sidebar { transition: width 0.25s ease, padding 0.25s ease; overflow-x: hidden; }
+#main-content { transition: margin-left 0.25s ease; }
+.collapse-toggle { 
+    background: none; border: none; cursor: pointer; 
+    color: #807660; padding: 4px; border-radius: 6px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.collapse-toggle:hover { background: #e2e2e2; }
+.dark .collapse-toggle:hover { background: #334155; }
+.collapse-toggle span { font-size: 18px; }
+.nav-item { white-space: nowrap; }
+</style>
+</head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- SideNavBar -->
+<aside id="main-sidebar" class="w-[240px] h-screen fixed left-0 top-0 bg-[#f3f3f3] dark:bg-slate-900 flex flex-col py-8 px-4 flex-shrink-0 z-50 shadow-[2px_0_12px_rgba(0,0,0,0.05)] border-r border-[#e2e2e2] dark:border-slate-800">
+<div class="mb-12 px-2 flex items-center justify-between">
+<div class="overflow-hidden">
+<h1 class="text-xl font-bold tracking-tighter text-[#1a1c1c] dark:text-white logo-text whitespace-nowrap">ADF Healer</h1>
+<p class="text-[10px] uppercase tracking-widest text-[#745b00] dark:text-[#f5c518] font-bold mt-1 logo-text whitespace-nowrap">Self-Healing Engine</p>
+</div>
+<button class="collapse-toggle ml-2" onclick="toggleSidebar()" title="Collapse sidebar">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+</div>
+<nav class="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="dashboard.html">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="text-sm nav-label">Dashboard</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#1a1c1c] dark:text-white font-bold border-l-4 border-[#f5c518] pl-4 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 bg-[#e2e2e2]/50 dark:bg-slate-800/50" href="pipelines.html">
+<span class="material-symbols-outlined shrink-0" data-icon="account_tree">account_tree</span>
+<span class="text-sm nav-label">Pipelines</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="chatbot.html">
+<span class="material-symbols-outlined shrink-0" data-icon="chat_bubble">chat_bubble</span>
+<span class="text-sm nav-label">Chatbot</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="reports.html">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="text-sm nav-label">Reports</span>
+</a>
+<a class="nav-item flex items-center gap-3 text-[#4e4633] dark:text-slate-400 pl-5 py-3 hover:bg-[#e2e2e2] dark:hover:bg-slate-800 transition-colors active:scale-95 border-l-4 border-transparent" href="settings.html">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="text-sm nav-label">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2 pt-6 refresh-btn-container">
+<button class="w-full py-3 bg-[#f5c518] text-[#1a1c1c] font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="refresh">refresh</span>
+<span class="nav-label">Refresh</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class=" flex-1 flex flex-col min-h-screen ml-[240px] transition-all" id="main-content">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest/80 backdrop-blur-xl flex justify-between items-center w-full px-8 py-4 docked full-width top-0 z-40 sticky shadow-[0_1px_0_0_rgba(26,28,28,0.05)]">
+<div class="flex items-center gap-4">
+<a class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface-variant" href="javascript:history.back()">
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_back">arrow_back</span>
+</a>
+<h2 class="font-['Inter'] font-bold tracking-tight text-on-surface text-lg truncate max-w-md">PL_Template_Quarterly_Error_Credentials</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex bg-surface-container-low rounded-full p-1">
+<button class="px-4 py-1.5 text-xs font-semibold rounded-full bg-surface-container-lowest text-on-surface shadow-sm">Today</button>
+<button class="px-4 py-1.5 text-xs font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-colors">1W</button>
+<button class="px-4 py-1.5 text-xs font-medium rounded-full text-on-surface-variant hover:text-on-surface transition-colors">1M</button>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded-full transition-colors scale-95 duration-200">
+<span class="material-symbols-outlined text-[20px]" data-icon="refresh">refresh</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded-full transition-colors scale-95 duration-200">
+<span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="p-8 md:p-12 space-y-12 max-w-7xl mx-auto w-full">
+<!-- PIPELINE HEADER CARD -->
+<section class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)]">
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="px-2.5 py-1 text-xs font-bold bg-error-container text-on-error-container rounded-full uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="warning">warning</span> HIGH
+                            </span>
+<span class="text-xs text-on-surface-variant font-medium">Daily 6:00 AM</span>
+</div>
+<h1 class="text-3xl md:text-4xl font-black tracking-tight text-on-surface mb-6">PL_Template_Quarterly_Error_Credentials</h1>
+<div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="person">person</span>
+<span>Owner: Anmol Gupta</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" data-icon="mail">mail</span>
+<span>anmol@company.com</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-high text-on-surface px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-surface-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="play_arrow">play_arrow</span> Run Now
+                        </button>
+<button class="bg-primary-container text-on-primary-container px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span> Edit Config
+                        </button>
+</div>
+</div>
+</section>
+<!-- METRICS ROW -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Success Rate -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)] flex flex-col justify-between relative overflow-hidden">
+<div class="text-sm font-semibold text-on-surface-variant mb-6">Success Rate</div>
+<div class="flex items-end gap-4">
+<div class="text-5xl font-black tracking-tighter text-on-surface">60.0<span class="text-2xl text-on-surface-variant">%</span></div>
+</div>
+<div class="mt-4 text-sm font-medium text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_downward">arrow_downward</span> 5% vs last period
+                    </div>
+<!-- Decorative Ring -->
+<div class="absolute -right-8 -bottom-8 w-32 h-32 rounded-full border-[12px] border-error-container opacity-50"></div>
+</div>
+<!-- Total Errors -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)] flex flex-col justify-between">
+<div class="text-sm font-semibold text-on-surface-variant mb-6">Total Errors</div>
+<div class="flex items-end gap-4">
+<div class="text-5xl font-black tracking-tighter text-on-surface">30</div>
+</div>
+<div class="mt-4 text-sm font-medium text-on-surface-variant">this period</div>
+</div>
+<!-- Most Common Type -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)] flex flex-col justify-between bg-gradient-to-br from-surface-container-lowest to-surface-container-low">
+<div class="text-sm font-semibold text-on-surface-variant mb-6">Most Common Type</div>
+<div>
+<div class="text-xl font-bold text-on-surface leading-tight mb-2">Type 3 — Credentials Expired</div>
+<div class="text-3xl font-black text-on-surface-variant">(18)</div>
+</div>
+</div>
+</section>
+<!-- CHARTS ROW -->
+<section class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+<!-- Failure Timeline -->
+<div class="lg:col-span-3 bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)] min-h-[300px] flex flex-col">
+<h3 class="text-base font-bold text-on-surface mb-6">Failure Timeline</h3>
+<div class="flex-1 w-full bg-surface-container-low/30 rounded-lg relative overflow-hidden flex items-end justify-between px-4 pb-4">
+<!-- Placeholder Line Chart -->
+<div class="absolute inset-0 flex items-end justify-between px-8 py-8">
+<div class="w-1/6 h-[20%] bg-surface-variant rounded-t-sm"></div>
+<div class="w-1/6 h-[40%] bg-surface-variant rounded-t-sm"></div>
+<div class="w-1/6 h-[30%] bg-surface-variant rounded-t-sm"></div>
+<div class="w-1/6 h-[80%] bg-primary-container rounded-t-sm relative">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-on-surface text-surface-container-lowest text-xs font-bold px-2 py-1 rounded">18</div>
+</div>
+<div class="w-1/6 h-[50%] bg-surface-variant rounded-t-sm"></div>
+</div>
+<!-- Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between py-8 pointer-events-none opacity-20">
+<div class="border-t border-on-surface-variant w-full"></div>
+<div class="border-t border-on-surface-variant w-full"></div>
+<div class="border-t border-on-surface-variant w-full"></div>
+<div class="border-t border-on-surface-variant w-full"></div>
+</div>
+</div>
+</div>
+<!-- Error Type Distribution -->
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)] min-h-[300px] flex flex-col">
+<h3 class="text-base font-bold text-on-surface mb-6">Error Type Distribution</h3>
+<div class="flex-1 flex items-center justify-center relative">
+<!-- Placeholder Pie Chart -->
+<div class="w-48 h-48 rounded-full border-[24px] border-surface-container-low relative">
+<!-- Type 3 Segment -->
+<div class="absolute inset-[-24px] rounded-full border-[24px] border-primary-container border-t-transparent border-l-transparent border-r-transparent rotate-45"></div>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-2xl font-black text-on-surface">60%</span>
+<span class="text-xs font-medium text-on-surface-variant">Type 3</span>
+</div>
+</div>
+</div>
+<div class="mt-4 flex flex-wrap gap-3 justify-center">
+<div class="flex items-center gap-1.5 text-xs text-on-surface-variant font-medium"><div class="w-2.5 h-2.5 rounded-full bg-primary-container"></div> Type 3</div>
+<div class="flex items-center gap-1.5 text-xs text-on-surface-variant font-medium"><div class="w-2.5 h-2.5 rounded-full bg-surface-container-high"></div> Others</div>
+</div>
+</div>
+</section>
+<!-- ERROR HISTORY TABLE -->
+<section class="bg-surface-container-lowest rounded-xl shadow-[0_4px_32px_-4px_rgba(26,28,28,0.04)] overflow-hidden">
+<div class="p-6 border-b border-surface-container-low flex justify-between items-center">
+<h3 class="text-base font-bold text-on-surface">Error History</h3>
+<button class="text-sm font-semibold text-primary hover:text-on-surface transition-colors">View All</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50 text-xs text-on-surface-variant font-semibold uppercase tracking-wider">
+<th class="px-6 py-4 font-semibold">Timestamp</th>
+<th class="px-6 py-4 font-semibold">Run ID</th>
+<th class="px-6 py-4 font-semibold">Error Type</th>
+<th class="px-6 py-4 font-semibold">Message</th>
+<th class="px-6 py-4 font-semibold">Action Taken</th>
+</tr>
+</thead>
+<tbody class="text-sm divide-y divide-surface-container-low">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-on-surface-variant font-medium">Oct 24, 06:05 AM</td>
+<td class="px-6 py-4 whitespace-nowrap font-mono text-xs text-on-surface">RUN-A1B2C3D4</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface">Type 3</span>
+</td>
+<td class="px-6 py-4 text-on-surface truncate max-w-[200px]" title="Azure Key Vault credentials expired. Please renew the secret 'kv-adf-creds'.">Azure Key Vault credentials exp...</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-error-container/30 text-error">
+<div class="w-1.5 h-1.5 rounded-full bg-error"></div> Escalated
+                                    </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-on-surface-variant font-medium">Oct 23, 06:02 AM</td>
+<td class="px-6 py-4 whitespace-nowrap font-mono text-xs text-on-surface">RUN-E5F6G7H8</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface">Type 1</span>
+</td>
+<td class="px-6 py-4 text-on-surface truncate max-w-[200px]">Connection timeout to SQL DB...</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#e6f4ea] text-[#137333]">
+<div class="w-1.5 h-1.5 rounded-full bg-[#137333]"></div> Auto-Restarted
+                                    </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/30 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap text-on-surface-variant font-medium">Oct 22, 06:05 AM</td>
+<td class="px-6 py-4 whitespace-nowrap font-mono text-xs text-on-surface">RUN-I9J0K1L2</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-container-high text-on-surface">Type 3</span>
+</td>
+<td class="px-6 py-4 text-on-surface truncate max-w-[200px]">Azure Key Vault credentials exp...</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-error-container/30 text-error">
+<div class="w-1.5 h-1.5 rounded-full bg-error"></div> Escalated
+                                    </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- PDF REPORTS SECTION -->
+<section class="mt-12 mb-8">
+<h3 class="text-sm font-bold text-on-surface-variant mb-4 uppercase tracking-wider">Generated Reports</h3>
+<div class="flex flex-wrap gap-4">
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_-2px_rgba(26,28,28,0.05)] border border-surface-container-low hover:border-outline-variant/30 transition-colors flex items-center justify-between min-w-[280px] group cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+</div>
+<div>
+<div class="text-sm font-semibold text-on-surface">Q3_Error_Analysis.pdf</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Oct 01, 2023 • 2.4 MB</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-on-surface opacity-0 group-hover:opacity-100 transition-all" data-icon="download">download</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_2px_8px_-2px_rgba(26,28,28,0.05)] border border-surface-container-low hover:border-outline-variant/30 transition-colors flex items-center justify-between min-w-[280px] group cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+</div>
+<div>
+<div class="text-sm font-semibold text-on-surface">Q2_Error_Analysis.pdf</div>
+<div class="text-xs text-on-surface-variant mt-0.5">Jul 01, 2023 • 1.8 MB</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-on-surface opacity-0 group-hover:opacity-100 transition-all" data-icon="download">download</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+
+<script>
+// Collapse sidebar
+function toggleSidebar() {
+    const sidebar = document.getElementById('main-sidebar');
+    const mainContent = document.getElementById('main-content');
+    if (!sidebar) return;
+    const labels = sidebar.querySelectorAll('.nav-label');
+    const logo = sidebar.querySelectorAll('.logo-text');
+    const btn = sidebar.querySelector('.collapse-toggle');
+    const refreshBtn = sidebar.querySelector('.refresh-btn-container');
+    
+    sidebar.classList.toggle('sidebar-collapsed');
+    const collapsed = sidebar.classList.contains('sidebar-collapsed');
+    
+    if (collapsed) {
+        sidebar.style.width = '72px';
+        sidebar.classList.remove('w-[240px]');
+        labels.forEach(l => l.style.display = 'none');
+        logo.forEach(l => l.style.display = 'none');
+        if (refreshBtn) refreshBtn.style.display = 'none';
+        if (btn) btn.querySelector('span').textContent = 'chevron_right';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[240px]');
+            mainContent.classList.add('ml-[72px]');
+        }
+    } else {
+        sidebar.style.width = '240px';
+        sidebar.classList.add('w-[240px]');
+        labels.forEach(l => l.style.display = '');
+        logo.forEach(l => l.style.display = '');
+        if (refreshBtn) refreshBtn.style.display = '';
+        if (btn) btn.querySelector('span').textContent = 'chevron_left';
+        if (mainContent) {
+            mainContent.classList.remove('ml-[72px]');
+            mainContent.classList.add('ml-[240px]');
+        }
+    }
+}
+
+// Theme toggle
+function toggleTheme() {
+    const html = document.documentElement;
+    const icon = document.getElementById('themeToggleIcon');
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        html.classList.add('light');
+        if (icon) icon.textContent = 'dark_mode';
+    } else {
+        html.classList.remove('light');
+        html.classList.add('dark');
+        if (icon) icon.textContent = 'light_mode';
+    }
+}
+</script>
+</body></html>
