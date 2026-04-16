@@ -8,3 +8,4 @@ n8n/data/
 docs/*.md
 docs/*.pdf
 .chainlit/
+prototype/
