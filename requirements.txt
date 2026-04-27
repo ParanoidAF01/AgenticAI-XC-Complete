@@ -23,3 +23,7 @@ fpdf2>=2.7.0
 
 # Azure SQL Connectivity
 pyodbc>=4.0.39
+
+# Backend API
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0

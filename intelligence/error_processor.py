@@ -167,6 +167,7 @@ def process_error(error_details: dict):
             action = "auto_restart"
             log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
             _handle_auto_restart(error_details, classification, pipeline_metadata)
+            attempt_count = restart_tracker.get_attempt_count(pipeline_name, error_type)
         else:
             # Max retries exhausted — escalate
             action = "escalate_max_retries"
@@ -180,10 +181,20 @@ def process_error(error_details: dict):
             restart_tracker.reset(pipeline_name, error_type)
     else:
         action = "escalate_to_human"
+        attempt_count = 0
         log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
         _handle_escalation(error_details, classification, pipeline_metadata)
 
     print(f"   [DONE] Processing complete for run: {run_id}")
+
+    # Return result so the SQL listener can update the table with full details
+    return {
+        "action": action,
+        "error_type": error_type,
+        "error_type_name": error_type_name,
+        "attempt_count": attempt_count,
+        "is_retry": restart_tracker.is_restart_child(run_id),
+    }
 
 
 def _handle_auto_restart(error_details, classification, pipeline_metadata):

@@ -130,24 +130,28 @@ class SQLListener:
 
                 # Process the error through the intelligence layer
                 try:
-                    process_error(error_details)
+                    result = process_error(error_details)
 
-                    # Determine what action was taken for the SQL update
-                    error_type = None
-                    try:
-                        # Re-check what action the processor took
-                        from intelligence.error_classifier import classify_error
-                        error_type_val = error_details.get("_last_error_type")
-                    except Exception:
-                        pass
-
-                    # Mark as processed in the SQL table
-                    action = self._determine_action(row_dict)
-                    self._mark_processed(conn, log_id, action)
+                    # Use the classification result to update all tracking fields
+                    self._mark_processed(
+                        conn=conn,
+                        log_id=log_id,
+                        action=result.get("action", "unknown"),
+                        error_type_name=result.get("error_type_name", ""),
+                        is_retry=result.get("is_retry", is_retry),
+                        retry_attempt=result.get("attempt_count", 0),
+                    )
 
                 except Exception as e:
                     print(f"   [ERROR] Processing failed for LogId {log_id}: {str(e)}")
-                    self._mark_processed(conn, log_id, "processing_error")
+                    self._mark_processed(
+                        conn=conn,
+                        log_id=log_id,
+                        action="processing_error",
+                        error_type_name="",
+                        is_retry=is_retry,
+                        retry_attempt=0,
+                    )
 
             conn.close()
 
@@ -200,35 +204,31 @@ class SQLListener:
             "data_written": row.get("DataWritten"),
         }
 
-    def _determine_action(self, row):
-        """Determine what action the healer took based on the error type."""
-        # The processor handles the logic internally.
-        # We read back from the restart tracker to determine the action.
-        pipeline_name = row["PipelineName"]
-
-        # Check if any restart was tracked for this pipeline
-        for error_type in (3, 4, 5):
-            count = restart_tracker.get_attempt_count(pipeline_name, error_type)
-            if count > 0:
-                return "auto_restart"
-
-        # If no restart was tracked, it was escalated
-        return "escalated"
-
-    def _mark_processed(self, conn, log_id, action):
-        """Update the PipelineRunLog row to mark it as processed by the healer."""
+    def _mark_processed(self, conn, log_id, action, error_type_name="",
+                         is_retry=False, retry_attempt=0):
+        """
+        Update the PipelineRunLog row to mark it as processed by the healer.
+        Writes all tracking fields: ProcessedByHealer, HealerProcessedAt,
+        HealerAction, HealerErrorType, IsRetry, RetryAttempt.
+        """
         try:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE PipelineRunLog
                 SET ProcessedByHealer = 1,
                     HealerProcessedAt = SYSUTCDATETIME(),
-                    HealerAction = ?
+                    HealerAction = ?,
+                    HealerErrorType = ?,
+                    IsRetry = ?,
+                    RetryAttempt = ?
                 WHERE LogId = ?
-            """, action, log_id)
+            """, action, error_type_name, 1 if is_retry else 0, retry_attempt, log_id)
             conn.commit()
+            print(f"   [SQL] Updated LogId {log_id}: action={action}, "
+                  f"error_type={error_type_name}, is_retry={is_retry}, "
+                  f"retry_attempt={retry_attempt}")
         except Exception as e:
-            print(f"   [WARN] Could not update ProcessedByHealer for LogId {log_id}: {str(e)}")
+            print(f"   [WARN] Could not update LogId {log_id}: {str(e)}")
 
 
 def start_listener():
