@@ -72,6 +72,17 @@ class RestartTracker:
         """Check if a run ID was created by a restart (child of a previous failure)."""
         return run_id in self._restart_run_ids
 
+    def get_child_attempt_number(self, run_id: str) -> int:
+        """Get the retry attempt number (1-based) for a child run ID."""
+        for entry in self._attempts.values():
+            if run_id in entry.get("child_run_ids", []):
+                return entry["child_run_ids"].index(run_id) + 1
+        return 0
+
+    def get_all_child_run_ids(self) -> set:
+        """Return all currently tracked child run IDs."""
+        return set(self._restart_run_ids)
+
     def get_info(self, pipeline_name: str, error_type: int) -> dict:
         """Get the full tracking info for a pipeline+error_type pair."""
         key = (pipeline_name, error_type)
@@ -112,6 +123,9 @@ def process_error(error_details: dict):
     pipeline_name = error_details.get("pipeline_name", "unknown")
     run_id = error_details.get("run_id", "unknown")
     error_text = error_details.get("combined_error", "")
+
+    # Capture is_retry early — before any reset() call can clear child run IDs
+    is_retry = restart_tracker.is_restart_child(run_id)
 
     print(f"\n{'=' * 50}")
     print(f"[PROCESS] Processing error for pipeline: {pipeline_name}")
@@ -167,7 +181,6 @@ def process_error(error_details: dict):
             action = "auto_restart"
             log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
             _handle_auto_restart(error_details, classification, pipeline_metadata)
-            attempt_count = restart_tracker.get_attempt_count(pipeline_name, error_type)
         else:
             # Max retries exhausted — escalate
             action = "escalate_max_retries"
@@ -193,7 +206,7 @@ def process_error(error_details: dict):
         "error_type": error_type,
         "error_type_name": error_type_name,
         "attempt_count": attempt_count,
-        "is_retry": restart_tracker.is_restart_child(run_id),
+        "is_retry": is_retry,
     }
 
 

@@ -153,6 +153,10 @@ class SQLListener:
                         retry_attempt=0,
                     )
 
+            # After processing failures, check for successful child runs
+            # that need IsRetry marking (retry succeeded → never goes through process_error)
+            self._mark_successful_retries(conn)
+
             conn.close()
 
         except pyodbc.Error as e:
@@ -229,6 +233,54 @@ class SQLListener:
                   f"retry_attempt={retry_attempt}")
         except Exception as e:
             print(f"   [WARN] Could not update LogId {log_id}: {str(e)}")
+
+    def _mark_successful_retries(self, conn):
+        """
+        Scan for succeeded pipeline runs that are known restart children.
+        When a retry succeeds, the listener never processes it (only failures
+        are processed), so its IsRetry field stays 0. This method fixes that.
+        """
+        child_run_ids = restart_tracker.get_all_child_run_ids()
+        if not child_run_ids:
+            return
+
+        try:
+            cursor = conn.cursor()
+            # Build parameterized IN clause
+            placeholders = ",".join(["?" for _ in child_run_ids])
+            query = f"""
+                SELECT LogId, PipelineRunId, PipelineName
+                FROM PipelineRunLog
+                WHERE PipelineRunId IN ({placeholders})
+                  AND ExecutionStatus = 'Succeeded'
+                  AND IsRetry = 0
+            """
+            cursor.execute(query, list(child_run_ids))
+            rows = cursor.fetchall()
+
+            for row in rows:
+                log_id, run_id, pipeline_name = row[0], row[1], row[2]
+                attempt_num = restart_tracker.get_child_attempt_number(run_id)
+
+                cursor.execute("""
+                    UPDATE PipelineRunLog
+                    SET IsRetry = 1,
+                        RetryAttempt = ?,
+                        ProcessedByHealer = 1,
+                        HealerProcessedAt = SYSUTCDATETIME(),
+                        HealerAction = 'auto_healed'
+                    WHERE LogId = ?
+                """, attempt_num, log_id)
+                conn.commit()
+
+                print(f"   [HEALED] Pipeline '{pipeline_name}' retry succeeded! "
+                      f"(Run: {run_id}, Attempt: {attempt_num}) → IsRetry=1")
+
+                # Reset tracker for this pipeline since the retry worked
+                restart_tracker.reset_pipeline(pipeline_name)
+
+        except Exception as e:
+            print(f"   [WARN] Error checking successful retries: {str(e)}")
 
 
 def start_listener():
