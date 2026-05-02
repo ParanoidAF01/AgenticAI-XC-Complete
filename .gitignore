@@ -8,5 +8,5 @@ n8n/data/
 docs/*.md
 docs/*.pdf
 .chainlit/
-backend/
 scripts/create_views.sql
+queries/
