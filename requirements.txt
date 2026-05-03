@@ -1,6 +1,7 @@
 # Azure SDK
 azure-identity>=1.15.0
 azure-mgmt-datafactory>=9.0.0
+azure-storage-blob>=12.19.0
 
 # AI & LLM (OpenAI-compatible API client)
 openai>=1.0.0

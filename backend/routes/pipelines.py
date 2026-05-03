@@ -234,11 +234,45 @@ def get_pipeline_detail(
     if owner_sets and owner_sets[0]:
         owner = owner_sets[0][0].get("Owner", "")
 
+    # Compute success rate delta vs previous period
+    from datetime import datetime as dt
+    try:
+        sd_dt = dt.fromisoformat(sd)
+        ed_dt = dt.fromisoformat(ed)
+    except ValueError:
+        sd_dt = dt.strptime(sd, "%Y-%m-%dT%H:%M:%S")
+        ed_dt = dt.strptime(ed, "%Y-%m-%dT%H:%M:%S")
+    period_duration = ed_dt - sd_dt
+    prev_sd = (sd_dt - period_duration).strftime("%Y-%m-%dT%H:%M:%S")
+    prev_ed = sd_dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    prev_result = call_proc("ui.sp_pipeline_ind", {
+        "TableName": TABLE_NAME,
+        "PipelineName": pipeline_name,
+        "StartDate": prev_sd,
+        "EndDate": prev_ed,
+        "Offset": 0,
+        "Rows": 1,
+    })
+    prev_sr = 0.0
+    if prev_result and prev_result[0]:
+        prev_sr = float(prev_result[0][0].get("SuccessRatePc", 0) or 0)
+
+    # Delta: current - previous (absolute points, not percentage-of-percentage)
+    sr_delta = round(sr - prev_sr, 1)
+    sr_direction = "up" if sr_delta > 0 else ("down" if sr_delta < 0 else "neutral")
+    sr_delta_is_good = sr_direction == "up"  # higher success rate = better
+
     return {
         "pipeline_name": pipeline_name,
         "owner": owner,
         "criticality": criticality,
-        "summary": summary,
+        "summary": {
+            **summary,
+            "success_rate_delta": abs(sr_delta),
+            "success_rate_direction": sr_direction,
+            "success_rate_delta_is_good": sr_delta_is_good,
+        },
         "error_distribution": error_distribution,
         "error_history": error_history,
     }

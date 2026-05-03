@@ -502,6 +502,23 @@ def call_proc(proc_name: str, params: dict) -> list[list[dict]]:
             return _mock_home_recent_activity(params)
         if proc_name == "ui.sp_pipeline_chart":
             return _mock_pipeline_chart(params)
+        # Report SPs
+        if proc_name == "ui.sp_report_mttr":
+            return _mock_report_mttr(params)
+        if proc_name == "ui.sp_report_autoheal":
+            return _mock_report_autoheal(params)
+        if proc_name == "ui.sp_report_time_saved":
+            return _mock_report_time_saved(params)
+        if proc_name == "ui.sp_report_errors_kpi":
+            return _mock_report_errors_kpi(params)
+        if proc_name == "ui.sp_report_heatmap":
+            return _mock_report_heatmap(params)
+        if proc_name == "ui.sp_report_pipeline_breakdown":
+            return _mock_report_pipeline_breakdown(params)
+        if proc_name == "ui.sp_report_errorstype":
+            return _mock_report_errorstype(params)
+        if proc_name == "ui.sp_report_restart_exh":
+            return _mock_report_restart_exh(params)
         return [[]]
     return _call_proc_live(proc_name, params)
 
@@ -537,3 +554,119 @@ def _mock_pipeline_chart(params):
             })
 
     return [data]
+
+
+# ── Report SP Mocks ──────────────────────────────────────────
+
+def _mock_report_mttr(params):
+    """Mock for ui.sp_report_mttr → returns MTTR in seconds."""
+    return [[{"MTTR": random.uniform(180, 360)}]]  # 3–6 minutes in seconds
+
+
+def _mock_report_autoheal(params):
+    """Mock for ui.sp_report_autoheal → returns AutoHealRate as %."""
+    return [[{"AutoHealRate": round(random.uniform(60, 85), 1)}]]
+
+
+def _mock_report_time_saved(params):
+    """Mock for ui.sp_report_time_saved → returns MinsSaved."""
+    return [[{"MinsSaved": random.randint(400, 900)}]]  # ~7–15 hrs
+
+
+def _mock_report_errors_kpi(params):
+    """Mock for ui.sp_report_errors_kpi → returns TotalErrors count."""
+    return [[{"TotalErrors": random.randint(25, 70)}]]
+
+
+def _mock_report_heatmap(params):
+    """Mock for ui.sp_report_heatmap → returns TimeBucket × HealerErrorType × ErrorCount."""
+    time_filter = params.get("TimeFilter", "1M")
+
+    error_types = [
+        "Type 1 - Connection Timeout",
+        "Type 2 - Schema Drift",
+        "Type 3 - Credentials Expired",
+        "Type 4 - Data Format Mismatch",
+        "Type 5 - API Rate Limit",
+        "Type 6 - Resource Unavailable",
+    ]
+
+    data = []
+    if time_filter == "TODAY":
+        buckets = list(range(24))
+    elif time_filter == "1W":
+        buckets = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    elif time_filter == "4M":
+        base = datetime.now(IST) - timedelta(days=120)
+        buckets = [(base + timedelta(weeks=w)).strftime("%Y-%m-%d") for w in range(17)]
+    else:
+        num_days = 15 if time_filter == "15D" else 30
+        base = datetime.now(IST) - timedelta(days=num_days)
+        buckets = [(base + timedelta(days=d)).strftime("%Y-%m-%d") for d in range(num_days)]
+
+    for tb in buckets:
+        for et in error_types:
+            count = random.choices([0, 0, 0, 1, 2, 3, 5], weights=[40, 20, 10, 15, 8, 5, 2])[0]
+            if count > 0:
+                data.append({
+                    "TimeBucket": str(tb),
+                    "HealerErrorType": et,
+                    "ErrorCount": count,
+                })
+
+    return [data]
+
+
+def _mock_report_pipeline_breakdown(params):
+    """Mock for ui.sp_report_pipeline_breakdown → TOP 5 pipelines by error count."""
+    pipelines = [
+        {"PipelineName": "PL_Ingest_Salesforce_Daily", "ErrorCount": random.randint(12, 22)},
+        {"PipelineName": "PL_Transform_ERP_Finance", "ErrorCount": random.randint(8, 15)},
+        {"PipelineName": "PL_Export_Analytics_DW", "ErrorCount": random.randint(5, 10)},
+        {"PipelineName": "PL_Sync_User_Profiles", "ErrorCount": random.randint(3, 7)},
+        {"PipelineName": "PL_Cleanup_Temp_Blobs", "ErrorCount": random.randint(1, 5)},
+    ]
+    return [pipelines]
+
+
+def _mock_report_errorstype(params):
+    """Mock for ui.sp_report_errorstype → root causes ranked by count."""
+    causes = [
+        {"HealerErrorType": "Type 3 - Credentials Expired", "ErrorCount": random.randint(10, 18), "AffectedPipelines": 3},
+        {"HealerErrorType": "Type 1 - Connection Timeout", "ErrorCount": random.randint(6, 12), "AffectedPipelines": 1},
+        {"HealerErrorType": "Type 4 - Data Format Mismatch", "ErrorCount": random.randint(4, 8), "AffectedPipelines": 2},
+        {"HealerErrorType": "Type 5 - API Rate Limit", "ErrorCount": random.randint(2, 6), "AffectedPipelines": 1},
+    ]
+    return [causes]
+
+
+def _mock_report_restart_exh(params):
+    """Mock for ui.sp_report_restart_exh → pipelines that exhausted retries."""
+    now = datetime.now(IST)
+    exhaustions = [
+        {
+            "PipelineName": "PL_Ingest_Salesforce_Daily",
+            "PipelineRunId": "RUN-" + "".join(random.choices("ABCDEF0123456789", k=8)),
+            "HealerErrorType": "Type 5 - API Rate Limit",
+            "TriggerTime": (now - timedelta(hours=random.randint(2, 24))).strftime("%Y-%m-%d %H:%M:%S"),
+            "MaxRetryAttempt": 3,
+            "Status": "Need Manual Fix",
+        },
+        {
+            "PipelineName": "PL_Transform_ERP_Finance",
+            "PipelineRunId": "RUN-" + "".join(random.choices("ABCDEF0123456789", k=8)),
+            "HealerErrorType": "Type 2 - Schema Drift",
+            "TriggerTime": (now - timedelta(hours=random.randint(5, 48))).strftime("%Y-%m-%d %H:%M:%S"),
+            "MaxRetryAttempt": 3,
+            "Status": "Need Manual Fix",
+        },
+        {
+            "PipelineName": "PL_Sync_User_Profiles",
+            "PipelineRunId": "RUN-" + "".join(random.choices("ABCDEF0123456789", k=8)),
+            "HealerErrorType": "Type 3 - Credentials Expired",
+            "TriggerTime": (now - timedelta(hours=random.randint(1, 12))).strftime("%Y-%m-%d %H:%M:%S"),
+            "MaxRetryAttempt": 3,
+            "Status": "Need Manual Fix",
+        },
+    ]
+    return [exhaustions]
