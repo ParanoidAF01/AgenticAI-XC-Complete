@@ -54,7 +54,8 @@ def chat(req: ChatRequest):
     if not req.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
-    from datetime import datetime, timezone
+    from datetime import datetime, timedelta, timezone
+    IST = timezone(timedelta(hours=5, minutes=30))
 
     # Save user message to history
     with _history_lock:
@@ -62,7 +63,7 @@ def chat(req: ChatRequest):
             "role": "user",
             "content": req.question,
             "pipeline_name": req.pipeline_name,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(IST).isoformat(),
         })
 
     try:
@@ -92,7 +93,7 @@ def chat(req: ChatRequest):
                 "role": "assistant",
                 "content": answer,
                 "pipeline_name": req.pipeline_name,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(IST).isoformat(),
             })
 
         return ChatResponse(

@@ -6,6 +6,9 @@ to the intelligence layer for classification.
 """
 import time
 from datetime import datetime, timedelta, timezone
+
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 from azure.identity import ClientSecretCredential
 from azure.mgmt.datafactory import DataFactoryManagementClient
 import schedule
@@ -43,14 +46,14 @@ class ADFListener:
         self.processed_runs = set()
 
         # How far back to look on first run
-        self.last_check_time = datetime.now(timezone.utc) - timedelta(minutes=5)
+        self.last_check_time = datetime.now(IST) - timedelta(minutes=5)
 
         print(f"[OK] Connected to ADF: {AzureConfig.FACTORY_NAME}")
         print(f"[INFO] Resource Group: {AzureConfig.RESOURCE_GROUP}")
 
     def check_for_failures(self):
         """Poll ADF for any pipeline runs that failed since last check."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(IST)
         print(f"\n[POLL] [{now.strftime('%H:%M:%S')}] Checking for failed pipeline runs...")
 
         try:
@@ -115,7 +118,7 @@ class ADFListener:
             run_id=pipeline_run.run_id,
             filter_parameters={
                 "lastUpdatedAfter": pipeline_run.run_start or self.last_check_time,
-                "lastUpdatedBefore": datetime.now(timezone.utc)
+                "lastUpdatedBefore": datetime.now(IST)
             }
         )
 
@@ -159,7 +162,7 @@ class ADFListener:
             "message": pipeline_run.message or "",
             "failed_activities": failed_activities,
             "combined_error": " | ".join(error_messages),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(IST).isoformat()
         }
 
 

@@ -7,7 +7,10 @@ from openai import OpenAI
 import json
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 from fpdf import FPDF
 import sys
 
@@ -91,7 +94,7 @@ class ErrorReportPDF(FPDF):
         self.set_y(21)
         self.cell(0, 8,
                   f'{self.pipeline_name}  |  {self.error_type}  |  {self.priority}  |  '
-                  f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M")}',
+                  f'Generated: {datetime.now(IST).strftime("%Y-%m-%d %H:%M")}',
                   align='C')
         self.ln(15)
 
@@ -236,15 +239,22 @@ def generate_error_document(payload: dict) -> str:
         else:
             pdf.add_body_text(section_content.strip())
 
-    # Save PDF
-    filename = (
-        f"error_report_{pipeline_name}"
-        f"_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-    )
-    filepath = os.path.join(DOC_OUTPUT_DIR, filename)
-    pdf.output(filepath)
+    # Save PDF via report storage (Blob Storage + SQL metadata, with local fallback)
+    from backend.report_storage import store_report
 
-    print(f"   [DOC] PDF report saved: {filepath}")
+    # Generate PDF bytes in memory
+    pdf_bytes = pdf.output()  # fpdf2 returns bytes when no path given
+
+    metadata = store_report(
+        pipeline_name=pipeline_name,
+        run_id=payload.get("run_id", "Unknown"),
+        error_type=error_type_name,
+        priority=priority,
+        pdf_bytes=pdf_bytes,
+    )
+
+    filepath = metadata.get("local_path") or metadata.get("blob_path", "")
+    print(f"   [DOC] Report generated: {metadata['filename']} ({metadata['file_size_bytes']} bytes)")
     return filepath
 
 

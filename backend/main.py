@@ -42,6 +42,7 @@ app.add_middleware(
 # Register route modules
 app.include_router(dashboard.router)
 app.include_router(pipelines.router)
+app.include_router(pipelines.reports_router)
 app.include_router(reports.router)
 app.include_router(chat.router)
 app.include_router(settings.router)

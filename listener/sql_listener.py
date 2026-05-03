@@ -9,7 +9,10 @@ import pyodbc
 import schedule
 import sys
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -55,7 +58,7 @@ class SQLListener:
 
     def check_for_failures(self):
         """Poll PipelineRunLog for unprocessed failed pipeline runs."""
-        now = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        now = datetime.now(IST).strftime("%H:%M:%S")
         print(f"\n[POLL] [{now}] Checking PipelineRunLog for failed runs...")
 
         try:

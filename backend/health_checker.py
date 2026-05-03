@@ -11,7 +11,10 @@ import os
 import sys
 import time
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -34,7 +37,7 @@ class HealthResult:
         self.status = status        # "connected", "failed", "checking", "unchecked"
         self.message = message      # Success info or error reason
         self.latency_ms = latency_ms
-        self.checked_at = datetime.now(timezone.utc).isoformat()
+        self.checked_at = datetime.now(IST).isoformat()
 
     def to_dict(self) -> dict:
         return {
@@ -86,7 +89,7 @@ class HealthChecker:
                 "stale": stale,
                 "checking": self._checking,
                 "cached_at": datetime.fromtimestamp(
-                    self._cache_time, tz=timezone.utc
+                    self._cache_time, tz=IST
                 ).isoformat() if self._cache_time > 0 else None,
             }
 

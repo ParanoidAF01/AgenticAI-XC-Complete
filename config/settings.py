@@ -48,5 +48,12 @@ class NotificationConfig:
     NOTIFY_RECIPIENT = os.getenv("NOTIFY_RECIPIENT")
 
 
+class StorageConfig:
+    """Azure Blob Storage settings for PDF report uploads."""
+    ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME")
+    ACCOUNT_KEY = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
+    CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER", "adf-healer-reports")
+
+
 # Polling interval in seconds
 POLL_INTERVAL = 30

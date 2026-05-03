@@ -11,7 +11,10 @@ import time
 import os
 import sys
 import importlib
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+
+# IST timezone (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
 from collections import deque
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -21,7 +24,7 @@ class PollLog:
     """Single poll cycle log entry."""
 
     def __init__(self, service: str, message: str, status: str = "ok"):
-        self.timestamp = datetime.utcnow().isoformat()
+        self.timestamp = datetime.now(IST).isoformat()
         self.service = service          # "SQL Listener" or "ADF SDK Listener"
         self.message = message          # "0 failures found." or "2 failures detected in 'pl_xxx'. Healing initiated."
         self.status = status            # "ok", "warning", "error"
@@ -144,7 +147,7 @@ class ListenerManager:
                 name=f"listener-{self._mode}"
             )
             self._running = True
-            self._started_at = datetime.utcnow().isoformat()
+            self._started_at = datetime.now(IST).isoformat()
             self._thread.start()
 
             self.add_log(f"Listener started in {self._mode.upper()} mode.", "ok")
@@ -206,7 +209,7 @@ class ListenerManager:
                 try:
                     # Call the listener's check method
                     result = listener.check_for_failures()
-                    self._last_poll_time = datetime.utcnow().isoformat()
+                    self._last_poll_time = datetime.now(IST).isoformat()
 
                     # Parse the result to create a meaningful log message
                     # The listeners return different things, so we handle gracefully
