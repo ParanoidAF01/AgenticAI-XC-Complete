@@ -55,7 +55,9 @@ def get_pipelines(
     sd = start_date or _default_start_date()
     ed = end_date or _default_end_date()
     search_param = f"%{search}%" if search else "%"
-    status_param = status if status in ("all", "Healthy", "Warning", "Critical") else "all"
+    # Normalize status (frontend sends 'healthy', backend SP expects 'Healthy')
+    s_norm = status.title() if status else "All"
+    status_param = s_norm if s_norm in ("All", "Healthy", "Warning", "Critical") else "All"
 
     result_sets = call_proc("ui.sp_pipelines_page", {
         "TableName": TABLE_NAME,
