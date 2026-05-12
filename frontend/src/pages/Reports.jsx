@@ -99,7 +99,7 @@ const Reports = () => {
       {/* KPI Cards */}
       <div className="rpt-kpi-row">
         {kpis?.mttr && (
-          <div className="rpt-kpi-card card fade-in" style={{background: '#F0EDFF'}}>
+          <div className="rpt-kpi-card card fade-in rpt-kpi-purple">
             <div className="rk-label">{kpis.mttr.label || 'MTTR'}</div>
             <div className="rk-value-row">
               <span className="rk-big">{kpis.mttr.value}{kpis.mttr.unit || ''}</span>
@@ -112,7 +112,7 @@ const Reports = () => {
           </div>
         )}
         {kpis?.autoheal_rate && (
-          <div className="rpt-kpi-card card fade-in" style={{background: '#E8F8F2', animationDelay: '0.05s'}}>
+          <div className="rpt-kpi-card card fade-in rpt-kpi-green" style={{animationDelay: '0.05s'}}>
             <div className="rk-label">{kpis.autoheal_rate.label || 'AUTO-HEAL RATE'}</div>
             <div className="rk-value-row">
               <span className="rk-big">{kpis.autoheal_rate.value}{kpis.autoheal_rate.unit || ''}</span>
@@ -125,7 +125,7 @@ const Reports = () => {
           </div>
         )}
         {kpis?.time_saved && (
-          <div className="rpt-kpi-card card fade-in" style={{background: '#FFF6E8', animationDelay: '0.1s'}}>
+          <div className="rpt-kpi-card card fade-in rpt-kpi-orange" style={{animationDelay: '0.1s'}}>
             <div className="rk-label">{kpis.time_saved.label || 'ESTIMATED SAVINGS'}</div>
             <div className="rk-value-row">
               <span className="rk-big">{kpis.time_saved.value}{kpis.time_saved.unit || ''}</span>
@@ -137,7 +137,7 @@ const Reports = () => {
             <div className="rk-sub">Developer time saved this period</div>
           </div>
         )}
-        <div className="rpt-kpi-card card fade-in" style={{background: '#FDEEEE', animationDelay: '0.15s'}}>
+        <div className="rpt-kpi-card card fade-in rpt-kpi-red" style={{animationDelay: '0.15s'}}>
           <div className="rk-label">TOTAL ERRORS</div>
           <div className="rk-value-row">
             <span className="rk-big">{kpis?.total_errors?.value || 0}</span>
@@ -184,7 +184,7 @@ const Reports = () => {
                       style={{
                         background: count > 0 
                           ? `rgba(255, 193, 7, ${intensity})` 
-                          : '#f8f9fc'
+                          : 'var(--track-bg)'
                       }}
                       title={`${type} — ${bucket}: ${count}`}
                     >

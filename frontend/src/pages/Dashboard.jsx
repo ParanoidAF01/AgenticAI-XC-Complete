@@ -61,12 +61,14 @@ const Dashboard = () => {
   }, [timeRange]);
 
   const getColor = (type) => {
-    if (type.includes('Type 1')) return '#FF8C00';
-    if (type.includes('Type 2')) return '#FFD54F';
-    if (type.includes('Type 3')) return '#05CD99';
-    if (type.includes('Type 4')) return '#4318FF';
-    if (type.includes('Type 5')) return '#EE5D50';
-    return '#A3AED0';
+    const t = type.toLowerCase();
+    if (t.includes('unclassified')) return '#A3AED0';
+    if (t.includes('large data') || t.includes('timeout')) return '#FF8C00';
+    if (t.includes('subscription')) return '#FFD54F';
+    if (t.includes('credential')) return '#4318FF';
+    if (t.includes('parameter')) return '#05CD99';
+    if (t.includes('server') || t.includes('slow')) return '#EE5D50';
+    return '#CBD5E0';
   };
 
   if (loading) return (

@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: calc(100vh - var(--header-height) - 32px);
-  background: #fff;
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
   overflow: hidden;
@@ -31,12 +31,13 @@
 
 .pipeline-selector select {
   appearance: none;
-  background: #f8f9fa;
+  background: var(--item-bg);
   border: 1px solid var(--border-color);
   padding: 6px 32px 6px 12px;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
+  color: var(--text-main);
   cursor: pointer;
 }
 
@@ -65,7 +66,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  background: #fcfcfd;
+  background: var(--bg-color);
 }
 
 .chat-empty {
@@ -93,7 +94,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -127,7 +128,7 @@
 }
 
 .message-wrapper.assistant .message-text {
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-bottom-left-radius: 2px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
@@ -164,7 +165,7 @@
 .quick-actions button {
   white-space: nowrap;
   padding: 6px 16px;
-  background: #f8f9fa;
+  background: var(--item-bg);
   border: 1px solid var(--border-color);
   border-radius: 20px;
   font-size: 12px;
@@ -174,7 +175,7 @@
 }
 
 .quick-actions button:hover {
-  background: #fff;
+  background: var(--card-bg);
   border-color: var(--primary-color);
   color: var(--text-main);
 }
@@ -182,7 +183,7 @@
 .input-area {
   display: flex;
   gap: 12px;
-  background: #f0f1f3;
+  background: var(--item-bg);
   padding: 6px;
   border-radius: 30px;
   border: 1px solid transparent;
@@ -190,7 +191,7 @@
 }
 
 .input-area:focus-within {
-  background: #fff;
+  background: var(--card-bg);
   border-color: var(--primary-color);
   box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.1);
 }
@@ -218,8 +219,8 @@
 }
 
 .send-btn:disabled {
-  background: #e9ecef;
-  color: #adb5bd;
+  background: var(--track-bg);
+  color: var(--text-muted);
   box-shadow: none;
 }
 

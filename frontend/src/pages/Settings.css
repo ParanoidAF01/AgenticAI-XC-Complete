@@ -23,7 +23,7 @@
 }
 
 .listener-card {
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 24px;
@@ -80,7 +80,7 @@
 }
 
 .listener-card.disabled {
-  background: #f8f9fa;
+  background: var(--item-bg);
   cursor: default;
   opacity: 0.7;
 }
@@ -186,12 +186,13 @@
 
 .select-wrapper select {
   appearance: none;
-  background: #f0f1f3;
+  background: var(--item-bg);
   border: 1px solid var(--border-color);
   padding: 8px 36px 8px 12px;
   border-radius: 6px;
   font-size: 14px;
   font-weight: 600;
+  color: var(--text-main);
   cursor: pointer;
 }
 
@@ -233,7 +234,7 @@
 .icon-bg {
   width: 32px;
   height: 32px;
-  background: #f8f9fa;
+  background: var(--item-bg);
   border-radius: 6px;
   display: flex;
   align-items: center;

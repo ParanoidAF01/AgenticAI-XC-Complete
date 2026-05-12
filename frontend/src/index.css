@@ -20,6 +20,9 @@
   --warning: #FFB547;
   --info: #4318FF;
 
+  --border-color: #e9edf7;
+  --card-shadow: 0px 4px 20px rgba(112, 144, 176, 0.08);
+
   --sidebar-width: 220px;
   --header-height: 64px;
   --radius-xl: 20px;
@@ -38,6 +41,8 @@
   --border-color: rgba(255, 255, 255, 0.1);
   --primary-light: rgba(255, 140, 0, 0.15);
   --topbar-bg: rgba(11, 20, 55, 0.85);
+  --item-bg: #192555;
+  --track-bg: #1b2e68;
 }
 
 * {
@@ -81,6 +86,10 @@ ul {
 
 .card:hover {
   box-shadow: 0px 8px 30px rgba(112, 144, 176, 0.14);
+}
+
+.dark-mode .card:hover {
+  box-shadow: 0px 8px 30px rgba(0, 0, 0, 0.3);
 }
 
 /* Scrollbar */

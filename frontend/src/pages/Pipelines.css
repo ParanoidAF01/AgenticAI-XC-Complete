@@ -35,6 +35,62 @@
   font-size: 14px;
 }
 
+/* Time Range Filter Bar */
+.time-range-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 14px 28px;
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.time-range-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.time-range-pills {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-color);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.time-pill {
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.time-pill:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.time-pill.active {
+  background: linear-gradient(135deg, #FF9F43, #FF6B35);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(255, 159, 67, 0.35);
+}
+
 .controls-row {
   display: flex;
   justify-content: space-between;
@@ -85,12 +141,26 @@
   font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   transition: all 0.2s;
+  cursor: pointer;
+}
+
+.filter-tab:hover {
+  background: var(--bg-color);
+  color: var(--text-main);
 }
 
 .filter-tab.active {
-  background: var(--text-main);
+  background: #1B2559;
   color: #fff;
+  border-color: #1B2559;
+}
+
+.dark-mode .filter-tab.active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
 }
 
 .filter-tab .dot {
@@ -100,7 +170,7 @@
 }
 
 .filter-tab .badge {
-  background: rgba(0,0,0,0.05);
+  background: rgba(112, 144, 176, 0.1);
   padding: 2px 6px;
   border-radius: 6px;
   font-size: 11px;
@@ -167,7 +237,7 @@
   border-radius: 10px;
   font-size: 13px;
   font-weight: 700;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   transition: all 0.2s;
 }

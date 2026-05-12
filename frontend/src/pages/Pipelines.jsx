@@ -11,16 +11,49 @@ import {
   Activity,
   CheckCircle2,
   AlertTriangle,
-  XCircle
+  XCircle,
+  Calendar
 } from 'lucide-react';
 import { PipelinesAPI } from '../services/api';
 import './Pipelines.css';
+
+const TIME_RANGES = [
+  { key: 'today', label: 'Today', days: 0 },
+  { key: '1w',    label: '1 Week', days: 7 },
+  { key: '15d',   label: '15 Days', days: 15 },
+  { key: '1m',    label: '1 Month', days: 30 },
+  { key: '4m',    label: '4 Months', days: 120 },
+];
+
+const getDateRange = (rangeKey) => {
+  const now = new Date();
+  let start;
+  if (rangeKey === 'today') {
+    start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  } else {
+    const range = TIME_RANGES.find(r => r.key === rangeKey);
+    const days = range ? range.days : 30;
+    start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    start.setHours(0, 0, 0, 0);
+  }
+  const fmt = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const ss = String(d.getSeconds()).padStart(2, '0');
+    return `${y}-${m}-${dd}T${hh}:${mm}:${ss}`;
+  };
+  return { start_date: fmt(start), end_date: fmt(now) };
+};
 
 const Pipelines = () => {
   const navigate = useNavigate();
   const [pipelines, setPipelines] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [timeRange, setTimeRange] = useState('1m');
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -32,11 +65,14 @@ const Pipelines = () => {
       setLoading(true);
       setError(null);
       try {
+        const { start_date, end_date } = getDateRange(timeRange);
         const data = await PipelinesAPI.getList({
           status: filter,
           search: search,
           offset: page * rowsPerPage,
-          rows: rowsPerPage
+          rows: rowsPerPage,
+          start_date,
+          end_date
         });
         setPipelines(data.pipelines || []);
         setStats({
@@ -53,7 +89,7 @@ const Pipelines = () => {
     };
 
     fetchData();
-  }, [filter, search, page]);
+  }, [filter, search, page, timeRange]);
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
@@ -62,6 +98,11 @@ const Pipelines = () => {
       case 'critical': return <XCircle size={16} color="var(--error)" />;
       default: return <Activity size={16} color="var(--text-muted)" />;
     }
+  };
+
+  const getTimeRangeLabel = () => {
+    const range = TIME_RANGES.find(r => r.key === timeRange);
+    return range ? range.label : '1 Month';
   };
 
   if (error) return (
@@ -87,6 +128,25 @@ const Pipelines = () => {
             <span>{stats.criticalCount} Pipelines in Critical Failure State</span>
           </div>
         )}
+      </div>
+
+      {/* Time Range Filter */}
+      <div className="time-range-bar">
+        <div className="time-range-label">
+          <Calendar size={16} />
+          <span>Time Range</span>
+        </div>
+        <div className="time-range-pills">
+          {TIME_RANGES.map((range) => (
+            <button
+              key={range.key}
+              className={`time-pill ${timeRange === range.key ? 'active' : ''}`}
+              onClick={() => { setTimeRange(range.key); setPage(0); }}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="controls-row card">
@@ -132,7 +192,7 @@ const Pipelines = () => {
             {loading ? (
               <tr><td colSpan="7" className="loading-cell"><div className="shimmer"></div></td></tr>
             ) : pipelines.length === 0 ? (
-              <tr><td colSpan="7" className="empty-cell">No pipelines match your filters.</td></tr>
+              <tr><td colSpan="7" className="empty-cell">No pipelines found for <b>{getTimeRangeLabel()}</b>. Try a wider time range.</td></tr>
             ) : (
               pipelines.map((p, idx) => (
                 <tr key={idx} onClick={() => navigate(`/pipelines/${p.pipeline_name}`)} className="clickable-row">

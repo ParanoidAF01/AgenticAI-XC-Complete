@@ -87,6 +87,18 @@
   box-shadow: none;
 }
 
+/* KPI color variants — light mode */
+.rpt-kpi-purple { background: #F0EDFF; }
+.rpt-kpi-green  { background: #E8F8F2; }
+.rpt-kpi-orange { background: #FFF6E8; }
+.rpt-kpi-red    { background: #FDEEEE; }
+
+/* KPI color variants — dark mode */
+.dark-mode .rpt-kpi-purple { background: rgba(130, 100, 255, 0.15); }
+.dark-mode .rpt-kpi-green  { background: rgba(5, 205, 153, 0.15); }
+.dark-mode .rpt-kpi-orange { background: rgba(255, 181, 71, 0.15); }
+.dark-mode .rpt-kpi-red    { background: rgba(238, 93, 80, 0.15); }
+
 .rk-label {
   font-size: 11px;
   font-weight: 700;
@@ -288,7 +300,7 @@
 .ep-bar-wrap {
   flex: 1;
   height: 14px;
-  background: #f0f3f9;
+  background: var(--track-bg);
   border-radius: 4px;
   overflow: hidden;
 }

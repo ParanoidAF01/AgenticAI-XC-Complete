@@ -21,12 +21,12 @@
   padding: 8px;
   border-radius: 50%;
   border: 1px solid var(--border-color);
-  background: #fff;
+  background: var(--card-bg);
   transition: all 0.2s;
 }
 
 .back-btn:hover {
-  background: #f8f9fa;
+  background: var(--item-bg);
 }
 
 .header-title {
@@ -66,7 +66,7 @@
 }
 
 .secondary-btn {
-  background: #f0f1f3;
+  background: var(--item-bg);
   color: var(--text-main);
   padding: 10px 20px;
   border-radius: var(--radius-sm);
@@ -226,7 +226,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #f8f9fa;
+  background: var(--item-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   min-width: 280px;
