@@ -165,7 +165,7 @@ def _mock_pipeline_list():
 
 
 def _mock_pipelines_page(params):
-    """Mock for ui.sp_pipelines_page — returns single result set matching SP columns."""
+    """Mock for ui.sp_pipelines_page — returns 2 result sets matching updated SP."""
     search = params.get("Search", "%").replace("%", "").lower()
     status_filter = params.get("Status", "all")
     offset = params.get("Offset", 0)
@@ -179,6 +179,10 @@ def _mock_pipelines_page(params):
         healed = random.randint(0, max(1, int(total * 0.05)))
         failures = total - org_success
 
+        # Generate a last failure date (random recent date)
+        days_ago = random.randint(0, 14)
+        last_failure_date = (datetime.now() - timedelta(days=days_ago)).strftime("%Y-%m-%d")
+
         all_rows.append({
             "PipelineName": p["name"],
             "Owner": p["owner"],
@@ -188,14 +192,22 @@ def _mock_pipelines_page(params):
             "TotalFailures": failures,
             "SuccessRatePc": sr,
             "Status": p["status"],
+            "LastFailure": last_failure_date,
         })
+
+    # Compute unfiltered status counts BEFORE applying filters (for RS2)
+    status_counts_rs2 = []
+    for s in ["Healthy", "Warning", "Critical"]:
+        count = len([r for r in all_rows if r["Status"] == s])
+        if count > 0:
+            status_counts_rs2.append({"Status": s, "StatusCount": count})
 
     # Apply search filter
     if search:
         all_rows = [r for r in all_rows if search in r["PipelineName"].lower()]
 
     # Apply status filter
-    if status_filter != "all":
+    if status_filter not in ("all", "All"):
         all_rows = [r for r in all_rows if r["Status"] == status_filter]
 
     # Sort: Critical first, then Warning, then Healthy
@@ -213,7 +225,8 @@ def _mock_pipelines_page(params):
         r["TotalPipelines"] = total_pipelines
         r["TotalCriticalPipelines"] = total_critical
 
-    return [page]
+    # Return 2 result sets: RS1 = pipeline rows, RS2 = status counts
+    return [page, status_counts_rs2]
 
 
 def _mock_pipeline_ind(params):
@@ -425,12 +438,15 @@ def _mock_home_errorbreak(params):
 
 def _mock_home_recent_activity(params):
     """Mock for ui.sp_home_recent_activity — returns 5 recent activity items."""
-    statuses = ["Healed", "Escalated", "Failed", "Success", "Healed"]
+    statuses = ["Success", "Healed", "Escalated", "Skipped", "Max Retries Exhausted"]
     error_types_for_status = {
         "Healed": "Type 4 - Large Data / Timeout",
         "Escalated": "Type 3 - Credentials Expired",
         "Failed": "Type 1 - Parameter Errors",
         "Success": None,
+        "Skipped": "Type 1 - Parameter Errors",
+        "Processing Error": "Type 2 - Dataset Type Errors",
+        "Max Retries Exhausted": "Type 5 - Server Slow",
     }
     error_descriptions = {
         "Type 4 - Large Data / Timeout": "Timeout Error detected",

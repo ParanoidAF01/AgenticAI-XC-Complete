@@ -77,7 +77,7 @@ def get_pipelines(
             "filter_counts": {"all": 0, "healthy": 0, "warning": 0, "critical": 0},
         }
 
-    # Parse result rows
+    # Parse result set 1: pipeline rows (filtered + paginated)
     pipeline_rows = result_sets[0]
 
     # TotalPipelines and TotalCriticalPipelines are window columns on every row
@@ -95,46 +95,25 @@ def get_pipelines(
             "total_failures": r.get("TotalFailures", 0),
             "success_rate_pc": float(r.get("SuccessRatePc", 0) or 0),
             "status": r.get("Status", "Healthy"),
+            "last_failure": str(r.get("LastFailure", "")) if r.get("LastFailure") else None,
         })
 
-    # Compute per-status pill counts (always unfiltered)
-    # If current request is already unfiltered, use these rows directly
-    if status_param == "all":
-        all_count = total_pipelines
-        healthy_count = sum(1 for r in pipeline_rows if r.get("Status") == "Healthy")
-        warning_count = sum(1 for r in pipeline_rows if r.get("Status") == "Warning")
-        critical_count = total_critical
-        # Adjust if paginated (counts may not cover all rows)
-        # Use TotalPipelines window column which covers everything
-        if total_pipelines > len(pipeline_rows):
-            # Need a separate unfiltered call for accurate per-status counts
-            all_sets = call_proc("ui.sp_pipelines_page", {
-                "TableName": TABLE_NAME, "StartDate": sd, "EndDate": ed,
-                "Search": search_param, "Status": "all", "Offset": 0, "Rows": 255,
-            })
-            if all_sets and all_sets[0]:
-                all_rows = all_sets[0]
-                all_count = all_rows[0].get("TotalPipelines", 0) if all_rows else 0
-                healthy_count = sum(1 for r in all_rows if r.get("Status") == "Healthy")
-                warning_count = sum(1 for r in all_rows if r.get("Status") == "Warning")
-                critical_count = sum(1 for r in all_rows if r.get("Status") == "Critical")
-    else:
-        # Filtered request — fetch unfiltered counts separately
-        all_sets = call_proc("ui.sp_pipelines_page", {
-            "TableName": TABLE_NAME, "StartDate": sd, "EndDate": ed,
-            "Search": search_param, "Status": "all", "Offset": 0, "Rows": 255,
-        })
-        if all_sets and all_sets[0]:
-            all_rows = all_sets[0]
-            all_count = all_rows[0].get("TotalPipelines", 0) if all_rows else 0
-            healthy_count = sum(1 for r in all_rows if r.get("Status") == "Healthy")
-            warning_count = sum(1 for r in all_rows if r.get("Status") == "Warning")
-            critical_count = sum(1 for r in all_rows if r.get("Status") == "Critical")
-        else:
-            all_count = total_pipelines
-            healthy_count = 0
-            warning_count = 0
-            critical_count = total_critical
+    # Parse result set 2: per-status counts (always unfiltered, from the SP)
+    # RS2 rows: [{Status: "Healthy", StatusCount: 18}, {Status: "Warning", StatusCount: 7}, ...]
+    healthy_count = 0
+    warning_count = 0
+    critical_count = 0
+    if len(result_sets) > 1 and result_sets[1]:
+        for row in result_sets[1]:
+            status = row.get("Status", "")
+            count = row.get("StatusCount", 0)
+            if status == "Healthy":
+                healthy_count = count
+            elif status == "Warning":
+                warning_count = count
+            elif status == "Critical":
+                critical_count = count
+    all_count = healthy_count + warning_count + critical_count
 
     return {
         "pipelines": pipelines,

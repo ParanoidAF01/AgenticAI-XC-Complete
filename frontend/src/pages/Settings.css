@@ -301,6 +301,8 @@
 }
 
 .log-status.ok { background: #d1fae5; color: #065f46; }
+.log-status.warning { background: #FFF4E5; color: #B76E00; }
+.log-status.critical { background: #fee2e2; color: #991b1b; font-weight: 800; }
 .log-status.error { background: #fee2e2; color: #991b1b; }
 
 .spinning {

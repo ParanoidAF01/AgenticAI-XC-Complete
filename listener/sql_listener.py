@@ -101,7 +101,7 @@ class SQLListener:
             if not rows:
                 print("   [OK] No unprocessed failures found.")
                 conn.close()
-                return
+                return 0
 
             print(f"   [ALERT] Found {len(rows)} unprocessed failed run(s)!")
 
@@ -161,11 +161,14 @@ class SQLListener:
             self._mark_successful_retries(conn)
 
             conn.close()
+            return len(rows)
 
         except pyodbc.Error as e:
             print(f"   [ERROR] SQL query failed: {str(e)}")
+            return 0
         except Exception as e:
             print(f"   [ERROR] Unexpected error: {str(e)}")
+            return 0
 
     def _row_to_error_details(self, row):
         """

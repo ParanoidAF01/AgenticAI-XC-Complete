@@ -290,6 +290,9 @@
 
 .act-bar.healed, .act-bar.success { background: var(--success); }
 .act-bar.failed, .act-bar.escalated { background: var(--error); }
+.act-bar.skipped { background: #A3AED0; }
+.act-bar.processing-error { background: #FFB547; }
+.act-bar.max-retries-exhausted { background: #7551FF; }
 
 .act-body { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .act-top-row { display: flex; justify-content: space-between; align-items: center; }
@@ -303,8 +306,11 @@
   text-transform: uppercase;
 }
 
-.act-badge.healed { background: #E8F8F2; color: #05CD99; }
+.act-badge.healed, .act-badge.success { background: #E8F8F2; color: #05CD99; }
 .act-badge.failed, .act-badge.escalated { background: #FDEEEE; color: #EE5D50; }
+.act-badge.skipped { background: #F0F2F8; color: #A3AED0; }
+.act-badge.processing-error { background: #FFF4E5; color: #FFB547; }
+.act-badge.max-retries-exhausted { background: #F0EBFF; color: #7551FF; }
 
 .act-bottom-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
 
