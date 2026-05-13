@@ -5,6 +5,8 @@
 **Automated failure detection, AI-powered classification, and self-recovery for Azure Data Factory pipelines.**
 
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)](https://fastapi.tiangolo.com/)
 [![Azure Data Factory](https://img.shields.io/badge/Azure-Data%20Factory-0078D4.svg)](https://azure.microsoft.com/en-us/products/data-factory)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -16,7 +18,9 @@
 
 ## Overview
 
-Self-Healing ADF Pipeline is a production-ready system that monitors Azure Data Factory pipelines in real-time, automatically classifies failures using AI, and takes corrective action — either restarting the pipeline or generating a detailed error report and notifying the responsible team.
+Self-Healing ADF Pipeline is a **full-stack** production system that monitors Azure Data Factory pipelines in real-time, automatically classifies failures using AI, and takes corrective action — either restarting the pipeline or generating a detailed error report and notifying the responsible team.
+
+It includes a **React dashboard** for monitoring, a **FastAPI REST API** serving 31 endpoints, **AI-powered chatbot** for developer queries, and **PDF/CSV report generation** for analytics.
 
 **The problem:** ADF pipeline failures require manual investigation, often taking 30–60 minutes per incident. Teams lose hours triaging errors that could be auto-resolved.
 
@@ -35,12 +39,28 @@ Self-Healing ADF Pipeline is a production-ready system that monitors Azure Data 
 
 ## Features
 
-### Automated Failure Detection
+### 🖥️ Web Dashboard (React)
+- **6 pages:** Dashboard, Pipelines List, Pipeline Detail, Reports & Analytics, AI Chatbot, Settings
+- Real-time KPI cards with period-over-period delta comparisons
+- Interactive charts (line, donut, bar, heatmap) via Recharts
+- Pipeline search, filtering (Healthy/Warning/Critical), and pagination
+- Listener control panel with connection health monitoring
+- Dark mode support, responsive layout, gold/dark premium design system
+
+### 🔌 REST API (FastAPI)
+- **31 endpoints** across 6 modules (Dashboard, Pipelines, Reports, Chat, Settings, Listener)
+- SQL Server stored procedures for all analytics queries
+- Mock data mode for offline development
+- PDF and CSV report export with branded styling
+- Azure Blob Storage for PDF persistence with local fallback
+
+### 🔍 Automated Failure Detection
 - Polls Azure Data Factory every 30 seconds for failed pipeline runs
+- Dual listener modes: ADF SDK or SQL Table polling
 - Extracts activity-level error details (error codes, messages, failed activities)
 - Tracks processed runs to prevent duplicate handling
 
-### AI-Powered Error Classification
+### 🤖 AI-Powered Error Classification
 - Classifies errors into **6 categories** with confidence scoring
 - Uses similar past errors (vector search) to improve classification accuracy
 - Returns structured JSON with root cause, recommended action, and priority
@@ -54,31 +74,30 @@ Self-Healing ADF Pipeline is a production-ready system that monitors Azure Data 
 | 5 | Server Slow | ★★★ | Generate report, notify team |
 | 6 | Subscription Corrupt | ★★ | Generate report, escalate immediately |
 
-### Automatic Pipeline Restart
+### 🔄 Automatic Pipeline Restart
 - Types 1–4 are automatically restarted via the Azure Data Factory REST API
 - Configurable wait times per error type (30s–120s) before restart
 - Authenticates using Azure Service Principal credentials
 
-### Professional PDF Reports
+### 📄 Professional PDF Reports
 - Auto-generated for escalated errors (Types 5–6)
-- Includes root cause analysis, resolution steps, prevention recommendations, and impact assessment
-- Professional layout with color-coded headers, error boxes, and pagination
-- Generated using `fpdf2` (pure Python, no system dependencies)
+- Stored in **Azure Blob Storage** with SQL metadata tracking
+- Local filesystem fallback for development environments
+- Full analytics PDF export from the Reports page (branded, multi-section)
 
-### Email Notifications
+### 📧 Email Notifications
 - Sends PDF reports as email attachments to pipeline owners
 - Owner email is looked up from the pipeline metadata database
 - Supports Gmail SMTP and Outlook/Office 365
-- HTML email body with summary; full details in the attached PDF
 
-### Developer Chatbot (RAG)
-- Chainlit-based chatbot for developer queries
-- Retrieval-Augmented Generation using Pinecone vector search + LLM
-- Answers questions about past failures, error patterns, and resolution steps
-- Context-aware: filters by pipeline name when mentioned
+### 💬 Developer Chatbot (RAG)
+- Integrated into the web dashboard as a dedicated page
+- Retrieval-Augmented Generation using ChromaDB vector search + LLM
+- Pipeline-scoped queries with source filtering (ADF/SQL)
+- Quick-action suggestion chips
 
-### Error Memory (Vector Store)
-- Every error is embedded and stored in Pinecone
+### 🧠 Error Memory (Vector Store)
+- Every error is embedded and stored in ChromaDB/Pinecone
 - Similarity search finds related past errors to improve classification
 - Namespaced by pipeline name for targeted retrieval
 
@@ -87,60 +106,91 @@ Self-Healing ADF Pipeline is a production-ready system that monitors Azure Data 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        start.py                                  │
-│                    (Entry Point)                                 │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                  listener/adf_listener.py                        │
-│              Polls ADF for failed pipeline runs                  │
-│              every 30 seconds via Azure SDK                      │
-└──────────────────────┬──────────────────────────────────────────┘
-                       │ Failed run detected
-                       ▼
-┌─────────────────────────────────────────────────────────────────┐
-│               intelligence/error_processor.py                    │
-│                   (Central Orchestrator)                          │
-│                                                                  │
-│  1. Search similar errors ──► intelligence/pinecone_store.py     │
-│  2. Fetch metadata ─────────► config/metadata_store.py           │
-│  3. Classify error ─────────► intelligence/error_classifier.py   │
-│  4. Store embedding ────────► intelligence/pinecone_store.py     │
-│  5. Take action:                                                 │
-│     ├─ Types 1-4: Restart ──► listener/azure_client.py           │
-│     └─ Types 5-6: Escalate                                      │
-│        ├─ Generate PDF ─────► listener/doc_generator.py          │
-│        └─ Send email ───────► smtplib (built-in)                 │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         FRONTEND (React 19 + Vite)                   │
+│                                                                      │
+│  Pages:  Dashboard │ Pipelines │ Detail │ Reports │ Chatbot │ Settings│
+│  Charts: Recharts (line, donut, bar, heatmap)                        │
+│  Icons:  Lucide React                                                │
+│  Router: React Router v7                                             │
+│  API:    services/api.js → fetch() to FastAPI                        │
+│                                                                      │
+│  Dev Server: http://localhost:5173 (Vite)                            │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │ HTTP (proxied or CORS)
+                             ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     BACKEND (FastAPI + Uvicorn)                      │
+│                     http://localhost:8000                             │
+│                                                                      │
+│  Routes:                                                             │
+│    /api/dashboard/*     — 5 endpoints (KPI, charts, activity feed)   │
+│    /api/pipelines/*     — 5 endpoints (list, detail, chart, reports) │
+│    /api/reports/*       — 7 endpoints (KPIs, heatmap, export)        │
+│    /api/chat/*          — 4 endpoints (RAG chatbot)                  │
+│    /api/settings        — 2 endpoints (GET/POST config)              │
+│    /api/listener/*      — 8 endpoints (start/stop, logs, health)     │
+│                                                                      │
+│  Modules:                                                            │
+│    db.py              — SQL Server connector + mock data dispatcher  │
+│    listener_manager.py — Background listener thread control          │
+│    health_checker.py   — 5-service connection health monitor         │
+│    report_storage.py   — Azure Blob Storage + local fallback         │
+└───────────┬──────────────────────┬──────────────────────────────────┘
+            │                      │
+            ▼                      ▼
+┌──────────────────────┐  ┌───────────────────────────────────────────┐
+│   SQL Server (Azure) │  │          Intelligence Layer                │
+│                      │  │                                            │
+│  Stored Procedures:  │  │  error_processor.py — Central orchestrator │
+│   ui.sp_home_*       │  │  error_classifier.py — LLM classification  │
+│   ui.sp_pipelines_*  │  │  chroma_store.py — Vector embeddings       │
+│   ui.sp_pipeline_*   │  │  rag_pipeline.py — RAG for chatbot         │
+│   ui.sp_report_*     │  │                                            │
+│                      │  │  ChromaDB / Pinecone (vector search)       │
+│  Tables:             │  │  OpenAI-compatible LLM API                 │
+│   dbo.PipelineRunLog │  │                                            │
+│   ui.PipelineReports │  └───────────────────────────────────────────┘
+│   ui.SystemConfig    │
+└──────────────────────┘
 
-┌─────────────────────────────────────────────────────────────────┐
-│                  chatbot/app.py                                   │
-│              Chainlit developer chatbot                           │
-│              (runs independently)                                 │
-│                                                                  │
-│  User question ──► chatbot/rag_pipeline.py                       │
-│                    ├─ Vector search (Pinecone)                    │
-│                    ├─ Metadata lookup (SQLite)                    │
-│                    └─ LLM response generation                    │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Listener Layer                                     │
+│                                                                      │
+│  adf_listener.py — Polls ADF SDK for failed runs                     │
+│  sql_listener.py — Polls PipelineRunLog table via SQL                │
+│  azure_client.py — Azure REST API (auth + pipeline restart)          │
+│  doc_generator.py — PDF report generation (fpdf2)                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                    External Services                                 │
+│                                                                      │
+│  Azure Data Factory — Pipeline orchestration + restart API           │
+│  Azure Blob Storage — PDF report persistence (adf-healer-reports)    │
+│  Azure SQL Server   — Analytics data + stored procedures             │
+│  LLM API            — Error classification + chatbot                 │
+│  SMTP               — Email notifications with PDF attachments       │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Technology Stack
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Runtime | Python 3.9+ | Core language |
-| Cloud | Azure Data Factory | Pipeline orchestration |
-| LLM | OpenAI-compatible API | Error classification, doc generation, chatbot |
-| Embeddings | text-embedding-3-large | Error vectorization (3072 dims) |
-| Vector DB | Pinecone (Serverless) | Similarity search for past errors |
-| Metadata DB | SQLite | Pipeline metadata and error history |
-| PDF Engine | fpdf2 | Professional report generation |
-| Email | smtplib (stdlib) | SMTP notifications with attachments |
-| Chatbot | Chainlit | Developer-facing RAG interface |
-| Scheduling | schedule | Periodic ADF polling |
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Frontend** | React 19 + Vite 8 | SPA dashboard |
+| **Charts** | Recharts | Line, donut, bar, heatmap visualizations |
+| **Icons** | Lucide React | UI iconography |
+| **Routing** | React Router v7 | Client-side navigation |
+| **Backend** | FastAPI + Uvicorn | REST API server |
+| **Database** | Azure SQL Server | Pipeline data + stored procedures |
+| **PDF Storage** | Azure Blob Storage | Cloud PDF persistence |
+| **Vector DB** | ChromaDB / Pinecone | Similarity search for past errors |
+| **LLM** | OpenAI-compatible API | Error classification + chatbot |
+| **PDF Engine** | fpdf2 | Report generation |
+| **Email** | smtplib (stdlib) | SMTP notifications |
+| **Metadata** | SQLite | Local pipeline metadata + error history |
+| **Runtime** | Python 3.9+ | Backend language |
 
 ---
 
@@ -148,39 +198,89 @@ Self-Healing ADF Pipeline is a production-ready system that monitors Azure Data 
 
 ```
 self-healing-adf/
-├── start.py                          # Application entry point
-├── requirements.txt                  # Python dependencies
+├── README.md
+├── requirements.txt                  # Python backend dependencies
 ├── .env                              # Environment variables (not committed)
 ├── .gitignore
+├── start.py                          # Standalone listener entry point
 ├── pipeline_metadata.db              # SQLite database (auto-created)
 │
+├── frontend/                         # React SPA (Vite)
+│   ├── package.json                 # Node dependencies
+│   ├── vite.config.js               # Vite build config
+│   ├── index.html                   # HTML entry point
+│   └── src/
+│       ├── main.jsx                 # React root mount
+│       ├── App.jsx                  # Router + layout setup
+│       ├── index.css                # Global design tokens & CSS variables
+│       ├── services/
+│       │   └── api.js               # Centralized API client (fetch wrappers)
+│       ├── components/
+│       │   ├── Layout.jsx/.css      # Main layout wrapper
+│       │   ├── Sidebar.jsx/.css     # Navigation sidebar
+│       │   └── TopBar.jsx/.css      # Top header bar
+│       └── pages/
+│           ├── Dashboard.jsx/.css   # KPI cards, charts, activity feed
+│           ├── Pipelines.jsx/.css   # Pipeline list with search/filters
+│           ├── PipelineDetail.jsx/.css # Detail view with error history
+│           ├── Reports.jsx/.css     # Analytics, heatmap, export
+│           ├── Chatbot.jsx/.css     # AI assistant chat interface
+│           └── Settings.jsx/.css    # Listener control + health monitor
+│
+├── backend/                          # FastAPI REST API
+│   ├── main.py                      # FastAPI app factory + CORS + router wiring
+│   ├── db.py                        # SQL Server connector + mock data dispatcher
+│   ├── listener_manager.py          # Background listener thread lifecycle
+│   ├── health_checker.py            # 5-service connection health checker
+│   ├── report_storage.py            # Azure Blob Storage + local PDF fallback
+│   └── routes/
+│       ├── dashboard.py             # 5 endpoints — KPI, trend, donut, breakdown, activity
+│       ├── pipelines.py             # 5 endpoints — list, detail, chart, reports, download
+│       ├── reports.py               # 7 endpoints — KPIs, heatmap, exports (CSV/PDF)
+│       ├── chat.py                  # 4 endpoints — RAG chat, pipelines, history
+│       ├── settings.py              # 2 endpoints — GET/POST system config
+│       └── listener.py              # 8 endpoints — start/stop, logs, health
+│
 ├── config/                           # Configuration & data layer
-│   ├── __init__.py                   # Exports all config classes
-│   ├── settings.py                   # Loads .env into typed config classes
+│   ├── settings.py                  # Loads .env into typed config classes
 │   └── metadata_store.py            # SQLite operations (pipelines, error history)
 │
 ├── listener/                         # Azure integration & output generation
-│   ├── __init__.py
-│   ├── adf_listener.py              # Polls ADF for failed runs (main loop)
+│   ├── adf_listener.py              # Polls ADF for failed runs
+│   ├── sql_listener.py              # Polls SQL table for failed runs
 │   ├── azure_client.py              # Azure REST API client (auth + restart)
-│   └── doc_generator.py             # PDF report generator using fpdf2
+│   └── doc_generator.py             # PDF report generator (fpdf2, in-memory)
 │
 ├── intelligence/                     # AI/ML processing layer
-│   ├── __init__.py
 │   ├── error_processor.py           # Central orchestrator (classify → act)
 │   ├── error_classifier.py          # LLM-based error classification
-│   └── pinecone_store.py            # Vector embeddings & similarity search
+│   ├── chroma_store.py              # ChromaDB vector embeddings
+│   └── pinecone_store.py            # Pinecone vector embeddings (alternative)
 │
 ├── chatbot/                          # Developer chatbot
-│   ├── __init__.py
 │   ├── app.py                       # Chainlit UI handlers
-│   └── rag_pipeline.py             # RAG: vector search + LLM answer
+│   └── rag_pipeline.py              # RAG: vector search + LLM answer
+│
+├── queries/                          # SQL stored procedure definitions
+│   └── procedures/
+│       ├── dashboard/               # ui.sp_home_* (5 SPs)
+│       ├── pipelines/               # ui.sp_pipelines_*, ui.sp_pipeline_* (4 SPs)
+│       └── report/                  # ui.sp_report_* (7 SPs)
+│           └── KPI/                 # MTTR, AutoHeal, TimeSaved, ErrorsKPI
+│
+├── prototype/                        # Static HTML design prototypes
+│   ├── dashboard.html
+│   ├── pipelines.html
+│   ├── pipeline_detail.html
+│   ├── reports.html
+│   ├── chatbot.html
+│   └── settings.html
 │
 ├── tests/                            # Test suite
 │   ├── test_phase1_2.py             # Unit tests for individual components
 │   └── test_full_system.py          # End-to-end test (all 6 error types)
 │
-└── docs/                             # Generated PDF reports (auto-created)
+└── docs/                             # Generated PDF reports (local fallback)
     └── error_report_*.pdf
 ```
 
@@ -190,103 +290,69 @@ self-healing-adf/
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- **Python 3.9+** and **Node.js 18+**
 - An Azure subscription with a Data Factory instance
 - An Azure Service Principal with **Data Factory Contributor** role
-- A Pinecone account (free tier works)
 - Access to an OpenAI-compatible LLM API
-- A Gmail or Outlook account for email notifications
 
-### 1. Clone the Repository
+### 1. Clone & Install Backend
 
 ```bash
 git clone https://github.com/your-org/self-healing-adf.git
 cd self-healing-adf
-```
 
-### 2. Create Virtual Environment
-
-```bash
+# Python backend
 python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# or
-venv\Scripts\activate     # Windows
-```
-
-### 3. Install Dependencies
-
-```bash
+source venv/bin/activate      # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
+### 2. Install Frontend
 
-Copy the example and fill in your credentials:
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 3. Configure Environment
 
 ```bash
 cp .env.example .env
+# Edit .env with your credentials (see Configuration section)
 ```
 
-Edit `.env` with your values (see [Configuration](#configuration) for details).
+### 4. Start Development Servers
 
-### 5. Register Your Pipelines
-
-Before the system can route notifications to the correct team, register your pipelines in the metadata database:
-
-```python
-from config.metadata_store import add_pipeline
-
-add_pipeline(
-    name="pl_copy_sales_data",
-    description="Copies daily sales data from SQL Server to Azure Blob",
-    owner_name="Data Engineering Team",
-    owner_email="data-eng@yourcompany.com",
-    schedule="daily 2:00 AM UTC",
-    criticality="high"
-)
-```
-
-### 6. Start the System
-
+**Terminal 1 — Backend (FastAPI):**
 ```bash
-python start.py
+source venv/bin/activate
+python -m uvicorn backend.main:app --port 8000 --reload
 ```
 
-You should see:
-
+**Terminal 2 — Frontend (Vite):**
+```bash
+cd frontend
+npm run dev
 ```
-============================================================
-Self-Healing ADF System - Starting
-============================================================
 
-  Components:
-  - ADF Listener       Polls Azure for pipeline failures
-  - LLM Classifier     Classifies errors into 6 types
-  - Pinecone Store     Similarity search for past errors
-  - Azure Restart      Auto-restarts recoverable pipelines
-  - PDF Doc Generator  Creates resolution docs for escalations
-  - Email Notifier     Sends PDF reports to pipeline owners
+The app runs at:
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8000
+- **API Docs (Swagger):** http://localhost:8000/docs
 
-============================================================
-[START] ADF Self-Healing Listener - Starting...
-============================================================
-[OK] Connected to ADF: your-factory-name
-[INFO] Resource Group: your-resource-group
-
-[POLL] [14:30:00] Checking for failed pipeline runs...
-   [OK] No failures detected.
-```
+> **Note:** The backend runs in **mock data mode** by default when no SQL Server is configured. All endpoints return realistic synthetic data for development.
 
 ---
 
 ## Configuration
 
-All configuration is managed through a `.env` file. Create one in the project root with the following variables:
+All configuration is managed through a `.env` file in the project root.
 
 ### Azure Credentials
 
 ```bash
-# Azure Service Principal — get from Azure Portal > App Registrations
+# Azure Service Principal
 AZURE_TENANT_ID=your-tenant-id
 AZURE_CLIENT_ID=your-client-id
 AZURE_CLIENT_SECRET=your-client-secret
@@ -297,315 +363,168 @@ ADF_RESOURCE_GROUP=your-resource-group
 ADF_FACTORY_NAME=your-factory-name
 ```
 
-**Setting up the Service Principal:**
+### SQL Server (Analytics Database)
 
-1. Go to **Azure Portal** → **App Registrations** → **New Registration**
-2. Name it (e.g., `self-healing-adf-sp`) and register
-3. Go to **Certificates & Secrets** → **New Client Secret** → copy the value
-4. Go to your **Data Factory** → **Access Control (IAM)** → **Add Role Assignment**
-5. Assign the **Data Factory Contributor** role to your Service Principal
+```bash
+SQL_SERVER=your-server.database.windows.net
+SQL_DATABASE=ADF_Healer
+SQL_USERNAME=your-username
+SQL_PASSWORD=your-password
+```
+
+> When SQL Server is not configured, the backend automatically runs in **mock mode** with synthetic data.
+
+### Azure Blob Storage (PDF Reports)
+
+```bash
+AZURE_STORAGE_ACCOUNT_NAME=your-storage-account
+AZURE_STORAGE_ACCOUNT_KEY=your-storage-key
+AZURE_STORAGE_CONTAINER=adf-healer-reports
+```
+
+> When Blob Storage is not configured, PDFs are saved to the local `docs/` folder.
 
 ### LLM API (OpenAI-Compatible)
 
 ```bash
-# Your company's or provider's OpenAI-compatible endpoint
 COMPANY_API_BASE_URL=https://api.your-provider.com/v1
 COMPANY_API_KEY=your-api-key
-COMPANY_CHAT_MODEL=claude-sonnet-4-6        # or gpt-4, etc.
+COMPANY_CHAT_MODEL=claude-sonnet-4-6
 COMPANY_EMBEDDING_MODEL=text-embedding-3-large
 ```
 
-### Pinecone
+### Listener Settings
 
 ```bash
-# Get from https://app.pinecone.io > API Keys
-PINECONE_API_KEY=your-pinecone-api-key
-PINECONE_INDEX_NAME=adf-error-logs   # auto-created if missing
+LISTENER_MODE=sql              # "adf" or "sql"
+POLL_INTERVAL=30               # Seconds between polls (10-300)
 ```
-
-> **Note:** The Pinecone index is automatically created on first run with 3072 dimensions (matching `text-embedding-3-large`). If you change the embedding model, the index will be automatically recreated.
 
 ### Email Notifications
 
 ```bash
-# Gmail
 SMTP_EMAIL=alerts@yourcompany.com
-SMTP_PASSWORD="your-app-password"       # Gmail App Password, NOT regular password
-NOTIFY_RECIPIENT=fallback@yourcompany.com  # Used when pipeline owner email is missing
-```
-
-**For Gmail:** You must use an [App Password](https://myaccount.google.com/apppasswords), not your regular password. Enable 2FA first, then generate an App Password.
-
-**For Outlook/Office 365:** Change the SMTP server in `error_processor.py`:
-```python
-# Line ~228: Change smtp.gmail.com to smtp.office365.com
-with smtplib.SMTP("smtp.office365.com", 587) as server:
+SMTP_PASSWORD="your-app-password"
+NOTIFY_RECIPIENT=fallback@yourcompany.com
 ```
 
 ---
 
 ## Usage
 
-### Main System
+### Web Dashboard
 
-The main system runs as a long-lived process that continuously polls ADF:
+Start both servers and navigate to http://localhost:5173. The dashboard provides:
+
+| Page | Description |
+|------|-------------|
+| **Dashboard** | KPI cards, failure trend chart, success/failure donut, error breakdown, recent activity |
+| **Pipelines** | Searchable, filterable pipeline list with health status badges |
+| **Pipeline Detail** | Per-pipeline metrics, error distribution, failure timeline, error history, PDF reports |
+| **Reports** | MTTR, auto-heal rate, heatmap, error-prone pipelines, root causes, restart exhaustion |
+| **Chatbot** | AI assistant for pipeline error queries with RAG |
+| **Settings** | Listener mode selection, start/stop controls, polling interval, connection health |
+
+### Standalone Listener
+
+Run the listener without the web dashboard:
 
 ```bash
 python start.py
 ```
 
-**What happens when a pipeline fails:**
+### Export Reports
 
-1. **Detection** — The listener detects the failure within 30 seconds
-2. **Search** — Pinecone is searched for similar past errors
-3. **Classification** — The LLM classifies the error (Type 1–6)
-4. **Storage** — The error embedding is stored for future similarity matching
-5. **Action** — Based on the classification:
-   - **Types 1–4:** The pipeline is automatically restarted via the ADF REST API
-   - **Types 5–6:** A PDF report is generated and emailed to the pipeline owner
+From the Reports page or directly via API:
 
-### Developer Chatbot
+```bash
+# Download CSV report
+curl -O "http://localhost:8000/api/reports/export/csv?time_range=1m"
 
-Run the chatbot for developer queries:
+# Download PDF report
+curl -O "http://localhost:8000/api/reports/export/pdf?time_range=1m"
+```
+
+### Developer Chatbot (Standalone)
+
+Run the Chainlit chatbot independently:
 
 ```bash
 chainlit run chatbot/app.py
-```
-
-Example questions:
-- *"Why did pipeline pl_copy_sales_data fail?"*
-- *"How do I fix a schema mismatch error?"*
-- *"Show me recent failures for pl_transform_inventory"*
-- *"What causes timeout errors in ADF?"*
-
-### Running Tests
-
-**Component tests** (metadata store, Pinecone, classifier, processor):
-
-```bash
-python tests/test_phase1_2.py
-```
-
-**Full end-to-end test** (simulates all 6 error types):
-
-```bash
-python tests/test_full_system.py
-```
-
-Expected output:
-
-```
-============================================================
-FULL SYSTEM TEST - Simulating All 6 Error Types
-============================================================
-
-Test 1/6: Type 1 — Parameter Errors
-   [CLASSIFY] Type 1 (Parameter Errors) - Confidence: 1.0
-   [AUTO-RECOVER] Type 1 (Parameter Errors)
-   [RESTART] Restarting pipeline 'pl_copy_sales_data' via Azure REST API...
-   [DONE] Processing complete for run: sim-type1-001
-
-...
-
-============================================================
-TEST RESULTS SUMMARY
-============================================================
-  PASSED  Type 1 — Parameter Errors
-  PASSED  Type 2 — Dataset Type Errors
-  PASSED  Type 3 — Credentials Expired
-  PASSED  Type 4 — Large Data / Timeout
-  PASSED  Type 5 — Server Slow
-  PASSED  Type 6 — Subscription Corrupt
-
-  Total: 6/6 passed
 ```
 
 ---
 
 ## API Reference
 
-### Error Processor
+The backend exposes **31 REST endpoints** across 6 modules. Full interactive docs available at `/docs` (Swagger UI).
 
-The central orchestrator. Processes a single error event end-to-end.
+### Dashboard — `/api/dashboard`
 
-```python
-from intelligence.error_processor import process_error
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/kpi` | 4 KPI cards with period-over-period deltas |
+| GET | `/failure-trend` | Line chart data (time-bucketed failures) |
+| GET | `/success-vs-failure` | Donut chart (success/failure ratio + health %) |
+| GET | `/error-breakdown` | Horizontal bar chart (error types ranked) |
+| GET | `/recent-activity` | Latest 5 pipeline events with status badges |
 
-process_error({
-    "pipeline_name": "pl_copy_sales_data",
-    "run_id": "abc-123-def",
-    "timestamp": "2026-03-12T14:30:00Z",
-    "combined_error": "The parameter 'fileName' is missing...",
-    "failed_activities": [
-        {
-            "activity_name": "Copy_Sales",
-            "activity_type": "Copy",
-            "error_code": "2011",
-            "error_message": "The parameter 'fileName' is missing..."
-        }
-    ]
-})
-```
+### Pipelines — `/api/pipelines`
 
-### Error Classifier
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Pipeline list with search, filter, pagination |
+| GET | `/{name}` | Pipeline detail: summary, error dist, history, delta |
+| GET | `/{name}/chart` | Failure timeline chart for one pipeline |
+| GET | `/{name}/reports` | List PDF reports for a pipeline |
+| GET | `/download/{name}/{file}` | Download a local PDF report |
 
-Classifies an error into one of 6 types using the LLM.
+### Reports — `/api/reports`
 
-```python
-from intelligence.error_classifier import classify_error
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/kpi` | 4 KPI cards (MTTR, auto-heal, savings, errors) with deltas |
+| GET | `/heatmap` | 2D error type heatmap (time × type matrix) |
+| GET | `/error-prone-pipelines` | Top 5 most failing pipelines |
+| GET | `/top-root-causes` | Root cause ranking with affected pipeline counts |
+| GET | `/restart-exhaustion` | Pipelines that exhausted all retries |
+| GET | `/export/csv` | Download full report as CSV |
+| GET | `/export/pdf` | Download styled PDF report |
 
-result = classify_error(
-    error_details={"pipeline_name": "...", "combined_error": "..."},
-    similar_errors=[],     # From Pinecone search
-    pipeline_metadata={}   # From SQLite
-)
+### Chat — `/api/chat`
 
-# Returns:
-# {
-#     "error_type": 1,
-#     "error_type_name": "Parameter Errors",
-#     "confidence": 0.95,
-#     "root_cause_summary": "Missing parameter 'fileName'...",
-#     "is_auto_recoverable": True,
-#     "recommended_action": "Add the missing parameter...",
-#     "priority": "P3"
-# }
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/` | Send question to RAG chatbot |
+| GET | `/pipelines` | Pipeline names grouped by source (dropdown) |
+| GET | `/history` | Get conversation history |
+| DELETE | `/history` | Clear chat history |
 
-### Pinecone Store
+### Settings — `/api/settings`
 
-Store and search error embeddings.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Get current system configuration |
+| POST | `/` | Update settings (listener_mode, poll_interval, email) |
 
-```python
-from intelligence.pinecone_store import store_error, search_similar_errors
+### Listener — `/api/listener`
 
-# Store an error
-store_error(
-    error_id="run-123",
-    error_text="Connection timeout to SQL Server...",
-    metadata={"pipeline_name": "pl_copy", "error_type": 4},
-    namespace="pl_copy"
-)
-
-# Search for similar errors
-results = search_similar_errors(
-    error_text="SQL Server connection timed out...",
-    namespace="pl_copy",
-    top_k=5
-)
-```
-
-### Pipeline Metadata
-
-Register and query pipeline metadata.
-
-```python
-from config.metadata_store import add_pipeline, get_pipeline, log_error
-
-# Register a pipeline
-add_pipeline(
-    name="pl_copy_sales_data",
-    description="Daily sales data copy",
-    owner_name="Data Team",
-    owner_email="data@company.com",
-    schedule="daily 2:00 AM",
-    criticality="high"
-)
-
-# Look up metadata
-pipeline = get_pipeline("pl_copy_sales_data")
-
-# Log an error
-log_error(
-    pipeline_name="pl_copy_sales_data",
-    run_id="abc-123",
-    error_type=1,
-    error_message="Missing parameter...",
-    action_taken="auto_restart"
-)
-```
-
-### Azure Client
-
-Restart an ADF pipeline programmatically.
-
-```python
-from listener.azure_client import restart_pipeline
-
-result = restart_pipeline("pl_copy_sales_data")
-# Returns: {"success": True, "run_id": "new-run-id-456", "message": "Pipeline restarted"}
-```
-
-### Document Generator
-
-Generate a professional PDF error report.
-
-```python
-from listener.doc_generator import generate_error_document
-
-pdf_path = generate_error_document({
-    "pipeline_name": "pl_copy_sales_data",
-    "run_id": "abc-123",
-    "timestamp": "2026-03-12T14:30:00Z",
-    "error_message": "Connection timeout...",
-    "classification": {"error_type": 5, "error_type_name": "Server Slow", ...},
-    "failed_activities": [...]
-})
-# Returns: "/path/to/docs/error_report_pl_copy_sales_data_20260312_143000.pdf"
-```
-
----
-
-## Error Processing Flow
-
-```
-Pipeline Failure Detected
-         │
-         ▼
-┌─── Search Pinecone ───┐
-│  Find similar errors   │
-│  in vector space       │
-└────────┬───────────────┘
-         │
-         ▼
-┌─── Classify Error ────┐
-│  LLM analyzes error    │
-│  + similar past errors │
-│  + pipeline metadata   │
-│  → Returns Type 1-6   │
-└────────┬───────────────┘
-         │
-         ▼
-┌─── Store Embedding ───┐
-│  Save to Pinecone for  │
-│  future similarity     │
-│  matching              │
-└────────┬───────────────┘
-         │
-    ┌────┴────┐
-    │         │
-    ▼         ▼
-Type 1-4   Type 5-6
-    │         │
-    ▼         ▼
- Restart   Generate PDF
- via ADF   Error Report
- REST API     │
-    │         ▼
-    │      Email PDF
-    │      to Owner
-    │         │
-    ▼         ▼
-   Done     Done
-```
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/status` | Listener state (running/stopped, mode, uptime) |
+| POST | `/start` | Start listener (optionally with mode) |
+| POST | `/stop` | Stop listener |
+| POST | `/restart` | Restart with new mode |
+| GET | `/logs` | Recent poll logs (limit: 1–100) |
+| DELETE | `/logs` | Clear poll logs |
+| GET | `/health` | Cached connection health (instant) |
+| POST | `/health/check` | Force fresh health check (~3-4s) |
 
 ---
 
 ## Deployment
 
 ### Running as a Background Service (Linux)
-
-Create a systemd service file:
 
 ```ini
 # /etc/systemd/system/self-healing-adf.service
@@ -616,7 +535,7 @@ After=network.target
 [Service]
 User=deploy
 WorkingDirectory=/opt/self-healing-adf
-ExecStart=/opt/self-healing-adf/venv/bin/python start.py
+ExecStart=/opt/self-healing-adf/venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=10
 Environment=PYTHONUNBUFFERED=1
@@ -625,13 +544,15 @@ Environment=PYTHONUNBUFFERED=1
 WantedBy=multi-user.target
 ```
 
+### Frontend Production Build
+
 ```bash
-sudo systemctl enable self-healing-adf
-sudo systemctl start self-healing-adf
-sudo journalctl -u self-healing-adf -f  # View logs
+cd frontend
+npm run build
+# Outputs to frontend/dist/ — serve via Nginx, Azure Static Web Apps, etc.
 ```
 
-### Running with Docker (Optional)
+### Docker (Optional)
 
 ```dockerfile
 FROM python:3.11-slim
@@ -639,12 +560,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-CMD ["python", "start.py"]
-```
-
-```bash
-docker build -t self-healing-adf .
-docker run -d --env-file .env --name adf-monitor self-healing-adf
+EXPOSE 8000
+CMD ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
 ### Security Considerations
@@ -653,7 +570,7 @@ docker run -d --env-file .env --name adf-monitor self-healing-adf
 - **Use Azure Key Vault** in production to manage secrets instead of `.env` files.
 - **Rotate Service Principal secrets** regularly (Azure recommends every 90 days).
 - **Use App Passwords** for Gmail SMTP, not your regular account password.
-- **Restrict Pinecone API keys** to specific IP ranges in production.
+- **Add authentication** to the API before exposing to the internet.
 
 ---
 
@@ -661,12 +578,14 @@ docker run -d --env-file .env --name adf-monitor self-healing-adf
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| `[ERROR] Azure auth failed (401)` | Invalid or expired Service Principal credentials | Regenerate client secret in Azure Portal |
-| `[ERROR] Email auth failed` | Wrong SMTP password | Use a Gmail App Password (not regular password) |
-| `[WARN] Restart failed: Entity not found` | Pipeline name doesn't exist in ADF | Verify pipeline name matches exactly in ADF |
-| `[WARN] Index exists with N dims, need 3072` | Embedding model changed | Index auto-deletes and recreates (one-time) |
-| `ImportError: No module named 'openai'` | Missing dependency | Run `pip install -r requirements.txt` |
-| `ResourceExhausted` from LLM API | Rate limit hit | Add delays between requests or upgrade API tier |
+| `No module named uvicorn` | Not in virtual environment | Run `source venv/bin/activate` first |
+| `[Errno 48] Address already in use` | Port 8000 already occupied | `lsof -ti:8000 \| xargs kill -9` |
+| `ImportError: HTTPExcBeption` | Typo in chat.py | Fix to `HTTPException` |
+| `[DB] Running in MOCK mode` | No SQL Server configured | Expected for local dev |
+| `Azure auth failed (401)` | Invalid Service Principal | Regenerate client secret |
+| `Email auth failed` | Wrong SMTP password | Use Gmail App Password |
+| `npm run dev` fails | Missing node_modules | Run `cd frontend && npm install` |
+| CORS errors in browser | Backend not allowing frontend origin | Check CORS config in `backend/main.py` |
 
 ---
 
@@ -683,12 +602,17 @@ docker run -d --env-file .env --name adf-monitor self-healing-adf
 ```bash
 git clone https://github.com/your-org/self-healing-adf.git
 cd self-healing-adf
-python -m venv venv
-source venv/bin/activate
+
+# Backend
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your credentials
-python tests/test_phase1_2.py  # Verify setup
+
+# Frontend
+cd frontend && npm install && cd ..
+
+# Run both
+# Terminal 1: source venv/bin/activate && python -m uvicorn backend.main:app --port 8000 --reload
+# Terminal 2: cd frontend && npm run dev
 ```
 
 ---
@@ -701,8 +625,11 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 ## Acknowledgments
 
+- [React](https://react.dev/) — Frontend framework
+- [Vite](https://vitejs.dev/) — Build tool
+- [Recharts](https://recharts.org/) — Charting library
+- [FastAPI](https://fastapi.tiangolo.com/) — Backend API framework
 - [Azure Data Factory SDK](https://github.com/Azure/azure-sdk-for-python) — Pipeline management
-- [Pinecone](https://www.pinecone.io/) — Vector similarity search
+- [ChromaDB](https://www.trychroma.com/) — Vector similarity search
 - [fpdf2](https://github.com/py-pdf/fpdf2) — PDF generation
-- [Chainlit](https://github.com/Chainlit/chainlit) — Chatbot UI
-- [python-dotenv](https://github.com/theskumar/python-dotenv) — Environment management
+- [Lucide](https://lucide.dev/) — Icon library
