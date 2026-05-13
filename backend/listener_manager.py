@@ -87,7 +87,7 @@ class ListenerManager:
         with self._lock:
             self._poll_logs.appendleft(log)  # Newest first
         # Also print to terminal for debugging
-        icon = "✓" if status == "ok" else "⚠" if status == "warning" else "✗"
+        icon = "OK" if status == "ok" else "!!" if status == "warning" else "ERR"
         print(f"  [{icon}] {log.service}: {message}")
 
     def get_logs(self, limit: int = 50) -> list[dict]:

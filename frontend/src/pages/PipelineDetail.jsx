@@ -48,13 +48,58 @@ const PipelineDetail = () => {
   }, [name]);
 
   const getErrorTypeColor = (type) => {
-    if (type.includes('Type 1')) return '#FF8C00'; // Credentials
-    if (type.includes('Type 2')) return '#FFD54F'; // Dataset
-    if (type.includes('Type 3')) return '#05CD99'; // Schema
-    if (type.includes('Type 4')) return '#4318FF'; // Large Data
-    if (type.includes('Type 5')) return '#EE5D50'; // Server Slow
-    if (type.includes('Type 6')) return '#7551FF'; // Subscription
+    if (!type) return 'var(--text-muted)';
+    const t = type.toLowerCase();
+    if (t.includes('parameter')) return '#FF8C00';         // Type 1: Parameter Errors
+    if (t.includes('dataset')) return '#FFD54F';           // Type 2: Dataset Type Errors
+    if (t.includes('credential')) return '#05CD99';        // Type 3: Credentials Expired
+    if (t.includes('large data') || t.includes('timeout')) return '#4318FF'; // Type 4: Large Data / Timeout
+    if (t.includes('server slow') || t.includes('server')) return '#EE5D50'; // Type 5: Server Slow
+    if (t.includes('subscription')) return '#7551FF';      // Type 6: Subscription Corrupt
+    // Fallback for "Type N" format
+    if (t.includes('type 1')) return '#FF8C00';
+    if (t.includes('type 2')) return '#FFD54F';
+    if (t.includes('type 3')) return '#05CD99';
+    if (t.includes('type 4')) return '#4318FF';
+    if (t.includes('type 5')) return '#EE5D50';
+    if (t.includes('type 6')) return '#7551FF';
     return 'var(--text-muted)';
+  };
+
+  // Map action_taken values from SQL to display label and CSS class
+  const getActionDisplay = (action) => {
+    if (!action) return { label: '● Unknown', className: 'unknown' };
+    const a = action.toLowerCase().replace(/\s+/g, '_');
+    
+    // Recoverable: auto-restarted
+    if (a === 'auto-restarted' || a === 'auto_restart' || a === 'auto_restarted')
+      return { label: '● Auto-Restarted', className: 'auto_restart' };
+    
+    // Escalated (non-recoverable or max retries)
+    if (a === 'escalated')
+      return { label: '● Escalated', className: 'escalated' };
+    
+    // Max retries reached → escalated with different label
+    if (a.includes('max_retries') || a.includes('max retries'))
+      return { label: '● Max Retries Reached', className: 'max_retries' };
+    
+    // Success (retry succeeded)
+    if (a === 'success' || a === 'auto_healed')
+      return { label: '● Auto-Healed', className: 'success' };
+    
+    // Skipped duplicate
+    if (a.includes('skipped') || a.includes('duplicate'))
+      return { label: '● Skipped (Duplicate)', className: 'skipped' };
+    
+    // Processing error
+    if (a.includes('processing_error') || a.includes('processing error'))
+      return { label: '● Processing Error', className: 'processing_error' };
+    
+    // Failed (generic)
+    if (a === 'failed')
+      return { label: '● Failed', className: 'failed' };
+    
+    return { label: `● ${action}`, className: 'unknown' };
   };
 
   if (loading) return <div className="loading">Loading Pipeline Details...</div>;
@@ -188,9 +233,14 @@ const PipelineDetail = () => {
                 </td>
                 <td className="message-cell">{h.error_message}</td>
                 <td>
-                  <span className={`action-badge ${h.action_taken}`}>
-                    {h.action_taken === 'auto_restart' ? '● Auto-Restarted' : '● Escalated'}
-                  </span>
+                  {(() => {
+                    const ad = getActionDisplay(h.action_taken);
+                    return (
+                      <span className={`action-badge ${ad.className}`}>
+                        {ad.label}
+                      </span>
+                    );
+                  })()}
                 </td>
               </tr>
             ))}

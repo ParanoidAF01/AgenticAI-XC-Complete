@@ -214,6 +214,12 @@
 
 .action-badge.auto_restart { color: #10b981; }
 .action-badge.escalated { color: #ef4444; }
+.action-badge.max_retries { color: #f59e0b; }
+.action-badge.success { color: #059669; }
+.action-badge.skipped { color: #6b7280; }
+.action-badge.processing_error { color: #d97706; }
+.action-badge.failed { color: #dc2626; }
+.action-badge.unknown { color: var(--text-muted); }
 
 .reports-list {
   display: flex;

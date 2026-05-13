@@ -248,7 +248,7 @@ const Reports = () => {
               {rootCauses.length > 0 ? rootCauses.map((c, idx) => (
                 <tr key={idx}>
                   <td className="rank-cell">{c.rank}</td>
-                  <td className="cause-cell">{c.error_type}</td>
+                  <td className="cause-cell">{c.error_type || 'Unclassified'}</td>
                   <td>{c.affected_pipelines}</td>
                   <td className="hits-cell">{c.occurrences}</td>
                 </tr>

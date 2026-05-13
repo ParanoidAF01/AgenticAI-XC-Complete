@@ -55,17 +55,19 @@ const Settings = () => {
     fetchData();
   }, []);
 
-  // Auto-refresh logs every 5 seconds when listener is running
+  // Auto-refresh logs + cached health every 5 seconds when listener is running
   useEffect(() => {
     if (!status?.running) return;
     const interval = setInterval(async () => {
       try {
-        const [statRes, logsRes] = await Promise.all([
+        const [statRes, logsRes, healthRes] = await Promise.all([
           ListenerAPI.getStatus(),
-          ListenerAPI.getLogs()
+          ListenerAPI.getLogs(),
+          ListenerAPI.getHealth()
         ]);
         setStatus(statRes);
         setLogs(logsRes?.logs || []);
+        setHealthServices(parseHealthServices(healthRes));
       } catch (err) {
         console.error("Poll refresh error:", err);
       }
@@ -80,6 +82,17 @@ const Settings = () => {
         await ListenerAPI.stop();
       } else {
         await ListenerAPI.start({ mode: settings?.listener_mode || 'sql' });
+
+        // On first start, run a fresh health check (POST) to verify all connections
+        setCheckingHealth(true);
+        try {
+          const healthRes = await ListenerAPI.checkHealth();
+          setHealthServices(parseHealthServices(healthRes));
+        } catch (healthErr) {
+          console.error("Health check on start failed:", healthErr);
+        } finally {
+          setCheckingHealth(false);
+        }
       }
       // Small delay then refresh status + logs
       await new Promise(r => setTimeout(r, 500));
@@ -223,11 +236,11 @@ const Settings = () => {
         <div className="section-header">
           <h3>Connection Health</h3>
           <button 
-            className={`refresh-btn ${checkingHealth ? 'spinning' : ''}`}
+            className="refresh-btn"
             onClick={checkHealth}
             disabled={checkingHealth}
           >
-            <RefreshCcw size={16} />
+            <RefreshCcw size={16} className={checkingHealth ? 'spinning' : ''} />
           </button>
         </div>
         
