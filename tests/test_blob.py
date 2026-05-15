@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-ACCOUNT_NAME = os.getenv("AZURE_STORAGE_ACCOUNT_NAME", "")
-ACCOUNT_KEY = os.getenv("AZURE_STORAGE_ACCOUNT_KEY", "")
-CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER", "adf-healer-reports")
+ACCOUNT_NAME = os.getenv("ACCOUNT_NAME", "")
+ACCOUNT_KEY = os.getenv("ACCOUNT_KEY", "")
+CONTAINER = os.getenv("CONTAINER_NAME", "adf-healer-reports")
 
 print("=" * 60)
 print("  Azure Blob Storage — Connection Test")
@@ -33,7 +33,7 @@ print(f"  ✅ Key: {ACCOUNT_KEY[:8]}...{ACCOUNT_KEY[-4:]}")
 # ── Step 2: Import SDK ──────────────────────────────────
 print("\n[2/4] Importing azure-storage-blob SDK...")
 try:
-    from azure.storage.blob import BlobServiceClient
+    from azure.storage.blob import BlobServiceClient, ContentSettings
     print("  ✅ SDK imported successfully")
 except ImportError:
     print("  ❌ azure-storage-blob not installed. Run:")
@@ -98,9 +98,9 @@ if len(sys.argv) > 1:
         blob_client = container_client.get_blob_client(blob_name)
 
         with open(pdf_path, "rb") as f:
-            blob_client.upload_blob(f, overwrite=True, content_settings={
-                "content_type": "application/pdf"
-            })
+            blob_client.upload_blob(f, overwrite=True, content_settings=ContentSettings(
+                content_type="application/pdf"
+            ))
 
         # Verify upload
         props = blob_client.get_blob_properties()
