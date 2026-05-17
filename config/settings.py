@@ -55,5 +55,18 @@ class StorageConfig:
     CONTAINER_NAME = os.getenv("CONTAINER_NAME", "adf-healer-reports")
 
 
+# Base directory for relative path resolution
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+class KnowledgeBaseConfig:
+    """Tiered classification knowledge base settings."""
+    CSV_PATH = os.path.join(BASE_DIR, "data", "adf_errors_v3.csv")
+    TYPE_MAP_PATH = os.path.join(BASE_DIR, "data", "category_type_map.json")
+    KEYWORD_THRESHOLD = float(os.getenv("KB_KEYWORD_THRESHOLD", "0.55"))
+    CONSENSUS_THRESHOLD = float(os.getenv("KB_CONSENSUS_THRESHOLD", "0.90"))
+    CONSENSUS_MIN_AGREE = int(os.getenv("KB_CONSENSUS_MIN_AGREE", "3"))
+
+
 # Polling interval in seconds
 POLL_INTERVAL = 30

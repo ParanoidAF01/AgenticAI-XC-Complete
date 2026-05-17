@@ -147,3 +147,93 @@ def get_collection_count(namespace: str) -> int:
     """Get the number of vectors in a collection."""
     collection = _get_collection(namespace)
     return collection.count()
+
+
+from typing import Optional
+
+
+def compute_consensus(similar_errors: list,
+                      score_threshold: float = 0.90,
+                      min_agree: int = 3) -> Optional[dict]:
+    """
+    Layer 2: Consensus-based classification from ChromaDB results.
+
+    Given top-N similar errors from search_similar_errors():
+    - Best match score must be >= score_threshold
+    - At least min_agree results must agree on the same error_type
+    - Returns the majority type with averaged confidence
+
+    Args:
+        similar_errors: Output from search_similar_errors()
+        score_threshold: Minimum similarity score for best match
+        min_agree: Minimum number of results that must agree
+
+    Returns:
+        Classification dict if consensus reached, None otherwise.
+    """
+    if not similar_errors or len(similar_errors) < min_agree:
+        return None
+
+    # Check if best match meets score threshold
+    best_score = similar_errors[0]["score"]
+    if best_score < score_threshold:
+        return None
+
+    # Count error_type votes from high-scoring matches
+    from collections import Counter
+    type_votes = Counter()
+    type_details = {}
+
+    for err in similar_errors:
+        if err["score"] < score_threshold * 0.85:  # Allow some slack for lower-ranked matches
+            continue
+        meta = err.get("metadata", {})
+        error_type_raw = meta.get("error_type", "")
+        # error_type stored as "3 - Credentials Expired" or just "3"
+        try:
+            if isinstance(error_type_raw, str) and " - " in error_type_raw:
+                error_type_int = int(error_type_raw.split(" - ")[0])
+            else:
+                error_type_int = int(error_type_raw)
+        except (ValueError, TypeError):
+            continue
+
+        type_votes[error_type_int] += 1
+        if error_type_int not in type_details:
+            type_details[error_type_int] = {
+                "scores": [],
+                "type_name": meta.get("error_type_name", ""),
+                "root_cause": meta.get("root_cause", ""),
+            }
+        type_details[error_type_int]["scores"].append(err["score"])
+
+    if not type_votes:
+        return None
+
+    # Check if majority type has enough votes
+    majority_type, majority_count = type_votes.most_common(1)[0]
+    if majority_count < min_agree:
+        return None
+
+    # Build result
+    details = type_details[majority_type]
+    avg_score = sum(details["scores"]) / len(details["scores"])
+
+    type_names = {
+        1: "Parameter Errors", 2: "Dataset Type Errors",
+        3: "Credentials Expired", 4: "Large Data / Timeout",
+        5: "Server Slow", 6: "Subscription Corrupt",
+    }
+
+    return {
+        "error_type": majority_type,
+        "error_type_name": type_names.get(majority_type, details["type_name"]),
+        "confidence": round(avg_score, 4),
+        "root_cause_summary": details["root_cause"] or f"Consensus from {majority_count} similar errors",
+        "is_auto_recoverable": majority_type in (3, 4, 5),
+        "recommended_action": f"Based on {majority_count}/{len(similar_errors)} similar past errors.",
+        "priority": {1: "P2", 2: "P2", 3: "P3", 4: "P3", 5: "P4", 6: "P1"}.get(majority_type, "P2"),
+        "classified_by": "L2_chromadb_consensus",
+        "consensus_count": majority_count,
+        "consensus_avg_score": round(avg_score, 4),
+    }

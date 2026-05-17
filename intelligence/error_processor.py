@@ -20,7 +20,7 @@ from email import encoders
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from intelligence.chroma_store import store_error, search_similar_errors
-from intelligence.error_classifier import classify_error
+from intelligence.tiered_classifier import classify_tiered
 from config.metadata_store import get_pipeline, log_error
 from config.settings import NotificationConfig
 
@@ -131,22 +131,13 @@ def process_error(error_details: dict):
     print(f"[PROCESS] Processing error for pipeline: {pipeline_name}")
     print(f"{'=' * 50}")
 
-    # Step 1: Search for similar past errors
-    print("   [SEARCH] Searching for similar past errors...")
-    similar_errors = search_similar_errors(
-        error_text=error_text,
-        namespace=pipeline_name,
-        top_k=5
-    )
-    print(f"   [SEARCH] Found {len(similar_errors)} similar past errors.")
-
-    # Step 2: Get pipeline metadata
+    # Step 1: Get pipeline metadata
     print("   [META] Fetching pipeline metadata...")
     pipeline_metadata = get_pipeline(pipeline_name)
 
-    # Step 3: Classify the error
-    print("   [CLASSIFY] Classifying error with LLM...")
-    classification = classify_error(error_details, similar_errors, pipeline_metadata)
+    # Step 2: Classify via 3-layer tiered pipeline (L1 CSV → L2 ChromaDB → L3 LLM)
+    print("   [CLASSIFY] Running tiered classification (L1 → L2 → L3)...")
+    classification = classify_tiered(error_details, pipeline_metadata)
 
     # Step 4: Store in ChromaDB with classification metadata
     store_error(
