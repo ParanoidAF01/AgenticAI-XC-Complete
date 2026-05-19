@@ -1,10 +1,15 @@
 """
 Error Processor — The orchestrator of the intelligence layer.
 Receives raw error details from the listener, embeds them, searches for similar errors,
-classifies them via LLM, and takes action:
-  - Types 1-4 (auto-recoverable): Attempt restart (max 3 per pipeline+error_type)
-  - Types 5-6 (non-recoverable): Generate error document + send email notification
-  - After 3 failed restart attempts: Escalate (same as Types 5-6)
+classifies them via the tiered pipeline, and returns a classification result.
+
+The SQL listener (sql_listener.py) handles the action (restart/escalate) and
+SQL write-back. This module is purely classification + storage.
+
+Action logic:
+  - Types 3, 4, 5 (auto-recoverable): Listener handles restart scheduling
+  - Types 1, 2, 6 (non-recoverable): Listener handles escalation
+  - After 3 failed restart attempts: Listener escalates
 """
 import requests
 import json
@@ -20,7 +25,7 @@ from email import encoders
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from intelligence.chroma_store import store_error, search_similar_errors
-from intelligence.error_classifier import classify_error
+from intelligence.tiered_classifier import classify_tiered
 from config.metadata_store import get_pipeline, log_error
 from config.settings import NotificationConfig
 
@@ -31,11 +36,9 @@ MAX_RESTART_ATTEMPTS = 3
 
 class RestartTracker:
     """
-    Tracks restart attempts per (pipeline_name, error_type) pair.
-    Prevents infinite restart loops by capping retries at MAX_RESTART_ATTEMPTS.
-
-    Also tracks which run IDs were created by restarts, so the listener
-    can link child runs back to the original failure.
+    In-memory tracker for restart attempts per (pipeline_name, error_type) pair.
+    Used by the ADF listener for backward compatibility.
+    The SQL listener uses the ModelActions table as the durable tracker instead.
     """
 
     def __init__(self):
@@ -110,22 +113,30 @@ class RestartTracker:
 restart_tracker = RestartTracker()
 
 
-def process_error(error_details: dict):
+# ── Wait strategies per error type ─────────────────────────────
+RESTART_STRATEGIES = {
+    3: ("Retry after credential rotation/refresh", 60),
+    4: ("Retry with delay for transient timeout", 120),
+    5: ("Retry after server recovery window", 90),
+}
+
+
+def process_error(error_details: dict) -> dict:
     """
     Full error processing pipeline:
     1. Search for similar past errors in ChromaDB
     2. Get pipeline metadata from SQLite
-    3. Classify the error using LLM
+    3. Classify the error using the tiered pipeline (L1→L2→L3)
     4. Store the error + classification in ChromaDB
     5. Log to SQLite
-    6. Take action: auto-restart (if attempts < 3) OR escalate
+    6. Return classification result — the CALLER (sql_listener) handles action
+
+    Returns:
+        dict with action, error_type, classification, wait_seconds, etc.
     """
     pipeline_name = error_details.get("pipeline_name", "unknown")
     run_id = error_details.get("run_id", "unknown")
     error_text = error_details.get("combined_error", "")
-
-    # Capture is_retry early — before any reset() call can clear child run IDs
-    is_retry = restart_tracker.is_restart_child(run_id)
 
     print(f"\n{'=' * 50}")
     print(f"[PROCESS] Processing error for pipeline: {pipeline_name}")
@@ -144,9 +155,9 @@ def process_error(error_details: dict):
     print("   [META] Fetching pipeline metadata...")
     pipeline_metadata = get_pipeline(pipeline_name)
 
-    # Step 3: Classify the error
-    print("   [CLASSIFY] Classifying error with LLM...")
-    classification = classify_error(error_details, similar_errors, pipeline_metadata)
+    # Step 3: Classify the error using tiered pipeline
+    print("   [CLASSIFY] Classifying error...")
+    classification = classify_tiered(error_details, pipeline_metadata)
 
     # Step 4: Store in ChromaDB with classification metadata
     store_error(
@@ -165,111 +176,49 @@ def process_error(error_details: dict):
         namespace=pipeline_name
     )
 
-    # Step 5: Determine action
-    # Types 3, 4, 5 are auto-recoverable (transient/environment issues)
-    # Types 1, 2, 6 require immediate escalation (definition-level / infrastructure bugs)
+    # Step 5: Determine action (but DON'T execute it — the listener does that)
     error_type = classification["error_type"]
     error_type_name = classification["error_type_name"]
     is_auto = error_type in (3, 4, 5)
 
     if is_auto:
-        # Check restart attempts before restarting
-        attempt_count = restart_tracker.get_attempt_count(pipeline_name, error_type)
-        can_restart = restart_tracker.can_restart(pipeline_name, error_type)
-
-        if can_restart:
-            action = "auto_restart"
-            log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
-            _handle_auto_restart(error_details, classification, pipeline_metadata)
-        else:
-            # Max retries exhausted — escalate
-            action = "escalate_max_retries"
-            log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
-            print(f"   [LIMIT] Restart limit reached ({MAX_RESTART_ATTEMPTS}/{MAX_RESTART_ATTEMPTS}) "
-                  f"for pipeline '{pipeline_name}' + Type {error_type}")
-            print(f"   [LIMIT] Escalating to human review instead of restarting.")
-            _handle_escalation(error_details, classification, pipeline_metadata,
-                               reason="max_retries_exhausted")
-            # Reset the counter after escalation
-            restart_tracker.reset(pipeline_name, error_type)
+        action = "auto_restart"
+        strategy, wait_secs = RESTART_STRATEGIES.get(error_type, ("Retry pipeline", 60))
+        print(f"   [CLASSIFY] Type {error_type} ({error_type_name}) → auto-recoverable")
+        print(f"   [STRATEGY] {strategy} (wait {wait_secs}s before restart)")
     else:
-        action = "escalate_to_human"
-        attempt_count = 0
-        log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
-        _handle_escalation(error_details, classification, pipeline_metadata)
+        action = "escalate"
+        wait_secs = 0
+        print(f"   [CLASSIFY] Type {error_type} ({error_type_name}) → escalation required")
 
-    print(f"   [DONE] Processing complete for run: {run_id}")
+    # Log to SQLite error history
+    log_error(pipeline_name, run_id, error_type, error_text[:1000], action, error_type_name)
 
-    # Return result so the SQL listener can update the table with full details
+    print(f"   [DONE] Classification complete for run: {run_id}")
+
     return {
         "action": action,
         "error_type": error_type,
         "error_type_name": error_type_name,
-        "attempt_count": attempt_count,
-        "is_retry": is_retry,
+        "classification": classification,
+        "pipeline_metadata": pipeline_metadata,
+        "wait_seconds": wait_secs,
     }
 
 
-def _handle_auto_restart(error_details, classification, pipeline_metadata):
-    """Handle auto-recoverable errors (Types 3, 4, 5): restart the pipeline via Azure REST API."""
-    error_type = classification["error_type"]
-    type_name = classification["error_type_name"]
-    pipeline_name = error_details.get("pipeline_name", "unknown")
-    run_id = error_details.get("run_id", "unknown")
-
-    # Get current attempt info
-    attempt_count = restart_tracker.get_attempt_count(pipeline_name, error_type) + 1
-
-    strategies = {
-        3: ("Retry after credential rotation/refresh", 60),
-        4: ("Retry with delay for transient timeout", 120),
-        5: ("Retry after server recovery window", 90),
-    }
-
-    strategy, wait_secs = strategies.get(error_type, ("Retry pipeline", 60))
-
-    print(f"   [AUTO-RECOVER] Type {error_type} ({type_name})")
-    print(f"   [ATTEMPT] Restart attempt {attempt_count}/{MAX_RESTART_ATTEMPTS}")
-    print(f"   [STRATEGY] {strategy}")
-    print(f"   [WAIT] {wait_secs}s before restart")
-
-    # Wait before restart
-    time.sleep(wait_secs)
-
-    # Actually restart the pipeline via Azure REST API
-    print(f"   [RESTART] Restarting pipeline '{pipeline_name}' via Azure REST API...")
-    try:
-        from listener.azure_client import restart_pipeline
-        result = restart_pipeline(pipeline_name)
-
-        if result["success"]:
-            new_run_id = result["run_id"]
-            print(f"   [OK] Pipeline restarted. New Run ID: {new_run_id}")
-            print(f"   [TRACK] Tracking new run as retry child ({attempt_count}/{MAX_RESTART_ATTEMPTS})")
-
-            # Record this restart attempt
-            restart_tracker.record_restart(pipeline_name, error_type, run_id, new_run_id)
-        else:
-            print(f"   [WARN] Restart failed: {result['message']}")
-    except Exception as e:
-        print(f"   [ERROR] Restart error: {str(e)}")
-
-
-def _handle_escalation(error_details, classification, pipeline_metadata, reason=None):
+def handle_escalation(error_details, classification, pipeline_metadata, reason=None):
     """
-    Handle non-recoverable errors (Types 5-6) or max-retry-exhausted errors:
+    Handle non-recoverable errors (Types 1, 2, 6) or max-retry-exhausted errors:
     generate doc + email notification.
+
+    Called by the SQL listener after classification or after max retries exhausted.
     """
     error_type = classification["error_type"]
     type_name = classification["error_type_name"]
     pipeline_name = error_details.get("pipeline_name", "unknown")
 
     if reason == "max_retries_exhausted":
-        tracker_info = restart_tracker.get_info(pipeline_name, error_type)
         print(f"   [ESCALATE] MAX RETRIES EXHAUSTED - Type {error_type} ({type_name})")
-        print(f"   [ESCALATE] Failed {tracker_info['count']} times. "
-              f"Run IDs: {tracker_info.get('original_run_id', 'N/A')} -> "
-              f"{tracker_info.get('child_run_ids', [])}")
     else:
         print(f"   [ESCALATE] ESCALATION REQUIRED - Type {error_type} ({type_name})")
 
@@ -289,13 +238,7 @@ def _handle_escalation(error_details, classification, pipeline_metadata, reason=
 
         # Add retry info if this is a max-retries escalation
         if reason == "max_retries_exhausted":
-            tracker_info = restart_tracker.get_info(pipeline_name, error_type)
-            payload["retry_info"] = {
-                "max_retries": MAX_RESTART_ATTEMPTS,
-                "attempts": tracker_info["count"],
-                "original_run_id": tracker_info["original_run_id"],
-                "child_run_ids": tracker_info["child_run_ids"]
-            }
+            payload["retry_info"] = error_details.get("retry_info", {})
 
         doc_path = generate_error_document(payload)
         print(f"   [DOC] Document saved: {doc_path}")
