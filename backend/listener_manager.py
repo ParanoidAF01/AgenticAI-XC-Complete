@@ -212,37 +212,29 @@ class ListenerManager:
                     self._last_poll_time = datetime.now(IST).isoformat()
 
                     # Parse the result to create a meaningful log message
-                    # The listeners return different things, so we handle gracefully
+                    # Both listeners now return an int (count of failures found)
+                    failures = 0
+
                     if isinstance(result, dict):
                         failures = result.get("failures_found", 0)
                         pipeline = result.get("pipeline_name", "")
-                        partition = result.get("partition", "")
-
-                        if failures > 0:
-                            msg = f"{failures} failure(s) detected"
-                            if pipeline:
-                                msg += f" in '{pipeline}'"
-                            msg += ". Healing initiated."
-                            self.add_log(msg, "warning")
-                        else:
-                            msg = "0 failures found."
-                            if partition:
-                                msg += f" Scanning partition {partition}."
-                            self.add_log(msg, "ok")
-
                     elif isinstance(result, int):
-                        # Simple count return
-                        if result > 0:
-                            self.add_log(f"{result} failure(s) detected. Healing initiated.", "warning")
-                        else:
-                            self.add_log("0 failures found.", "ok")
+                        failures = result
+                    # result is None → treat as 0 (listener didn't return a value)
 
-                    elif result is None:
-                        # No return value — the listener printed to stdout
-                        self.add_log("Poll completed.", "ok")
-
+                    # 3-tier severity based on failure count
+                    if failures == 0:
+                        self.add_log("0 failures found.", "ok")
+                    elif failures <= 5:
+                        self.add_log(
+                            f"{failures} failure(s) detected. Healing initiated.",
+                            "warning"
+                        )
                     else:
-                        self.add_log(f"Poll #{poll_count} completed. Result: {str(result)[:100]}", "ok")
+                        self.add_log(
+                            f"{failures} failure(s) detected! High backlog. Healing initiated.",
+                            "critical"
+                        )
 
                 except Exception as poll_error:
                     self.add_log(f"Poll error: {str(poll_error)[:200]}", "error")

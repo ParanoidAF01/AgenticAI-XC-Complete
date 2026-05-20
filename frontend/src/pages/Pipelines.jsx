@@ -221,14 +221,15 @@ const Pipelines = () => {
                 Recent Runs <ArrowUpDown size={14} className={`sort-icon ${sortField === 'total_runs' ? 'active' : ''}`} />
               </th>
               <th>Success Rate</th>
+              <th>Last Failure</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan="7" className="loading-cell"><div className="shimmer"></div></td></tr>
+              <tr><td colSpan="8" className="loading-cell"><div className="shimmer"></div></td></tr>
             ) : sortedPipelines.length === 0 ? (
-              <tr><td colSpan="7" className="empty-cell">No pipelines found for <b>{getTimeRangeLabel()}</b>. Try a wider time range.</td></tr>
+              <tr><td colSpan="8" className="empty-cell">No pipelines found for <b>{getTimeRangeLabel()}</b>. Try a wider time range.</td></tr>
             ) : (
               paginatedPipelines.map((p, idx) => (
                 <tr key={idx} onClick={() => navigate(`/pipelines/${p.pipeline_name}`)} className="clickable-row">
@@ -255,6 +256,13 @@ const Pipelines = () => {
                   <td className="runs-cell">{p.total_runs.toLocaleString()}</td>
                   <td className="rate-cell">
                     <span className={`rate-text ${p.status.toLowerCase()}`}>{p.success_rate_pc}%</span>
+                  </td>
+                  <td className="failure-date-cell">
+                    {p.last_failure ? (
+                      <span className="failure-date">{p.last_failure}</span>
+                    ) : (
+                      <span className="no-failure">—</span>
+                    )}
                   </td>
                   <td>
                     <button className="row-action"><MoreVertical size={16} /></button>

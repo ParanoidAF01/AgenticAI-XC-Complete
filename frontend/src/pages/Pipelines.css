@@ -226,6 +226,18 @@
 .rate-text.warning { color: #FFB547; }
 .rate-text.critical { color: #EE5D50; }
 
+.failure-date-cell { font-size: 13px; }
+.failure-date {
+  font-weight: 600;
+  color: #EE5D50;
+  background: #FDEEEE;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.no-failure { color: var(--text-muted); font-size: 16px; }
+
 .pagination-row { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
 .count-info { font-size: 13px; color: var(--text-muted); }
 .page-controls { display: flex; gap: 12px; }

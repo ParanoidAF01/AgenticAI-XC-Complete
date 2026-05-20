@@ -63,6 +63,8 @@ def upload_to_blob(pdf_bytes: bytes, blob_path: str) -> Optional[str]:
         return None
 
     try:
+        from azure.storage.blob import ContentSettings
+
         container_client = client.get_container_client(StorageConfig.CONTAINER_NAME)
         # Ensure container exists
         try:
@@ -71,9 +73,9 @@ def upload_to_blob(pdf_bytes: bytes, blob_path: str) -> Optional[str]:
             container_client.create_container()
 
         blob_client = container_client.get_blob_client(blob_path)
-        blob_client.upload_blob(pdf_bytes, overwrite=True, content_settings={
-            "content_type": "application/pdf"
-        })
+        blob_client.upload_blob(pdf_bytes, overwrite=True, content_settings=ContentSettings(
+            content_type="application/pdf"
+        ))
 
         blob_url = blob_client.url
         print(f"   [BLOB] Uploaded to: {blob_url}")

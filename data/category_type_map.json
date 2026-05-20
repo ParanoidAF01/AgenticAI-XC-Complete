@@ -1,0 +1,196 @@
+{
+  "_description": "Maps CSV error categories to our 6 self-healing types. Review each mapping carefully.",
+  "_types_reference": {
+    "1": "Parameter Errors — Escalate (bad params, wrong values, type mismatches)",
+    "2": "Dataset Type Errors — Escalate (schema mismatch, format errors, column mapping)",
+    "3": "Credentials Expired — Auto-restart (expired tokens, SAS, service principals)",
+    "4": "Large Data / Timeout — Auto-restart (timeouts, memory, data volume)",
+    "5": "Server Slow — Auto-restart (throttling, latency, service degradation)",
+    "6": "Subscription Corrupt — Escalate (broken ARM, corrupt linked services)"
+  },
+
+  "Azure Databricks": {
+    "default_type": 1,
+    "description": "Databricks notebook/cluster errors",
+    "overrides": {
+      "3200": { "type": 3, "reason": "Authentication token expired" },
+      "3201": { "type": 3, "reason": "AAD token refresh failure" },
+      "3202": { "type": 5, "reason": "Cluster throttling / rate limit" },
+      "3203": { "type": 4, "reason": "Cluster startup timeout" },
+      "3204": { "type": 1, "reason": "Invalid notebook path or parameter" },
+      "3205": { "type": 5, "reason": "Cluster unavailable / terminated" },
+      "3206": { "type": 4, "reason": "Job execution timeout" },
+      "3207": { "type": 1, "reason": "Invalid cluster configuration" }
+    }
+  },
+
+  "Data Lake Analytics": {
+    "default_type": 1,
+    "description": "ADLA U-SQL job errors",
+    "overrides": {
+      "2200": { "type": 4, "reason": "Job timeout / AU exhausted" },
+      "2201": { "type": 3, "reason": "Data Lake Store access denied / expired SPN" },
+      "2202": { "type": 2, "reason": "U-SQL schema mismatch" }
+    }
+  },
+
+  "Azure Functions": {
+    "default_type": 1,
+    "description": "Azure Function invocation errors",
+    "overrides": {
+      "3600": { "type": 1, "reason": "Invalid function name or route" },
+      "3601": { "type": 3, "reason": "Function key expired or invalid" },
+      "3602": { "type": 2, "reason": "Invalid HTTP method for function" },
+      "3603": { "type": 5, "reason": "Function app not responding / cold start" },
+      "3604": { "type": 4, "reason": "Function execution timeout" },
+      "3610": { "type": 2, "reason": "Bad endpoint URL / 404" }
+    }
+  },
+
+  "Azure Machine Learning": {
+    "default_type": 1,
+    "description": "AML pipeline/endpoint errors",
+    "overrides": {
+      "4121": { "type": 3, "reason": "AML workspace credential expired" },
+      "4122": { "type": 3, "reason": "AML service principal expired" },
+      "4123": { "type": 4, "reason": "AML compute timeout / quota exceeded" },
+      "4124": { "type": 1, "reason": "Invalid experiment or pipeline parameter" }
+    }
+  },
+
+  "JSON": {
+    "default_type": 2,
+    "description": "JSON parsing, linked service, format errors",
+    "overrides": {
+      "4121": { "type": 3, "reason": "Linked service credential expired" },
+      "4122": { "type": 3, "reason": "Connection string expired" }
+    }
+  },
+
+  "Copy Activity": {
+    "default_type": 4,
+    "description": "Data copy/movement errors",
+    "overrides": {
+      "1000": { "type": 2, "reason": "Source/sink schema mismatch" },
+      "1001": { "type": 2, "reason": "Column mapping failure" },
+      "1002": { "type": 2, "reason": "Data type conversion error" },
+      "1003": { "type": 4, "reason": "Copy timeout — data volume too large" },
+      "1004": { "type": 3, "reason": "Source connection credential expired" },
+      "1005": { "type": 5, "reason": "Source/sink server throttling" }
+    }
+  },
+
+  "Data Flow": {
+    "default_type": 4,
+    "description": "Mapping data flow errors",
+    "overrides": {
+      "1100": { "type": 2, "reason": "Schema drift / column mismatch" },
+      "1101": { "type": 4, "reason": "Data flow timeout or OOM" },
+      "1102": { "type": 1, "reason": "Invalid transformation expression" },
+      "1103": { "type": 5, "reason": "Spark cluster degradation" }
+    }
+  },
+
+  "Integration Runtime": {
+    "default_type": 6,
+    "description": "Self-hosted or Azure IR errors",
+    "overrides": {
+      "5000": { "type": 6, "reason": "IR node offline / corrupt config" },
+      "5001": { "type": 5, "reason": "IR node overloaded / slow" },
+      "5002": { "type": 3, "reason": "IR registration key expired" },
+      "5003": { "type": 6, "reason": "IR version incompatible" }
+    }
+  },
+
+  "Linked Service": {
+    "default_type": 3,
+    "description": "Connection/authentication errors to external services",
+    "overrides": {
+      "6000": { "type": 3, "reason": "Connection string expired" },
+      "6001": { "type": 3, "reason": "Service principal secret expired" },
+      "6002": { "type": 3, "reason": "SAS token expired" },
+      "6003": { "type": 3, "reason": "Managed identity token expired" },
+      "6004": { "type": 6, "reason": "Linked service definition corrupt" },
+      "6005": { "type": 1, "reason": "Wrong server/database in connection" }
+    }
+  },
+
+  "Trigger": {
+    "default_type": 1,
+    "description": "Pipeline trigger errors",
+    "overrides": {
+      "7000": { "type": 1, "reason": "Trigger parameter mismatch" },
+      "7001": { "type": 6, "reason": "Trigger definition corrupt" },
+      "7002": { "type": 5, "reason": "Event Grid delivery delay" }
+    }
+  },
+
+  "SQL": {
+    "default_type": 5,
+    "description": "Azure SQL / SQL Server errors",
+    "overrides": {
+      "8000": { "type": 5, "reason": "SQL Server connection timeout" },
+      "8001": { "type": 3, "reason": "SQL login credentials expired" },
+      "8002": { "type": 2, "reason": "SQL schema mismatch / table not found" },
+      "8003": { "type": 4, "reason": "SQL query timeout — large result set" },
+      "8004": { "type": 5, "reason": "SQL Server throttling / DTU limit" },
+      "8005": { "type": 6, "reason": "SQL firewall blocking ADF IP" }
+    }
+  },
+
+  "Blob Storage": {
+    "default_type": 3,
+    "description": "Azure Blob / ADLS Gen2 errors",
+    "overrides": {
+      "9000": { "type": 3, "reason": "Storage account key expired" },
+      "9001": { "type": 3, "reason": "SAS token expired" },
+      "9002": { "type": 2, "reason": "Blob path / container not found" },
+      "9003": { "type": 4, "reason": "Blob download timeout — file too large" },
+      "9004": { "type": 5, "reason": "Storage account throttling" }
+    }
+  },
+
+  "Key Vault": {
+    "default_type": 3,
+    "description": "Azure Key Vault access errors",
+    "overrides": {
+      "9100": { "type": 3, "reason": "Key Vault access policy expired" },
+      "9101": { "type": 3, "reason": "Secret version expired" },
+      "9102": { "type": 6, "reason": "Key Vault soft-deleted or purged" }
+    }
+  },
+
+  "Pipeline": {
+    "default_type": 1,
+    "description": "General pipeline orchestration errors",
+    "overrides": {
+      "2000": { "type": 1, "reason": "Pipeline parameter validation failure" },
+      "2001": { "type": 4, "reason": "Pipeline execution timeout" },
+      "2002": { "type": 6, "reason": "Pipeline definition corrupt / invalid JSON" },
+      "2003": { "type": 5, "reason": "Concurrent pipeline run limit reached" }
+    }
+  },
+
+  "Web Activity": {
+    "default_type": 5,
+    "description": "HTTP/REST API call errors",
+    "overrides": {
+      "4000": { "type": 5, "reason": "HTTP 429 / 503 — server throttling" },
+      "4001": { "type": 3, "reason": "API key or OAuth token expired" },
+      "4002": { "type": 1, "reason": "Invalid URL or request body" },
+      "4003": { "type": 4, "reason": "HTTP request timeout" },
+      "4004": { "type": 2, "reason": "Response schema mismatch" }
+    }
+  },
+
+  "Cosmos DB": {
+    "default_type": 5,
+    "description": "Azure Cosmos DB errors",
+    "overrides": {
+      "4200": { "type": 5, "reason": "Cosmos DB RU throttling" },
+      "4201": { "type": 3, "reason": "Cosmos DB key expired" },
+      "4202": { "type": 2, "reason": "Partition key mismatch" },
+      "4203": { "type": 4, "reason": "Request entity too large" }
+    }
+  }
+}

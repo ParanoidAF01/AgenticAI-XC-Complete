@@ -106,9 +106,11 @@ class ADFListener:
 
             # Update the check window
             self.last_check_time = now
+            return len(failed_runs)
 
         except Exception as e:
             print(f"   [ERROR] Error polling ADF: {str(e)}")
+            return 0
 
     def _get_activity_errors(self, pipeline_run):
         """Get activity-level error details for a failed pipeline run."""
