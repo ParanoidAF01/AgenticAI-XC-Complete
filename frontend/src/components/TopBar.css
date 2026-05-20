@@ -106,3 +106,24 @@
   font-size: 11px;
   color: var(--text-muted);
 }
+
+.sidebar-toggle-topbar {
+  background: var(--item-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-right: 12px;
+}
+
+.sidebar-toggle-topbar:hover {
+  background: var(--accent-light);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}

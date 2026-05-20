@@ -1,10 +1,19 @@
-import { Bell, Moon, Sun, User } from 'lucide-react';
+import { Bell, Moon, Sun, User, Menu } from 'lucide-react';
 import './TopBar.css';
 
-const TopBar = ({ title, isDarkMode, toggleDarkMode }) => {
+const TopBar = ({ title, isDarkMode, toggleDarkMode, isSidebarCollapsed, setIsSidebarCollapsed }) => {
   return (
     <header className="topbar">
       <div className="topbar-left">
+        {isSidebarCollapsed && (
+          <button 
+            className="sidebar-toggle-topbar" 
+            onClick={() => setIsSidebarCollapsed(false)}
+            title="Expand Sidebar"
+          >
+            <Menu size={18} />
+          </button>
+        )}
         <h2 className="page-title">{title}</h2>
         <div className="listener-status">
           <span className="listener-dot"></span>

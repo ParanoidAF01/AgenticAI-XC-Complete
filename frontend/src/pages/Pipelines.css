@@ -251,3 +251,26 @@
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
 .empty-cell { text-align: center; padding: 60px !important; color: var(--text-muted); font-size: 15px; }
+
+.sortable-header {
+  transition: all 0.25s ease;
+}
+
+.sortable-header:hover {
+  background: var(--accent-light) !important;
+  color: var(--accent-color) !important;
+}
+
+.sortable-header:hover svg {
+  opacity: 1 !important;
+  color: var(--accent-color) !important;
+}
+
+.sort-icon {
+  transition: all 0.25s ease;
+}
+
+.sort-icon.active {
+  opacity: 1 !important;
+  color: var(--accent-color) !important;
+}

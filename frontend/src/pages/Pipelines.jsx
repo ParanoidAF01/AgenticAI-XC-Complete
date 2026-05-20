@@ -58,6 +58,8 @@ const Pipelines = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [error, setError] = useState(null);
+  const [sortField, setSortField] = useState('total_runs');
+  const [sortOrder, setSortOrder] = useState('desc');
   const rowsPerPage = 10;
 
   useEffect(() => {
@@ -69,8 +71,8 @@ const Pipelines = () => {
         const data = await PipelinesAPI.getList({
           status: filter,
           search: search,
-          offset: page * rowsPerPage,
-          rows: rowsPerPage,
+          offset: 0,
+          rows: 100, // Safe limit <= 100 to avoid FastAPI 422 error
           start_date,
           end_date
         });
@@ -89,7 +91,37 @@ const Pipelines = () => {
     };
 
     fetchData();
-  }, [filter, search, page, timeRange]);
+  }, [filter, search, timeRange]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder(field === 'total_runs' ? 'desc' : 'asc');
+    }
+    setPage(0);
+  };
+
+  const getSortedPipelines = () => {
+    return [...pipelines].sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+
+      if (sortField === 'pipeline_name') {
+        return sortOrder === 'asc' 
+          ? valA.localeCompare(valB) 
+          : valB.localeCompare(valA);
+      } else {
+        return sortOrder === 'asc' 
+          ? valA - valB 
+          : valB - valA;
+      }
+    });
+  };
+
+  const sortedPipelines = getSortedPipelines();
+  const paginatedPipelines = sortedPipelines.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
 
   const getStatusIcon = (status) => {
     switch (status.toLowerCase()) {
@@ -180,10 +212,14 @@ const Pipelines = () => {
           <thead>
             <tr>
               <th>Status</th>
-              <th>Pipeline Identity <ArrowUpDown size={14} /></th>
+              <th onClick={() => handleSort('pipeline_name')} style={{ cursor: 'pointer', userSelect: 'none' }} className="sortable-header">
+                Pipeline Identity <ArrowUpDown size={14} className={`sort-icon ${sortField === 'pipeline_name' ? 'active' : ''}`} />
+              </th>
               <th>Owner</th>
               <th>Health Index</th>
-              <th>Recent Runs</th>
+              <th onClick={() => handleSort('total_runs')} style={{ cursor: 'pointer', userSelect: 'none' }} className="sortable-header">
+                Recent Runs <ArrowUpDown size={14} className={`sort-icon ${sortField === 'total_runs' ? 'active' : ''}`} />
+              </th>
               <th>Success Rate</th>
               <th></th>
             </tr>
@@ -191,10 +227,10 @@ const Pipelines = () => {
           <tbody>
             {loading ? (
               <tr><td colSpan="7" className="loading-cell"><div className="shimmer"></div></td></tr>
-            ) : pipelines.length === 0 ? (
+            ) : sortedPipelines.length === 0 ? (
               <tr><td colSpan="7" className="empty-cell">No pipelines found for <b>{getTimeRangeLabel()}</b>. Try a wider time range.</td></tr>
             ) : (
-              pipelines.map((p, idx) => (
+              paginatedPipelines.map((p, idx) => (
                 <tr key={idx} onClick={() => navigate(`/pipelines/${p.pipeline_name}`)} className="clickable-row">
                   <td>
                     <div className="status-indicator">
@@ -231,7 +267,7 @@ const Pipelines = () => {
 
         <div className="pagination-row">
           <span className="count-info">
-            Showing <b>{page * rowsPerPage + 1}</b> to <b>{Math.min((page + 1) * rowsPerPage, stats?.total || 0)}</b> of {stats?.total || 0} pipelines
+            Showing <b>{sortedPipelines.length === 0 ? 0 : page * rowsPerPage + 1}</b> to <b>{Math.min((page + 1) * rowsPerPage, sortedPipelines.length)}</b> of {sortedPipelines.length} pipelines
           </span>
           <div className="page-controls">
             <button 
@@ -242,7 +278,7 @@ const Pipelines = () => {
               <ChevronLeft size={18} /> Prev
             </button>
             <button 
-              disabled={(page + 1) * rowsPerPage >= (stats?.total || 0)} 
+              disabled={(page + 1) * rowsPerPage >= sortedPipelines.length} 
               onClick={() => setPage(p => p + 1)}
               className="ctrl-btn"
             >

@@ -7,11 +7,12 @@ import {
   BarChart3,
   Radio,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  ChevronLeft
 } from 'lucide-react';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard size={18} /> },
     { name: 'Pipelines', path: '/pipelines', icon: <Database size={18} /> },
@@ -21,13 +22,20 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-logo">
         <div className="logo-icon">A</div>
         <div className="logo-text">
           <h1>ADF Healer</h1>
           <span>MONITORING SYSTEM</span>
         </div>
+        <button 
+          className="sidebar-collapse-btn" 
+          onClick={() => setIsCollapsed(true)}
+          title="Collapse Sidebar"
+        >
+          <ChevronLeft size={16} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">

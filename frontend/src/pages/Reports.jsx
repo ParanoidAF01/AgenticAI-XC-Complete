@@ -162,11 +162,14 @@ const Reports = () => {
             {/* X Axis Labels */}
             <div className="hm-header">
               <div className="hm-y-spacer"></div>
-              {heatmap?.error_types?.map((type, i) => (
-                <div key={i} className="hm-x-label" title={type}>
-                  {type.length > 14 ? type.substring(0, 12) + '…' : type}
-                </div>
-              ))}
+              {heatmap?.error_types?.map((type, i) => {
+                const displayName = type || 'Unclassified';
+                return (
+                  <div key={i} className="hm-x-label" title={displayName}>
+                    {displayName.length > 14 ? displayName.substring(0, 12) + '…' : displayName}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Rows */}
@@ -186,7 +189,7 @@ const Reports = () => {
                           ? `rgba(255, 193, 7, ${intensity})` 
                           : 'var(--track-bg)'
                       }}
-                      title={`${type} — ${bucket}: ${count}`}
+                      title={`${type || 'Unclassified'} — ${bucket}: ${count}`}
                     >
                     </div>
                   );
