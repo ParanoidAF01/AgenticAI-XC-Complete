@@ -374,7 +374,7 @@ class SQLListener:
             print(f"   [RESTART] Restarting '{pipeline_name}' (attempt {attempt})...")
             try:
                 from listener.azure_client import restart_pipeline
-                result = restart_pipeline(pipeline_name)
+                result = restart_pipeline(pipeline_name, parameters={"isChild": 1})
 
                 if result["success"]:
                     child_run_id = result["run_id"]

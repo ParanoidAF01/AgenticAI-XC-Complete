@@ -23,7 +23,7 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter(prefix="/api/reports", tags=["Reports"])
 
-TABLE_NAME = "dbo.PipelineRunLog"
+TABLE_NAME = "sql.PipelineRunLog"
 
 
 # ── Helpers ─────────────────────────────────────────────────

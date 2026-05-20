@@ -17,7 +17,7 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
-TABLE_NAME = "dbo.PipelineRunLog"
+TABLE_NAME = "sql.PipelineRunLog"
 
 # ── Date Range Helpers ──────────────────────────────────────
 
