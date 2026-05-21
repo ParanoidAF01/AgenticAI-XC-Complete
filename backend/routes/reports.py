@@ -99,38 +99,38 @@ def get_report_kpis(
         return (abs(delta), direction)
 
     # 1. MTTR (current + previous)
-    mttr_result = call_proc("ui.sp_report_mttr", base_params)
+    mttr_result = call_proc("ui.sp_report_mttr_v2", base_params)
     mttr_seconds = float(mttr_result[0][0].get("MTTR", 0) or 0) if mttr_result and mttr_result[0] else 0
     mttr_minutes = round(mttr_seconds / 60, 1) if mttr_seconds else 0
 
-    prev_mttr_result = call_proc("ui.sp_report_mttr", prev_params)
+    prev_mttr_result = call_proc("ui.sp_report_mttr_v2", prev_params)
     prev_mttr_seconds = float(prev_mttr_result[0][0].get("MTTR", 0) or 0) if prev_mttr_result and prev_mttr_result[0] else 0
     prev_mttr_minutes = round(prev_mttr_seconds / 60, 1) if prev_mttr_seconds else 0
     mttr_delta, mttr_dir = _calc_delta(mttr_minutes, prev_mttr_minutes)
 
     # 2. Auto-Heal Rate (current + previous)
-    autoheal_result = call_proc("ui.sp_report_autoheal", base_params)
+    autoheal_result = call_proc("ui.sp_report_autoheal_v2", base_params)
     autoheal_rate = float(autoheal_result[0][0].get("AutoHealRate", 0) or 0) if autoheal_result and autoheal_result[0] else 0
 
-    prev_autoheal_result = call_proc("ui.sp_report_autoheal", prev_params)
+    prev_autoheal_result = call_proc("ui.sp_report_autoheal_v2", prev_params)
     prev_autoheal_rate = float(prev_autoheal_result[0][0].get("AutoHealRate", 0) or 0) if prev_autoheal_result and prev_autoheal_result[0] else 0
     autoheal_delta, autoheal_dir = _calc_delta(autoheal_rate, prev_autoheal_rate)
 
     # 3. Time Saved (current + previous)
-    time_saved_result = call_proc("ui.sp_report_time_saved", base_params)
+    time_saved_result = call_proc("ui.sp_report_time_saved_v2", base_params)
     mins_saved = int(time_saved_result[0][0].get("MinsSaved", 0) or 0) if time_saved_result and time_saved_result[0] else 0
     hours_saved = round(mins_saved / 60, 1)
 
-    prev_time_result = call_proc("ui.sp_report_time_saved", prev_params)
+    prev_time_result = call_proc("ui.sp_report_time_saved_v2", prev_params)
     prev_mins = int(prev_time_result[0][0].get("MinsSaved", 0) or 0) if prev_time_result and prev_time_result[0] else 0
     prev_hours = round(prev_mins / 60, 1)
     time_delta, time_dir = _calc_delta(hours_saved, prev_hours)
 
     # 4. Total Errors (current + previous)
-    errors_result = call_proc("ui.sp_report_errors_kpi", base_params)
+    errors_result = call_proc("ui.sp_report_errors_kpi_v2", base_params)
     total_errors = int(errors_result[0][0].get("TotalErrors", 0) or 0) if errors_result and errors_result[0] else 0
 
-    prev_errors_result = call_proc("ui.sp_report_errors_kpi", prev_params)
+    prev_errors_result = call_proc("ui.sp_report_errors_kpi_v2", prev_params)
     prev_errors = int(prev_errors_result[0][0].get("TotalErrors", 0) or 0) if prev_errors_result and prev_errors_result[0] else 0
     errors_delta, errors_dir = _calc_delta(total_errors, prev_errors)
 
@@ -169,7 +169,7 @@ def get_error_heatmap(
     """
     Error Type Heatmap — a 2D grid of (time_bucket × error_type → count).
 
-    Calls: EXEC ui.sp_report_heatmap @TableName, @TimeFilter, @StartDate, @EndDate
+    Calls: EXEC ui.sp_report_heatmap_v2 @TableName, @TimeFilter, @StartDate, @EndDate
 
     Returns a structured matrix:
       - rows: time buckets (hours/days/weeks depending on time range)
@@ -179,7 +179,7 @@ def get_error_heatmap(
     sd, ed = _resolve_dates(time_range, start_date, end_date)
     tf = _time_filter_param(time_range)
 
-    result_sets = call_proc("ui.sp_report_heatmap", {
+    result_sets = call_proc("ui.sp_report_heatmap_v2", {
         "TableName": TABLE_NAME,
         "TimeFilter": tf,
         "StartDate": sd,
@@ -240,12 +240,12 @@ def get_error_prone_pipelines(
     """
     Top 5 most error-prone pipelines (bar chart).
 
-    Calls: EXEC ui.sp_report_pipeline_breakdown @TableName, @StartDate, @EndDate
+    Calls: EXEC ui.sp_report_pipeline_breakdown_v2 @TableName, @StartDate, @EndDate
     Returns: PipelineName, ErrorCount + bar_pc for frontend CSS width binding.
     """
     sd, ed = _resolve_dates(time_range, start_date, end_date)
 
-    result_sets = call_proc("ui.sp_report_pipeline_breakdown", {
+    result_sets = call_proc("ui.sp_report_pipeline_breakdown_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -280,12 +280,12 @@ def get_top_root_causes(
     """
     Top root causes ranked by occurrence count, with affected pipeline count.
 
-    Calls: EXEC ui.sp_report_errorstype @TableName, @StartDate, @EndDate
+    Calls: EXEC ui.sp_report_errorstype_v2 @TableName, @StartDate, @EndDate
     Returns: HealerErrorType, ErrorCount, AffectedPipelines
     """
     sd, ed = _resolve_dates(time_range, start_date, end_date)
 
-    result_sets = call_proc("ui.sp_report_errorstype", {
+    result_sets = call_proc("ui.sp_report_errorstype_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -317,12 +317,12 @@ def get_restart_exhaustion(
     """
     Pipelines that exhausted all retry attempts and need manual intervention.
 
-    Calls: EXEC ui.sp_report_restart_exh @TableName, @StartDate, @EndDate
+    Calls: EXEC ui.sp_report_restart_exh_v2 @TableName, @StartDate, @EndDate
     Returns: PipelineName, RunId, ErrorType, MaxRetryAttempt, Status
     """
     sd, ed = _resolve_dates(time_range, start_date, end_date)
 
-    result_sets = call_proc("ui.sp_report_restart_exh", {
+    result_sets = call_proc("ui.sp_report_restart_exh_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -352,32 +352,32 @@ def _fetch_all_report_data(sd, ed, time_range):
     base = {"TableName": TABLE_NAME, "StartDate": sd, "EndDate": ed}
 
     # KPIs
-    mttr_r = call_proc("ui.sp_report_mttr", base)
+    mttr_r = call_proc("ui.sp_report_mttr_v2", base)
     mttr_sec = float(mttr_r[0][0].get("MTTR", 0) or 0) if mttr_r and mttr_r[0] else 0
     mttr_min = round(mttr_sec / 60, 1)
 
-    ah_r = call_proc("ui.sp_report_autoheal", base)
+    ah_r = call_proc("ui.sp_report_autoheal_v2", base)
     ah_rate = float(ah_r[0][0].get("AutoHealRate", 0) or 0) if ah_r and ah_r[0] else 0
 
-    ts_r = call_proc("ui.sp_report_time_saved", base)
+    ts_r = call_proc("ui.sp_report_time_saved_v2", base)
     mins = int(ts_r[0][0].get("MinsSaved", 0) or 0) if ts_r and ts_r[0] else 0
     hrs = round(mins / 60, 1)
 
-    err_r = call_proc("ui.sp_report_errors_kpi", base)
+    err_r = call_proc("ui.sp_report_errors_kpi_v2", base)
     total_err = int(err_r[0][0].get("TotalErrors", 0) or 0) if err_r and err_r[0] else 0
 
     kpis = {"MTTR (min)": mttr_min, "Auto-Heal Rate (%)": ah_rate,
             "Time Saved (hrs)": hrs, "Total Errors": total_err}
 
     # Error-prone pipelines
-    pb_r = call_proc("ui.sp_report_pipeline_breakdown", base)
+    pb_r = call_proc("ui.sp_report_pipeline_breakdown_v2", base)
     pipelines = []
     if pb_r and pb_r[0]:
         for r in pb_r[0]:
             pipelines.append({"Pipeline": r.get("PipelineName", ""), "Error Count": r.get("ErrorCount", 0)})
 
     # Root causes
-    rc_r = call_proc("ui.sp_report_errorstype", base)
+    rc_r = call_proc("ui.sp_report_errorstype_v2", base)
     causes = []
     if rc_r and rc_r[0]:
         for r in rc_r[0]:
@@ -388,7 +388,7 @@ def _fetch_all_report_data(sd, ed, time_range):
             })
 
     # Restart exhaustion
-    re_r = call_proc("ui.sp_report_restart_exh", base)
+    re_r = call_proc("ui.sp_report_restart_exh_v2", base)
     exhaustions = []
     if re_r and re_r[0]:
         for r in re_r[0]:

@@ -91,7 +91,7 @@ def get_kpi(
     """
     4 KPI cards + period-over-period delta percentages.
 
-    Calls: EXEC ui.sp_home_kpi @TableName, @CurrStartDate, @CurrEndDate, @PrevStartDate, @PrevEndDate
+    Calls: EXEC ui.sp_home_kpi_v2 @TableName, @CurrStartDate, @CurrEndDate, @PrevStartDate, @PrevEndDate
 
     Returns: TotalFailures, AutoHealed, Escalated, ActivePipelines,
              FailureDeltaPc, AutoHealedDeltaPc, EscalatedDeltaPc,
@@ -103,7 +103,7 @@ def get_kpi(
     if end_date:
         ce = end_date
 
-    result_sets = call_proc("ui.sp_home_kpi", {
+    result_sets = call_proc("ui.sp_home_kpi_v2", {
         "TableName": TABLE_NAME,
         "CurrStartDate": cs,
         "CurrEndDate": ce,
@@ -147,7 +147,7 @@ def get_failure_trend(
       - 4m     → weekly buckets
       - others → daily buckets
 
-    Calls: EXEC ui.sp_home_failure_trend @TableName, @TimeFilter, @StartDate, @EndDate
+    Calls: EXEC ui.sp_home_failure_trend_v2 @TableName, @TimeFilter, @StartDate, @EndDate
     """
     sd, ed = _compute_simple_range(time_range)
     if start_date:
@@ -158,7 +158,7 @@ def get_failure_trend(
     # Map time_range to SP's @TimeFilter param
     time_filter = "TODAY" if time_range.lower() == "today" else ("4M" if time_range.lower() == "4m" else "DEFAULT")
 
-    result_sets = call_proc("ui.sp_home_failure_trend", {
+    result_sets = call_proc("ui.sp_home_failure_trend_v2", {
         "TableName": TABLE_NAME,
         "TimeFilter": time_filter,
         "StartDate": sd,
@@ -189,7 +189,7 @@ def get_success_vs_failure(
     """
     Success vs Failure donut chart.
 
-    Calls: EXEC ui.sp_home_SvF @TableName, @StartDate, @EndDate
+    Calls: EXEC ui.sp_home_SvF_v2 @TableName, @StartDate, @EndDate
 
     Returns: success count, failure count, total runs, health percentage.
     """
@@ -199,7 +199,7 @@ def get_success_vs_failure(
     if end_date:
         ed = end_date
 
-    result_sets = call_proc("ui.sp_home_SvF", {
+    result_sets = call_proc("ui.sp_home_SvF_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -228,7 +228,7 @@ def get_error_breakdown(
     """
     Error type breakdown horizontal bar chart data.
 
-    Calls: EXEC ui.sp_home_errorbreak @TableName, @StartDate, @EndDate
+    Calls: EXEC ui.sp_home_errorbreak_v2 @TableName, @StartDate, @EndDate
 
     Returns list of {error_type, count} sorted by count desc.
     """
@@ -238,7 +238,7 @@ def get_error_breakdown(
     if end_date:
         ed = end_date
 
-    result_sets = call_proc("ui.sp_home_errorbreak", {
+    result_sets = call_proc("ui.sp_home_errorbreak_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -274,7 +274,7 @@ def get_recent_activity(
     """
     Recent activity feed (latest 5 items).
 
-    Calls: EXEC ui.sp_home_recent_activity @TableName, @StartDate, @EndDate
+    Calls: EXEC ui.sp_home_recent_activity_v2 @TableName, @StartDate, @EndDate
 
     Each item has: pipeline name, run ID, trigger time, error type (nullable), status badge.
     Status values: Success, Healed, Escalated, Failed, Skipped, Processing Error, Max Retries Exhausted
@@ -285,7 +285,7 @@ def get_recent_activity(
     if end_date:
         ed = end_date
 
-    result_sets = call_proc("ui.sp_home_recent_activity", {
+    result_sets = call_proc("ui.sp_home_recent_activity_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,

@@ -45,7 +45,7 @@ def get_pipelines(
     """
     List all pipelines with computed stats.
 
-    Calls: EXEC ui.sp_pipelines_page @TableName, @StartDate, @EndDate, @Search, @Status, @Offset, @Rows
+    Calls: EXEC ui.sp_pipelines_page_v2 @TableName, @StartDate, @EndDate, @Search, @Status, @Offset, @Rows
 
     Returns per pipeline: name, owner, total runs, org success, healed count,
     total failures, success rate %, health status (Healthy/Warning/Critical).
@@ -59,7 +59,7 @@ def get_pipelines(
     s_norm = status.title() if status else "All"
     status_param = s_norm if s_norm in ("All", "Healthy", "Warning", "Critical") else "All"
 
-    result_sets = call_proc("ui.sp_pipelines_page", {
+    result_sets = call_proc("ui.sp_pipelines_page_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -139,7 +139,7 @@ def get_pipeline_detail(
     """
     Detail view for a specific pipeline.
 
-    Calls: EXEC ui.sp_pipeline_ind @TableName, @PipelineName, @StartDate, @EndDate, @Offset, @Rows
+    Calls: EXEC ui.sp_pipeline_ind_v2 @TableName, @PipelineName, @StartDate, @EndDate, @Offset, @Rows
 
     Returns 3 result sets:
       1. Summary metrics: success rate, total errors, most common error type
@@ -149,7 +149,7 @@ def get_pipeline_detail(
     sd = start_date or _default_start_date()
     ed = end_date or _default_end_date()
 
-    result_sets = call_proc("ui.sp_pipeline_ind", {
+    result_sets = call_proc("ui.sp_pipeline_ind_v2", {
         "TableName": TABLE_NAME,
         "PipelineName": pipeline_name,
         "StartDate": sd,
@@ -167,7 +167,7 @@ def get_pipeline_detail(
         "success_rate_pc": float(summary_row.get("SuccessRatePc", 0) or 0),
         "total_errors": summary_row.get("TotalErrors", 0),
         "most_common_error_type": summary_row.get("MostCommonErrorType", None),
-        "most_common_error_type_count": summary_row.get("MostCommonErrorTypeCount", 0),
+        "most_common_error_type_count": summary_row.get("MostCommonErrorCount", summary_row.get("MostCommonErrorTypeCount", 0)),
     }
 
     # Result set 2: Error type distribution
@@ -203,7 +203,7 @@ def get_pipeline_detail(
 
     # Fetch owner from the list SP (same source as pipelines page)
     owner = ""
-    owner_sets = call_proc("ui.sp_pipelines_page", {
+    owner_sets = call_proc("ui.sp_pipelines_page_v2", {
         "TableName": TABLE_NAME,
         "StartDate": sd,
         "EndDate": ed,
@@ -227,7 +227,7 @@ def get_pipeline_detail(
     prev_sd = (sd_dt - period_duration).strftime("%Y-%m-%dT%H:%M:%S")
     prev_ed = sd_dt.strftime("%Y-%m-%dT%H:%M:%S")
 
-    prev_result = call_proc("ui.sp_pipeline_ind", {
+    prev_result = call_proc("ui.sp_pipeline_ind_v2", {
         "TableName": TABLE_NAME,
         "PipelineName": pipeline_name,
         "StartDate": prev_sd,
@@ -272,7 +272,7 @@ def get_pipeline_chart(
     Failure timeline line chart for a specific pipeline.
     Same format as GET /api/dashboard/failure-trend but scoped to one pipeline.
 
-    Calls: EXEC ui.sp_pipeline_chart @TableName, @PipelineName, @TimeFilter, @StartDate, @EndDate
+    Calls: EXEC ui.sp_pipeline_chart_v2 @TableName, @PipelineName, @TimeFilter, @StartDate, @EndDate
 
     Time bucketing:
       - today  → hourly (0-23)
@@ -297,7 +297,7 @@ def get_pipeline_chart(
 
     time_filter = "TODAY" if key == "today" else ("4M" if key == "4m" else "DEFAULT")
 
-    result_sets = call_proc("ui.sp_pipeline_chart", {
+    result_sets = call_proc("ui.sp_pipeline_chart_v2", {
         "TableName": TABLE_NAME,
         "PipelineName": pipeline_name,
         "TimeFilter": time_filter,
