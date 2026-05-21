@@ -14,11 +14,13 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { PipelinesAPI } from '../services/api';
+import { useDataSource } from '../context/DataSourceContext';
 import './PipelineDetail.css';
 
 const PipelineDetail = () => {
   const { name } = useParams();
   const navigate = useNavigate();
+  const { dataSource } = useDataSource();
   const [data, setData] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [reports, setReports] = useState([]);
@@ -29,8 +31,8 @@ const PipelineDetail = () => {
       setLoading(true);
       try {
         const [detailRes, chartRes, reportsRes] = await Promise.all([
-          PipelinesAPI.getDetail(name, {}),
-          PipelinesAPI.getChart(name, {}),
+          PipelinesAPI.getDetail(name, { source: dataSource }),
+          PipelinesAPI.getChart(name, { source: dataSource }),
           PipelinesAPI.getReports(name)
         ]);
 
@@ -45,7 +47,7 @@ const PipelineDetail = () => {
     };
 
     fetchData();
-  }, [name]);
+  }, [name, dataSource]);
 
   const getErrorTypeColor = (type) => {
     if (!type) return 'var(--text-muted)';

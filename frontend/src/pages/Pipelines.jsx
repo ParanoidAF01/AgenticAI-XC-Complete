@@ -15,6 +15,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { PipelinesAPI } from '../services/api';
+import { useDataSource } from '../context/DataSourceContext';
 import './Pipelines.css';
 
 const TIME_RANGES = [
@@ -50,6 +51,7 @@ const getDateRange = (rangeKey) => {
 
 const Pipelines = () => {
   const navigate = useNavigate();
+  const { dataSource } = useDataSource();
   const [pipelines, setPipelines] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -71,6 +73,7 @@ const Pipelines = () => {
         const data = await PipelinesAPI.getList({
           status: filter,
           search: search,
+          source: dataSource,
           offset: 0,
           rows: 100, // Safe limit <= 100 to avoid FastAPI 422 error
           start_date,
@@ -91,7 +94,7 @@ const Pipelines = () => {
     };
 
     fetchData();
-  }, [filter, search, timeRange]);
+  }, [filter, search, timeRange, dataSource]);
 
   const handleSort = (field) => {
     if (sortField === field) {

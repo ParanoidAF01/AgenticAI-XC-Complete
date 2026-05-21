@@ -17,7 +17,15 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter(prefix="/api/dashboard", tags=["Dashboard"])
 
-TABLE_NAME = "sql.PipelineRunLog"
+VALID_SOURCES = {"sql", "adf"}
+
+
+def _get_table_name(source: str) -> str:
+    """Build the table name from the source prefix (sql or adf)."""
+    s = source.lower() if source else "sql"
+    if s not in VALID_SOURCES:
+        s = "sql"
+    return f"{s}.PipelineRunLog"
 
 # ── Date Range Helpers ──────────────────────────────────────
 
@@ -85,6 +93,7 @@ def _compute_simple_range(time_range: str):
 @router.get("/kpi")
 def get_kpi(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None, description="Override: custom start date ISO"),
     end_date: Optional[str] = Query(None, description="Override: custom end date ISO"),
 ):
@@ -104,7 +113,7 @@ def get_kpi(
         ce = end_date
 
     result_sets = call_proc("ui.sp_home_kpi_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "CurrStartDate": cs,
         "CurrEndDate": ce,
         "PrevStartDate": ps,
@@ -138,6 +147,7 @@ def get_kpi(
 @router.get("/failure-trend")
 def get_failure_trend(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -159,7 +169,7 @@ def get_failure_trend(
     time_filter = "TODAY" if time_range.lower() == "today" else ("4M" if time_range.lower() == "4m" else "DEFAULT")
 
     result_sets = call_proc("ui.sp_home_failure_trend_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "TimeFilter": time_filter,
         "StartDate": sd,
         "EndDate": ed,
@@ -183,6 +193,7 @@ def get_failure_trend(
 @router.get("/success-vs-failure")
 def get_success_vs_failure(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -200,7 +211,7 @@ def get_success_vs_failure(
         ed = end_date
 
     result_sets = call_proc("ui.sp_home_SvF_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
     })
@@ -222,6 +233,7 @@ def get_success_vs_failure(
 @router.get("/error-breakdown")
 def get_error_breakdown(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -239,7 +251,7 @@ def get_error_breakdown(
         ed = end_date
 
     result_sets = call_proc("ui.sp_home_errorbreak_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
     })
@@ -268,6 +280,7 @@ def get_error_breakdown(
 @router.get("/recent-activity")
 def get_recent_activity(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -286,7 +299,7 @@ def get_recent_activity(
         ed = end_date
 
     result_sets = call_proc("ui.sp_home_recent_activity_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
     })

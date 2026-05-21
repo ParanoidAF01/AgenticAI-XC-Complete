@@ -24,11 +24,11 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 export const DashboardAPI = {
-  getKPIs: (timeRange = '1m') => fetchAPI(`/dashboard/kpi?time_range=${timeRange}`),
-  getFailureTrend: (timeRange = '1m') => fetchAPI(`/dashboard/failure-trend?time_range=${timeRange}`),
-  getSuccessVsFailure: (timeRange = '1m') => fetchAPI(`/dashboard/success-vs-failure?time_range=${timeRange}`),
-  getErrorBreakdown: (timeRange = '1m') => fetchAPI(`/dashboard/error-breakdown?time_range=${timeRange}`),
-  getRecentActivity: (timeRange = '1m') => fetchAPI(`/dashboard/recent-activity?time_range=${timeRange}`),
+  getKPIs: (timeRange = '1m', source = 'sql') => fetchAPI(`/dashboard/kpi?time_range=${timeRange}&source=${source}`),
+  getFailureTrend: (timeRange = '1m', source = 'sql') => fetchAPI(`/dashboard/failure-trend?time_range=${timeRange}&source=${source}`),
+  getSuccessVsFailure: (timeRange = '1m', source = 'sql') => fetchAPI(`/dashboard/success-vs-failure?time_range=${timeRange}&source=${source}`),
+  getErrorBreakdown: (timeRange = '1m', source = 'sql') => fetchAPI(`/dashboard/error-breakdown?time_range=${timeRange}&source=${source}`),
+  getRecentActivity: (timeRange = '1m', source = 'sql') => fetchAPI(`/dashboard/recent-activity?time_range=${timeRange}&source=${source}`),
 };
 
 export const PipelinesAPI = {
@@ -48,11 +48,11 @@ export const PipelinesAPI = {
 };
 
 export const ReportsAPI = {
-  getKPIs: (timeRange = '1m') => fetchAPI(`/reports/kpi?time_range=${timeRange}`),
-  getHeatmap: (timeRange = '1m') => fetchAPI(`/reports/heatmap?time_range=${timeRange}`),
-  getErrorPronePipelines: (timeRange = '1m') => fetchAPI(`/reports/error-prone-pipelines?time_range=${timeRange}`),
-  getTopRootCauses: (timeRange = '1m') => fetchAPI(`/reports/top-root-causes?time_range=${timeRange}`),
-  getRestartExhaustion: (timeRange = '1m') => fetchAPI(`/reports/restart-exhaustion?time_range=${timeRange}`),
+  getKPIs: (timeRange = '1m', source = 'sql') => fetchAPI(`/reports/kpi?time_range=${timeRange}&source=${source}`),
+  getHeatmap: (timeRange = '1m', source = 'sql') => fetchAPI(`/reports/heatmap?time_range=${timeRange}&source=${source}`),
+  getErrorPronePipelines: (timeRange = '1m', source = 'sql') => fetchAPI(`/reports/error-prone-pipelines?time_range=${timeRange}&source=${source}`),
+  getTopRootCauses: (timeRange = '1m', source = 'sql') => fetchAPI(`/reports/top-root-causes?time_range=${timeRange}&source=${source}`),
+  getRestartExhaustion: (timeRange = '1m', source = 'sql') => fetchAPI(`/reports/restart-exhaustion?time_range=${timeRange}&source=${source}`),
 };
 
 export const ChatAPI = {

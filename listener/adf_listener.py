@@ -101,7 +101,8 @@ class ADFListener:
         now = datetime.now(IST)
         print(f"\n[POLL] [{now.strftime('%H:%M:%S')}] Poll cycle starting...")
         self._poll_child_runs()
-        self._poll_adf_runs()
+        failure_count = self._poll_adf_runs()
+        return failure_count or 0
 
     # ── Step A: Poll Child Runs (adf.ModelActions) ─────────────
 
@@ -189,7 +190,8 @@ class ADFListener:
     # ── Step B: Poll ADF SDK ───────────────────────────────────
 
     def _poll_adf_runs(self):
-        """Query ADF SDK for all pipeline runs, INSERT into adf.PipelineRunLog."""
+        """Query ADF SDK for all pipeline runs, INSERT into adf.PipelineRunLog.
+        Returns the number of failures found (for listener_manager logging)."""
         now = datetime.now(IST)
         try:
             runs_response = self.adf_client.pipeline_runs.query_by_factory(
@@ -205,12 +207,12 @@ class ADFListener:
 
             if not all_runs:
                 print("  [OK] ADF SDK: 0 new pipeline runs.")
-                return
+                return 0
 
             new_runs = [r for r in all_runs if r.run_id not in self.processed_run_ids]
             if not new_runs:
                 print(f"  [OK] ADF SDK: {len(all_runs)} runs (all already processed).")
-                return
+                return 0
 
             succeeded = [r for r in new_runs if r.status == "Succeeded"]
             failed = [r for r in new_runs if r.status in ("Failed", "Cancelled")]
@@ -234,9 +236,11 @@ class ADFListener:
                     self._process_failure(conn, log_id, error_details, run)
 
             conn.close()
+            return len(failed)
 
         except Exception as e:
             print(f"   [ERROR] ADF SDK poll error: {e}")
+            return 0
 
     def _insert_pipeline_run(self, conn, run) -> int:
         """INSERT a pipeline run into adf.PipelineRunLog. Returns LogId."""

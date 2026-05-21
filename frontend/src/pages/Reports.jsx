@@ -10,9 +10,11 @@ import {
   Zap
 } from 'lucide-react';
 import { ReportsAPI } from '../services/api';
+import { useDataSource } from '../context/DataSourceContext';
 import './Reports.css';
 
 const Reports = () => {
+  const { dataSource } = useDataSource();
   const [timeRange, setTimeRange] = useState('1m');
   const [kpis, setKpis] = useState(null);
   const [heatmap, setHeatmap] = useState(null);
@@ -28,11 +30,11 @@ const Reports = () => {
       setError(null);
       try {
         const [kpiRes, heatmapRes, errorProneRes, rootRes, exhRes] = await Promise.all([
-          ReportsAPI.getKPIs(timeRange),
-          ReportsAPI.getHeatmap(timeRange),
-          ReportsAPI.getErrorPronePipelines(timeRange),
-          ReportsAPI.getTopRootCauses(timeRange),
-          ReportsAPI.getRestartExhaustion(timeRange)
+          ReportsAPI.getKPIs(timeRange, dataSource),
+          ReportsAPI.getHeatmap(timeRange, dataSource),
+          ReportsAPI.getErrorPronePipelines(timeRange, dataSource),
+          ReportsAPI.getTopRootCauses(timeRange, dataSource),
+          ReportsAPI.getRestartExhaustion(timeRange, dataSource)
         ]);
         setKpis(kpiRes || {});
         setHeatmap(heatmapRes || { error_types: [], time_buckets: [], cells: [] });
@@ -47,10 +49,10 @@ const Reports = () => {
       }
     };
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, dataSource]);
 
-  const exportCSV = () => window.open(`http://localhost:8000/api/reports/export/csv?time_range=${timeRange}`, '_blank');
-  const exportPDF = () => window.open(`http://localhost:8000/api/reports/export/pdf?time_range=${timeRange}`, '_blank');
+  const exportCSV = () => window.open(`http://localhost:8000/api/reports/export/csv?time_range=${timeRange}&source=${dataSource}`, '_blank');
+  const exportPDF = () => window.open(`http://localhost:8000/api/reports/export/pdf?time_range=${timeRange}&source=${dataSource}`, '_blank');
 
   if (loading) return (
     <div className="loading-screen">

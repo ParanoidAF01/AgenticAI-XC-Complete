@@ -25,21 +25,74 @@
   color: var(--text-main);
 }
 
-.listener-status {
+/* ── Source Selector ── */
+
+.source-selector {
+  position: relative;
+}
+
+.source-trigger {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--item-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
+}
+
+.source-trigger:hover,
+.source-trigger.active {
+  border-color: var(--accent-color);
+  background: var(--accent-light);
+  color: var(--accent-color);
+}
+
+.source-label {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.source-trigger:hover .source-label,
+.source-trigger.active .source-label {
+  color: var(--accent-color);
+}
+
+.source-status {
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.source-chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.6;
+}
+
+.source-chevron.rotated {
+  transform: rotate(180deg);
 }
 
 .listener-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.listener-dot.running {
   background: var(--success);
   animation: pulse-dot 2s infinite;
+}
+
+.listener-dot.stopped {
+  background: var(--text-muted);
+  opacity: 0.5;
 }
 
 @keyframes pulse-dot {
@@ -47,6 +100,168 @@
   70% { box-shadow: 0 0 0 6px rgba(5, 205, 153, 0); }
   100% { box-shadow: 0 0 0 0 rgba(5, 205, 153, 0); }
 }
+
+/* ── Dropdown Panel ── */
+
+.source-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 8px;
+  z-index: 200;
+  animation: dropdown-in 0.15s ease-out;
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.source-dropdown-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  padding: 4px 8px 8px;
+}
+
+.source-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.source-option:hover {
+  background: var(--accent-light);
+}
+
+.source-option.selected {
+  background: var(--accent-light);
+}
+
+.option-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
+}
+
+.source-option.selected .option-radio {
+  border-color: var(--accent-color);
+}
+
+.option-radio-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  animation: radio-pop 0.15s ease-out;
+}
+
+@keyframes radio-pop {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.option-label {
+  flex: 1;
+}
+
+.option-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--success);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Confirm Button ── */
+
+.source-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent-color);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: confirm-slide 0.2s ease-out;
+}
+
+@keyframes confirm-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.source-confirm:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.source-confirm:active {
+  transform: translateY(0);
+}
+
+.source-confirm.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Right Side ── */
 
 .topbar-right {
   display: flex;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { DataSourceProvider } from './context/DataSourceContext';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Pipelines from './pages/Pipelines';
@@ -26,29 +27,32 @@ function App() {
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout title="Dashboard" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
-          <Route index element={<Dashboard />} />
-        </Route>
-        <Route path="/pipelines" element={<Layout title="Pipelines" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
-          <Route index element={<Pipelines />} />
-        </Route>
-        <Route path="/pipelines/:name" element={<Layout title="Pipeline Details" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
-          <Route index element={<PipelineDetail />} />
-        </Route>
-        <Route path="/chatbot" element={<Layout title="Chatbot" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
-          <Route index element={<Chatbot />} />
-        </Route>
-        <Route path="/settings" element={<Layout title="Settings" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
-          <Route index element={<Settings />} />
-        </Route>
-        <Route path="/reports" element={<Layout title="Reports & Analytics" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
-          <Route index element={<Reports />} />
-        </Route>
-      </Routes>
-    </Router>
+    <DataSourceProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout title="Dashboard" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
+            <Route index element={<Dashboard />} />
+          </Route>
+          <Route path="/pipelines" element={<Layout title="Pipelines" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
+            <Route index element={<Pipelines />} />
+          </Route>
+          <Route path="/pipelines/:name" element={<Layout title="Pipeline Details" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
+            <Route index element={<PipelineDetail />} />
+          </Route>
+          <Route path="/chatbot" element={<Layout title="Chatbot" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
+            <Route index element={<Chatbot />} />
+          </Route>
+          <Route path="/settings" element={<Layout title="Settings" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
+            <Route index element={<Settings />} />
+          </Route>
+          <Route path="/reports" element={<Layout title="Reports & Analytics" isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}>
+            <Route index element={<Reports />} />
+          </Route>
+        </Routes>
+      </Router>
+    </DataSourceProvider>
   );
 }
 
 export default App;
+

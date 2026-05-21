@@ -14,9 +14,11 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { DashboardAPI } from '../services/api';
+import { useDataSource } from '../context/DataSourceContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
+  const { dataSource } = useDataSource();
   const [timeRange, setTimeRange] = useState('1m');
   const [kpis, setKpis] = useState(null);
   const [trendData, setTrendData] = useState([]);
@@ -33,11 +35,11 @@ const Dashboard = () => {
       setError(null);
       try {
         const [kpiRes, trendRes, svfRes, breakRes, actRes] = await Promise.all([
-          DashboardAPI.getKPIs(timeRange),
-          DashboardAPI.getFailureTrend(timeRange),
-          DashboardAPI.getSuccessVsFailure(timeRange),
-          DashboardAPI.getErrorBreakdown(timeRange),
-          DashboardAPI.getRecentActivity(timeRange)
+          DashboardAPI.getKPIs(timeRange, dataSource),
+          DashboardAPI.getFailureTrend(timeRange, dataSource),
+          DashboardAPI.getSuccessVsFailure(timeRange, dataSource),
+          DashboardAPI.getErrorBreakdown(timeRange, dataSource),
+          DashboardAPI.getRecentActivity(timeRange, dataSource)
         ]);
 
         const PIE_COLORS = ['#FF8C00', '#FFD54F', '#05CD99', '#4318FF', '#EE5D50'];
@@ -58,7 +60,7 @@ const Dashboard = () => {
       }
     };
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, dataSource]);
 
   const getColor = (type) => {
     const t = type.toLowerCase();

@@ -23,7 +23,14 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter(prefix="/api/reports", tags=["Reports"])
 
-TABLE_NAME = "sql.PipelineRunLog"
+VALID_SOURCES = {"sql", "adf"}
+
+
+def _get_table_name(source: str) -> str:
+    s = source.lower() if source else "sql"
+    if s not in VALID_SOURCES:
+        s = "sql"
+    return f"{s}.PipelineRunLog"
 
 
 # ── Helpers ─────────────────────────────────────────────────
@@ -62,6 +69,7 @@ def _time_filter_param(time_range: str) -> str:
 @router.get("/kpi")
 def get_report_kpis(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None, description="Override: custom start date ISO"),
     end_date: Optional[str] = Query(None, description="Override: custom end date ISO"),
 ):
@@ -75,7 +83,8 @@ def get_report_kpis(
     Each KPI includes a delta_pc comparing current vs previous period.
     """
     sd, ed = _resolve_dates(time_range, start_date, end_date)
-    base_params = {"TableName": TABLE_NAME, "StartDate": sd, "EndDate": ed}
+    table = _get_table_name(source)
+    base_params = {"TableName": table, "StartDate": sd, "EndDate": ed}
 
     # Calculate previous period dates (same duration, shifted back)
     from datetime import datetime as dt
@@ -88,7 +97,7 @@ def get_report_kpis(
     period_duration = ed_dt - sd_dt
     prev_sd = (sd_dt - period_duration).strftime("%Y-%m-%dT%H:%M:%S")
     prev_ed = sd_dt.strftime("%Y-%m-%dT%H:%M:%S")
-    prev_params = {"TableName": TABLE_NAME, "StartDate": prev_sd, "EndDate": prev_ed}
+    prev_params = {"TableName": table, "StartDate": prev_sd, "EndDate": prev_ed}
 
     def _calc_delta(current, previous):
         """Calculate percentage change. Returns (delta_pc, direction)."""
@@ -163,6 +172,7 @@ def get_report_kpis(
 @router.get("/heatmap")
 def get_error_heatmap(
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -180,7 +190,7 @@ def get_error_heatmap(
     tf = _time_filter_param(time_range)
 
     result_sets = call_proc("ui.sp_report_heatmap_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "TimeFilter": tf,
         "StartDate": sd,
         "EndDate": ed,
@@ -234,6 +244,7 @@ def get_error_heatmap(
 @router.get("/error-prone-pipelines")
 def get_error_prone_pipelines(
     time_range: str = Query("1m", description="Time range"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -246,7 +257,7 @@ def get_error_prone_pipelines(
     sd, ed = _resolve_dates(time_range, start_date, end_date)
 
     result_sets = call_proc("ui.sp_report_pipeline_breakdown_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
     })
@@ -274,6 +285,7 @@ def get_error_prone_pipelines(
 @router.get("/top-root-causes")
 def get_top_root_causes(
     time_range: str = Query("1m", description="Time range"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -286,7 +298,7 @@ def get_top_root_causes(
     sd, ed = _resolve_dates(time_range, start_date, end_date)
 
     result_sets = call_proc("ui.sp_report_errorstype_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
     })
@@ -311,6 +323,7 @@ def get_top_root_causes(
 @router.get("/restart-exhaustion")
 def get_restart_exhaustion(
     time_range: str = Query("1m", description="Time range"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -323,7 +336,7 @@ def get_restart_exhaustion(
     sd, ed = _resolve_dates(time_range, start_date, end_date)
 
     result_sets = call_proc("ui.sp_report_restart_exh_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
     })
@@ -347,9 +360,9 @@ def get_restart_exhaustion(
 
 # ── Export Helpers ──────────────────────────────────────────
 
-def _fetch_all_report_data(sd, ed, time_range):
+def _fetch_all_report_data(sd, ed, time_range, source="sql"):
     """Fetch all report data for export (reuses the same SP calls)."""
-    base = {"TableName": TABLE_NAME, "StartDate": sd, "EndDate": ed}
+    base = {"TableName": _get_table_name(source), "StartDate": sd, "EndDate": ed}
 
     # KPIs
     mttr_r = call_proc("ui.sp_report_mttr_v2", base)
@@ -409,6 +422,7 @@ def _fetch_all_report_data(sd, ed, time_range):
 @router.get("/export/csv")
 def export_csv(
     time_range: str = Query("1m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -417,7 +431,7 @@ def export_csv(
     Returns a downloadable CSV file.
     """
     sd, ed = _resolve_dates(time_range, start_date, end_date)
-    kpis, pipelines, causes, exhaustions = _fetch_all_report_data(sd, ed, time_range)
+    kpis, pipelines, causes, exhaustions = _fetch_all_report_data(sd, ed, time_range, source)
 
     now = datetime.now(IST)
     output = io.StringIO()
@@ -474,6 +488,7 @@ def export_csv(
 @router.get("/export/pdf")
 def export_pdf(
     time_range: str = Query("1m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
 ):
@@ -484,7 +499,7 @@ def export_pdf(
     from fpdf import FPDF
 
     sd, ed = _resolve_dates(time_range, start_date, end_date)
-    kpis, pipelines, causes, exhaustions = _fetch_all_report_data(sd, ed, time_range)
+    kpis, pipelines, causes, exhaustions = _fetch_all_report_data(sd, ed, time_range, source)
 
     now = datetime.now(IST)
 

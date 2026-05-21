@@ -19,8 +19,14 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 router = APIRouter(prefix="/api/pipelines", tags=["Pipelines"])
 
-# The PipelineRunLog table — hardcoded, never exposed to frontend
-TABLE_NAME = "sql.PipelineRunLog"
+VALID_SOURCES = {"sql", "adf"}
+
+
+def _get_table_name(source: str) -> str:
+    s = source.lower() if source else "sql"
+    if s not in VALID_SOURCES:
+        s = "sql"
+    return f"{s}.PipelineRunLog"
 
 
 def _default_start_date() -> str:
@@ -39,6 +45,7 @@ def get_pipelines(
     end_date: Optional[str] = Query(None, description="ISO date string e.g. 2026-12-31T23:59:59"),
     search: Optional[str] = Query(None, description="Search pipeline name (partial match)"),
     status: Optional[str] = Query("all", description="Filter: all, Healthy, Warning, Critical"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     rows: int = Query(10, ge=1, le=100, description="Page size"),
 ):
@@ -60,7 +67,7 @@ def get_pipelines(
     status_param = s_norm if s_norm in ("All", "Healthy", "Warning", "Critical") else "All"
 
     result_sets = call_proc("ui.sp_pipelines_page_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
         "Search": search_param,
@@ -133,6 +140,7 @@ def get_pipeline_detail(
     pipeline_name: str = Path(..., description="Pipeline name"),
     start_date: Optional[str] = Query(None, description="ISO date string"),
     end_date: Optional[str] = Query(None, description="ISO date string"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     offset: int = Query(0, ge=0, description="Error history pagination offset"),
     rows: int = Query(10, ge=1, le=100, description="Error history page size"),
 ):
@@ -150,7 +158,7 @@ def get_pipeline_detail(
     ed = end_date or _default_end_date()
 
     result_sets = call_proc("ui.sp_pipeline_ind_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "PipelineName": pipeline_name,
         "StartDate": sd,
         "EndDate": ed,
@@ -204,7 +212,7 @@ def get_pipeline_detail(
     # Fetch owner from the list SP (same source as pipelines page)
     owner = ""
     owner_sets = call_proc("ui.sp_pipelines_page_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "StartDate": sd,
         "EndDate": ed,
         "Search": pipeline_name,
@@ -228,7 +236,7 @@ def get_pipeline_detail(
     prev_ed = sd_dt.strftime("%Y-%m-%dT%H:%M:%S")
 
     prev_result = call_proc("ui.sp_pipeline_ind_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "PipelineName": pipeline_name,
         "StartDate": prev_sd,
         "EndDate": prev_ed,
@@ -265,6 +273,7 @@ def get_pipeline_detail(
 def get_pipeline_chart(
     pipeline_name: str = Path(..., description="Pipeline name"),
     time_range: str = Query("1m", description="Time range: today, 1w, 15d, 1m, 4m"),
+    source: str = Query("sql", description="Data source: sql or adf"),
     start_date: Optional[str] = Query(None, description="Override: custom start date ISO"),
     end_date: Optional[str] = Query(None, description="Override: custom end date ISO"),
 ):
@@ -298,7 +307,7 @@ def get_pipeline_chart(
     time_filter = "TODAY" if key == "today" else ("4M" if key == "4m" else "DEFAULT")
 
     result_sets = call_proc("ui.sp_pipeline_chart_v2", {
-        "TableName": TABLE_NAME,
+        "TableName": _get_table_name(source),
         "PipelineName": pipeline_name,
         "TimeFilter": time_filter,
         "StartDate": sd,
