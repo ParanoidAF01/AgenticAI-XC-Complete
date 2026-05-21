@@ -79,6 +79,10 @@ class SQLListener:
         # Lock for thread-safe access to _active_sagas and SQL writes
         self._lock = threading.Lock()
 
+        # Track OrgLogIds that have an active restart thread pending
+        # Prevents duplicate restart threads for the same saga
+        self._pending_restarts = set()
+
     def _get_connection(self):
         """Get a fresh database connection."""
         return pyodbc.connect(self.conn_str)
@@ -115,8 +119,10 @@ class SQLListener:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            # Find children that have a RunId but haven't been resolved yet
-            # (IsSuccess = 0 means either pending or failed — we check ADF status)
+            # Find children that have a RunId, haven't been processed yet,
+            # and whose parent saga is still open.
+            # HealerProcessedAt IS NULL ensures we only check children that
+            # haven't been resolved — prevents re-polling the same failed child.
             cursor.execute("""
                 SELECT
                     ma.ActionId,
@@ -131,6 +137,7 @@ class SQLListener:
                 JOIN sql.PipelineRunLog prl ON prl.LogId = ma.OrgLogId
                 WHERE ma.PipelineRunId IS NOT NULL
                   AND ma.IsSuccess = 0
+                  AND ma.HealerProcessedAt IS NULL
                   AND prl.HealerFinalOutcome IS NULL
                 ORDER BY ma.ActionId ASC
             """)
@@ -166,11 +173,17 @@ class SQLListener:
         pipeline_name = child["PipelineName"]
         org_error_type = child.get("OrgErrorType", "")
 
+        # Skip if there's already a restart thread pending for this saga
+        with self._lock:
+            if org_log_id in self._pending_restarts:
+                print(f"   [SKIP] OrgLogId {org_log_id} already has a pending restart, skipping child {child_run_id}")
+                return
+
         # Query ADF for child run status
         status_result = get_pipeline_run_status(child_run_id)
         adf_status = status_result.get("status", "Unknown")
 
-        # Still running — skip, check next cycle
+        # Still running — skip, check next cycle (don't stamp HealerProcessedAt)
         if adf_status in ("InProgress", "Queued", "Cancelling"):
             return
 
@@ -186,6 +199,7 @@ class SQLListener:
             # Clean up saga
             with self._lock:
                 self._active_sagas.pop(org_log_id, None)
+                self._pending_restarts.discard(org_log_id)
 
         elif adf_status in ("Failed", "Cancelled"):
             # ── CHILD FAILED ──
@@ -226,6 +240,7 @@ class SQLListener:
                 # Clean up saga
                 with self._lock:
                     self._active_sagas.pop(org_log_id, None)
+                    self._pending_restarts.discard(org_log_id)
 
         else:
             # Unknown status — log and skip
@@ -365,7 +380,16 @@ class SQLListener:
           3. INSERTs the child run into ModelActions
 
         The main poll loop continues immediately — NO BLOCKING.
+        Guards against duplicate threads via _pending_restarts set.
         """
+        # Prevent duplicate restart threads for the same saga
+        with self._lock:
+            if log_id in self._pending_restarts:
+                print(f"   [SKIP] Restart already pending for LogId {log_id}, "
+                      f"ignoring duplicate attempt {attempt}")
+                return
+            self._pending_restarts.add(log_id)
+
         def _do_restart():
             print(f"   [THREAD] Waiting {wait_secs}s before restart "
                   f"('{pipeline_name}', attempt {attempt})...")
@@ -408,6 +432,9 @@ class SQLListener:
                         self._trigger_escalation(log_id, reason="restart_api_failed")
                     else:
                         # Try again with next attempt
+                        # Release lock first so recursive call can acquire it
+                        with self._lock:
+                            self._pending_restarts.discard(log_id)
                         self._schedule_restart(
                             pipeline_name=pipeline_name,
                             log_id=log_id,
@@ -415,9 +442,14 @@ class SQLListener:
                             attempt=attempt + 1,
                             wait_secs=wait_secs,
                         )
+                        return  # Skip the finally-style discard below
 
             except Exception as e:
                 print(f"   [ERROR] Restart thread error for '{pipeline_name}': {str(e)}")
+            finally:
+                # Release the pending lock so next poll can schedule if needed
+                with self._lock:
+                    self._pending_restarts.discard(log_id)
 
         thread = threading.Thread(target=_do_restart, daemon=True,
                                   name=f"restart-{pipeline_name}-{attempt}")
