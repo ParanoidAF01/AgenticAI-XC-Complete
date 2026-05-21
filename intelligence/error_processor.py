@@ -142,21 +142,12 @@ def process_error(error_details: dict) -> dict:
     print(f"[PROCESS] Processing error for pipeline: {pipeline_name}")
     print(f"{'=' * 50}")
 
-    # Step 1: Search for similar past errors
-    print("   [SEARCH] Searching for similar past errors...")
-    similar_errors = search_similar_errors(
-        error_text=error_text,
-        namespace=pipeline_name,
-        top_k=5
-    )
-    print(f"   [SEARCH] Found {len(similar_errors)} similar past errors.")
-
-    # Step 2: Get pipeline metadata
+    # Step 1: Get pipeline metadata
     print("   [META] Fetching pipeline metadata...")
     pipeline_metadata = get_pipeline(pipeline_name)
 
-    # Step 3: Classify the error using tiered pipeline
-    print("   [CLASSIFY] Classifying error...")
+    # Step 2: Classify via 3-layer tiered pipeline (L1 CSV → L2 ChromaDB → L3 LLM)
+    print("   [CLASSIFY] Running tiered classification (L1 → L2 → L3)...")
     classification = classify_tiered(error_details, pipeline_metadata)
 
     # Step 4: Store in ChromaDB with classification metadata

@@ -1,196 +1,351 @@
 {
-  "_description": "Maps CSV error categories to our 6 self-healing types. Review each mapping carefully.",
+  "_description": "Maps CSV error categories to our 6 self-healing types based on ACTUAL CSV data.",
   "_types_reference": {
-    "1": "Parameter Errors — Escalate (bad params, wrong values, type mismatches)",
-    "2": "Dataset Type Errors — Escalate (schema mismatch, format errors, column mapping)",
-    "3": "Credentials Expired — Auto-restart (expired tokens, SAS, service principals)",
-    "4": "Large Data / Timeout — Auto-restart (timeouts, memory, data volume)",
-    "5": "Server Slow — Auto-restart (throttling, latency, service degradation)",
-    "6": "Subscription Corrupt — Escalate (broken ARM, corrupt linked services)"
+    "1": "Parameter Errors — Escalate",
+    "2": "Dataset Type Errors — Escalate",
+    "3": "Credentials Expired — Auto-restart",
+    "4": "Large Data / Timeout — Auto-restart",
+    "5": "Server Slow — Auto-restart",
+    "6": "Subscription Corrupt — Escalate"
   },
 
   "Azure Databricks": {
     "default_type": 1,
-    "description": "Databricks notebook/cluster errors",
     "overrides": {
-      "3200": { "type": 3, "reason": "Authentication token expired" },
-      "3201": { "type": 3, "reason": "AAD token refresh failure" },
-      "3202": { "type": 5, "reason": "Cluster throttling / rate limit" },
-      "3203": { "type": 4, "reason": "Cluster startup timeout" },
-      "3204": { "type": 1, "reason": "Invalid notebook path or parameter" },
-      "3205": { "type": 5, "reason": "Cluster unavailable / terminated" },
-      "3206": { "type": 4, "reason": "Job execution timeout" },
-      "3207": { "type": 1, "reason": "Invalid cluster configuration" }
+      "3200": { "type": 3, "reason": "Access token expired" },
+      "3202": { "type": 5, "reason": "Rate limit / throttling / unauthorized access" },
+      "3203": { "type": 5, "reason": "Cluster terminated / unavailable" },
+      "3204": { "type": 4, "reason": "Job execution failed" },
+      "3208": { "type": 5, "reason": "Network connection interrupted" }
     }
   },
 
-  "Data Lake Analytics": {
+  "Azure Data Lake Analytics": {
     "default_type": 1,
-    "description": "ADLA U-SQL job errors",
     "overrides": {
-      "2200": { "type": 4, "reason": "Job timeout / AU exhausted" },
-      "2201": { "type": 3, "reason": "Data Lake Store access denied / expired SPN" },
-      "2202": { "type": 2, "reason": "U-SQL schema mismatch" }
+      "2709": { "type": 5, "reason": "Throttling / wrong tenant / rate limit" },
+      "2705": { "type": 3, "reason": "ACL verification failed / unauthorized" },
+      "2711": { "type": 3, "reason": "ACL verification failed / file not found" },
+      "2704": { "type": 3, "reason": "ACL verification failed" },
+      "2703": { "type": 4, "reason": "Internal system error from ADLA" }
     }
   },
 
-  "Azure Functions": {
+  "Azure functions": {
     "default_type": 1,
-    "description": "Azure Function invocation errors",
     "overrides": {
-      "3600": { "type": 1, "reason": "Invalid function name or route" },
-      "3601": { "type": 3, "reason": "Function key expired or invalid" },
-      "3602": { "type": 2, "reason": "Invalid HTTP method for function" },
-      "3603": { "type": 5, "reason": "Function app not responding / cold start" },
-      "3604": { "type": 4, "reason": "Function execution timeout" },
-      "3610": { "type": 2, "reason": "Bad endpoint URL / 404" }
+      "3602": { "type": 1, "reason": "Invalid HTTP method" },
+      "3606": { "type": 3, "reason": "Missing function key" },
+      "3608": { "type": 5, "reason": "Call to function failed" },
+      "3610": { "type": 1, "reason": "Invalid function URL" }
     }
   },
 
   "Azure Machine Learning": {
     "default_type": 1,
-    "description": "AML pipeline/endpoint errors",
     "overrides": {
-      "4121": { "type": 3, "reason": "AML workspace credential expired" },
-      "4122": { "type": 3, "reason": "AML service principal expired" },
-      "4123": { "type": 4, "reason": "AML compute timeout / quota exceeded" },
-      "4124": { "type": 1, "reason": "Invalid experiment or pipeline parameter" }
+      "4101": { "type": 1, "reason": "Invalid property value" },
+      "4110": { "type": 1, "reason": "Missing linked service" }
     }
   },
 
   "JSON": {
     "default_type": 2,
-    "description": "JSON parsing, linked service, format errors",
     "overrides": {
-      "4121": { "type": 3, "reason": "Linked service credential expired" },
-      "4122": { "type": 3, "reason": "Connection string expired" }
+      "4121": { "type": 3, "reason": "Credential expired for AML operation" },
+      "4122": { "type": 3, "reason": "Invalid/expired credential for AML" },
+      "4125": { "type": 5, "reason": "Server error on Azure ML" }
     }
   },
 
-  "Copy Activity": {
-    "default_type": 4,
-    "description": "Data copy/movement errors",
-    "overrides": {
-      "1000": { "type": 2, "reason": "Source/sink schema mismatch" },
-      "1001": { "type": 2, "reason": "Column mapping failure" },
-      "1002": { "type": 2, "reason": "Data type conversion error" },
-      "1003": { "type": 4, "reason": "Copy timeout — data volume too large" },
-      "1004": { "type": 3, "reason": "Source connection credential expired" },
-      "1005": { "type": 5, "reason": "Source/sink server throttling" }
-    }
-  },
-
-  "Data Flow": {
-    "default_type": 4,
-    "description": "Mapping data flow errors",
-    "overrides": {
-      "1100": { "type": 2, "reason": "Schema drift / column mismatch" },
-      "1101": { "type": 4, "reason": "Data flow timeout or OOM" },
-      "1102": { "type": 1, "reason": "Invalid transformation expression" },
-      "1103": { "type": 5, "reason": "Spark cluster degradation" }
-    }
-  },
-
-  "Integration Runtime": {
-    "default_type": 6,
-    "description": "Self-hosted or Azure IR errors",
-    "overrides": {
-      "5000": { "type": 6, "reason": "IR node offline / corrupt config" },
-      "5001": { "type": 5, "reason": "IR node overloaded / slow" },
-      "5002": { "type": 3, "reason": "IR registration key expired" },
-      "5003": { "type": 6, "reason": "IR version incompatible" }
-    }
-  },
-
-  "Linked Service": {
-    "default_type": 3,
-    "description": "Connection/authentication errors to external services",
-    "overrides": {
-      "6000": { "type": 3, "reason": "Connection string expired" },
-      "6001": { "type": 3, "reason": "Service principal secret expired" },
-      "6002": { "type": 3, "reason": "SAS token expired" },
-      "6003": { "type": 3, "reason": "Managed identity token expired" },
-      "6004": { "type": 6, "reason": "Linked service definition corrupt" },
-      "6005": { "type": 1, "reason": "Wrong server/database in connection" }
-    }
-  },
-
-  "Trigger": {
-    "default_type": 1,
-    "description": "Pipeline trigger errors",
-    "overrides": {
-      "7000": { "type": 1, "reason": "Trigger parameter mismatch" },
-      "7001": { "type": 6, "reason": "Trigger definition corrupt" },
-      "7002": { "type": 5, "reason": "Event Grid delivery delay" }
-    }
-  },
-
-  "SQL": {
+  "Azure Synapse Analytics": {
     "default_type": 5,
-    "description": "Azure SQL / SQL Server errors",
     "overrides": {
-      "8000": { "type": 5, "reason": "SQL Server connection timeout" },
-      "8001": { "type": 3, "reason": "SQL login credentials expired" },
-      "8002": { "type": 2, "reason": "SQL schema mismatch / table not found" },
-      "8003": { "type": 4, "reason": "SQL query timeout — large result set" },
-      "8004": { "type": 5, "reason": "SQL Server throttling / DTU limit" },
-      "8005": { "type": 6, "reason": "SQL firewall blocking ADF IP" }
+      "3250": { "type": 4, "reason": "Insufficient workspace resources" },
+      "3251": { "type": 4, "reason": "Insufficient pool resources" },
+      "3252": { "type": 4, "reason": "Not enough vCores" },
+      "3253": { "type": 5, "reason": "Throttling from concurrent executions" },
+      "3254": { "type": 1, "reason": "Invalid linked service property" },
+      "AzureBlobOperationFailed": { "type": 5, "reason": "Blob operation failed" },
+      "AzureBlobFailedToCreateContainer": { "type": 6, "reason": "Blob container creation failed" },
+      "FIPSModeIsNotSupport": { "type": 6, "reason": "FIPS mode not supported" },
+      "AzureBlobInvalidBlockSize": { "type": 4, "reason": "Block size / concurrent write issue" },
+      "SqlFailedToConnect": { "type": 5, "reason": "SQL connection failure" },
+      "SqlOperationFailed": { "type": 5, "reason": "SQL operation failed" },
+      "SqlUnauthorizedAccess": { "type": 3, "reason": "SQL unauthorized" },
+      "SqlOpenConnectionTimeout": { "type": 4, "reason": "SQL connection timeout" },
+      "SqlAutoCreateTableTypeMapFailed": { "type": 2, "reason": "Type mapping failed" },
+      "SqlDataTypeNotSupported": { "type": 2, "reason": "Data type not supported" },
+      "SqlInvalidDbStoredProcedure": { "type": 1, "reason": "Invalid stored procedure" },
+      "SqlInvalidDbQueryString": { "type": 1, "reason": "Invalid SQL query" },
+      "SqlInvalidColumnName": { "type": 2, "reason": "Column does not exist" },
+      "SqlBatchWriteTimeout": { "type": 4, "reason": "SQL write timeout" },
+      "KustoWriteFailed": { "type": 5, "reason": "Kusto/ADX write failure" },
+      "AzureFileOperationFailed": { "type": 5, "reason": "Azure Files operation failed" },
+      "SqlDeniedPublicAccess": { "type": 6, "reason": "Public network access denied" },
+      "DB2DriverRunFailed": { "type": 1, "reason": "DB2 driver error" },
+      "OrcJavaInvocationException": { "type": 4, "reason": "ORC Java memory/processing error" },
+      "OrcDateTimeExceedLimit": { "type": 2, "reason": "DateTime out of range" },
+      "DEDICATED_DPERORCODE0": { "type": 6, "reason": "Object reference error" },
+      "AccessToOnPremFileSystemDenied": { "type": 6, "reason": "Local file system access denied" },
+      "Msg 105208": { "type": 6, "reason": "DNS partitioning issue" }
     }
   },
 
-  "Blob Storage": {
-    "default_type": 3,
-    "description": "Azure Blob / ADLS Gen2 errors",
-    "overrides": {
-      "9000": { "type": 3, "reason": "Storage account key expired" },
-      "9001": { "type": 3, "reason": "SAS token expired" },
-      "9002": { "type": 2, "reason": "Blob path / container not found" },
-      "9003": { "type": 4, "reason": "Blob download timeout — file too large" },
-      "9004": { "type": 5, "reason": "Storage account throttling" }
-    }
-  },
-
-  "Key Vault": {
-    "default_type": 3,
-    "description": "Azure Key Vault access errors",
-    "overrides": {
-      "9100": { "type": 3, "reason": "Key Vault access policy expired" },
-      "9101": { "type": 3, "reason": "Secret version expired" },
-      "9102": { "type": 6, "reason": "Key Vault soft-deleted or purged" }
-    }
-  },
-
-  "Pipeline": {
+  "Common": {
     "default_type": 1,
-    "description": "General pipeline orchestration errors",
     "overrides": {
-      "2000": { "type": 1, "reason": "Pipeline parameter validation failure" },
-      "2001": { "type": 4, "reason": "Pipeline execution timeout" },
-      "2002": { "type": 6, "reason": "Pipeline definition corrupt / invalid JSON" },
-      "2003": { "type": 5, "reason": "Concurrent pipeline run limit reached" }
+      "2103": { "type": 1, "reason": "Missing required property" },
+      "2104": { "type": 2, "reason": "Incorrect property type" },
+      "2105": { "type": 1, "reason": "Invalid JSON for property" },
+      "2106": { "type": 3, "reason": "Invalid storage connection string" },
+      "2110": { "type": 1, "reason": "Wrong linked service type" },
+      "DF-AdobeIntegration-InvalidMapToFilter": { "type": 1, "reason": "Invalid config" },
+      "DF-AdobeIntegration-InvalidPartitionConfiguration": { "type": 1, "reason": "Invalid partition" },
+      "DF-AdobeIntegration-InvalidPartitionType": { "type": 1, "reason": "Invalid partition type" },
+      "DF-AdobeIntegration-InvalidPrivacyRegulation": { "type": 1, "reason": "Invalid privacy config" },
+      "DF-AdobeIntegration-KeyColumnMissed": { "type": 1, "reason": "Missing key column" },
+      "DF-AzureDataExplorer-InvalidOperation": { "type": 1, "reason": "Unsupported operation" },
+      "DF-AzureDataExplorer-ReadTimeout": { "type": 4, "reason": "Read timeout" },
+      "DF-AzureDataExplorer-WriteTimeout": { "type": 4, "reason": "Write timeout" },
+      "DF-Blob-FunctionNotSupport": { "type": 6, "reason": "Blob feature not supported" },
+      "DF-Blob-InvalidAccountConfiguration": { "type": 3, "reason": "Invalid blob credentials" },
+      "DF-Blob-InvalidAuthConfiguration": { "type": 3, "reason": "Invalid auth config" },
+      "DF-Blob-InvalidCloudType": { "type": 6, "reason": "Invalid cloud type" },
+      "DF-Cosmos-DeleteDataFailed": { "type": 5, "reason": "Cosmos delete throttled" }
+    }
+  },
+
+  "Custom": {
+    "default_type": 1,
+    "overrides": {
+      "2500": { "type": 1, "reason": "Execution failed / bad executable" },
+      "2501": { "type": 3, "reason": "Incorrect batch access key" },
+      "2504": { "type": 4, "reason": "Too many files / payload too large" }
+    }
+  },
+
+  "HDInsight": {
+    "default_type": 1,
+    "overrides": {
+      "206": { "type": 5, "reason": "Transient internal error" },
+      "2300": { "type": 5, "reason": "Failed to submit job / cluster unreachable" },
+      "2301": { "type": 5, "reason": "Could not get job status from HDI" },
+      "2302": { "type": 4, "reason": "Hadoop job failed" },
+      "2303": { "type": 5, "reason": "Hadoop transient failure" },
+      "2304": { "type": 6, "reason": "MSI auth not supported for HDI" },
+      "2310": { "type": 5, "reason": "Failed to submit Spark job" },
+      "2312": { "type": 4, "reason": "Spark job failed" },
+      "2328": { "type": 6, "reason": "Failed to create on-demand cluster" },
+      "2342": { "type": 5, "reason": "Failed to connect to HDI cluster" },
+      "2346": { "type": 5, "reason": "Failed to create ODBC connection" },
+      "2350": { "type": 3, "reason": "Failed to prepare files / bad credentials" },
+      "2357": { "type": 3, "reason": "Certificate or password wrong for ADLS" },
+      "2361": { "type": 6, "reason": "Failed to create on-demand HDI cluster" },
+      "2362": { "type": 6, "reason": "Additional storage not supported / SSL error" }
     }
   },
 
   "Web Activity": {
     "default_type": 5,
-    "description": "HTTP/REST API call errors",
     "overrides": {
-      "4000": { "type": 5, "reason": "HTTP 429 / 503 — server throttling" },
-      "4001": { "type": 3, "reason": "API key or OAuth token expired" },
-      "4002": { "type": 1, "reason": "Invalid URL or request body" },
-      "4003": { "type": 4, "reason": "HTTP request timeout" },
-      "4004": { "type": 2, "reason": "Response schema mismatch" }
+      "2001": { "type": 4, "reason": "Output over 4MB limit" },
+      "2002": { "type": 4, "reason": "Payload too large" },
+      "2003": { "type": 5, "reason": "Throttling from concurrent executions" },
+      "2010": { "type": 6, "reason": "Self-hosted IR offline" },
+      "2108": { "type": 5, "reason": "Error calling endpoint" },
+      "2113": { "type": 3, "reason": "Certificate extraction failed" },
+      "2403": { "type": 3, "reason": "MSI/token/auth failure" }
     }
   },
 
-  "Cosmos DB": {
-    "default_type": 5,
-    "description": "Azure Cosmos DB errors",
+  "General": {
+    "default_type": 1,
     "overrides": {
-      "4200": { "type": 5, "reason": "Cosmos DB RU throttling" },
-      "4201": { "type": 3, "reason": "Cosmos DB key expired" },
-      "4202": { "type": 2, "reason": "Partition key mismatch" },
-      "4203": { "type": 4, "reason": "Request entity too large" }
+      "20000 - JreNotFound": { "type": 6, "reason": "Java Runtime not found on SHIR" },
+      "20002 - JniException": { "type": 6, "reason": "JVM creation error" },
+      "20150 - GetOAuth2AccessTokenErrorResponse": { "type": 3, "reason": "OAuth2 token failure" },
+      "20151 - FailedToGetOAuth2AccessToken": { "type": 3, "reason": "OAuth2 credential invalid" },
+      "20152 - OAuth2AccessTokenTypeNotSupported": { "type": 3, "reason": "Token type not supported" },
+      "20523 - ManagedIdentityCredentialObjectNotSupported": { "type": 6, "reason": "SHIR version too old" },
+      "2200 - UserErrorOdbcOperationFailed": { "type": 3, "reason": "Authentication failure" }
+    }
+  },
+
+  "General connector errors": {
+    "default_type": 5,
+    "overrides": {
+      "9611 - UserErrorOdbcInvalidQueryString": { "type": 1, "reason": "Invalid ODBC query" },
+      "11775": { "type": 5, "reason": "PostgreSQL connection failure" }
+    }
+  },
+
+  "Azure SQL": {
+    "default_type": 5,
+    "overrides": {
+      "SqlBatchWriteTransactionFailed": { "type": 5, "reason": "Transaction timeout / network" },
+      "SqlBulkCopyInvalidColumnLength": { "type": 2, "reason": "Invalid column length" },
+      "SqlConnectionIsClosed": { "type": 5, "reason": "SQL connection closed" },
+      "FailedDbOperation": { "type": 3, "reason": "Permission / auth failure" }
+    }
+  },
+
+  "Dynamics": {
+    "default_type": 1,
+    "overrides": {
+      "DynamicsCreateServiceClientError": { "type": 5, "reason": "Transient Dynamics server issue" },
+      "DynamicsFailedToConnect": { "type": 3, "reason": "Auth failure connecting to Dynamics" },
+      "DynamicsFailedToRequetServer": { "type": 5, "reason": "Dynamics server unreachable" },
+      "DynamicsOperationFailed": { "type": 5, "reason": "Dynamics operation failed" }
+    }
+  },
+
+  "Mapping data flow": {
+    "default_type": 1,
+    "overrides": {
+      "DF-Executor-OutOfMemorySparkBroadcastError": { "type": 4, "reason": "Spark OOM broadcast" },
+      "DF-Executor-OutOfMemorySparkError": { "type": 4, "reason": "Spark OOM" },
+      "DF-Executor-RemoteRPCClientDisassociated": { "type": 5, "reason": "Spark driver OOM / RPC lost" },
+      "DF-Executor-UnauthorizedStorageAccess": { "type": 3, "reason": "Storage access unauthorized" },
+      "DF-Executor-UnreachableStorageAccount": { "type": 5, "reason": "Storage unreachable" },
+      "DF-GEN2-InvalidAuthConfiguration": { "type": 3, "reason": "ADLS Gen2 auth invalid" },
+      "DF-GEN2-InvalidServicePrincipalCredentialType": { "type": 3, "reason": "Invalid SPN credential" },
+      "DF-MSSQL-InvalidCredential": { "type": 3, "reason": "SQL credential invalid" },
+      "DF-MSSQL-InvalidFirewallSetting": { "type": 6, "reason": "SQL firewall blocking" },
+      "DF-PGSQL-InvalidCredential": { "type": 3, "reason": "PostgreSQL credential invalid" },
+      "DF-MSSQL-InvalidDataType": { "type": 2, "reason": "SQL data type mismatch" },
+      "DF-Hive-InvalidDataType": { "type": 2, "reason": "Hive data type invalid" }
+    }
+  },
+
+  "Parquet": {
+    "default_type": 2,
+    "overrides": {
+      "ParquetJavaInvocationException": { "type": 4, "reason": "Java OOM / memory" },
+      "ADLSGen2ForbiddenError": { "type": 3, "reason": "ADLS Gen2 forbidden / auth" },
+      "UserErrorJniException": { "type": 6, "reason": "JVM creation error" },
+      "ParquetDateTimeExceedLimit": { "type": 2, "reason": "DateTime out of range" }
+    }
+  },
+
+  "Azure Data Lake Storage Gen2": {
+    "default_type": 5,
+    "overrides": {
+      "ADLSGen2OperationFailed": { "type": 5, "reason": "ADLS Gen2 operation failed" },
+      "ADLSGen2ForbiddenError": { "type": 3, "reason": "ADLS Gen2 forbidden / permission" }
+    }
+  },
+
+  "MongoDB": {
+    "default_type": 1,
+    "overrides": {
+      "CosmosDbSqlApiOperationFailed": { "type": 5, "reason": "Cosmos DB operation failed" },
+      "DeprecatedMongoDbOdbcConnector": { "type": 6, "reason": "Deprecated connector" },
+      "MongoDbUnsupportedUuidType": { "type": 2, "reason": "UUID type mismatch" },
+      "UserErrorFailedToConnectOdbcSource": { "type": 3, "reason": "SSL/TLS connection failure" }
+    }
+  },
+
+  "Azure Cosmos DB": {
+    "default_type": 5,
+    "overrides": {
+      "DF-Cosmos-FailToResetThroughput": { "type": 5, "reason": "Throughput scale in progress" },
+      "DF-Cosmos-IdPropertyMissed": { "type": 1, "reason": "Missing id property" },
+      "DF-Cosmos-InvalidAccountKey": { "type": 3, "reason": "Invalid account key" },
+      "DF-Cosmos-InvalidPartitionKey": { "type": 1, "reason": "Invalid partition key" },
+      "DF-Cosmos-ShortTypeNotSupport": { "type": 2, "reason": "Short type not supported" }
+    }
+  },
+
+  "PostgreSQL": {
+    "default_type": 1,
+    "overrides": {
+      "DF-SAPODP-NotReached": { "type": 5, "reason": "SAP server unreachable" },
+      "DF-SAPODP-OOM": { "type": 4, "reason": "Out of memory" },
+      "DF-SAPODP-InsufficientResource": { "type": 4, "reason": "Insufficient resources" },
+      "DF-SAPODP-SHIROFFLINE": { "type": 6, "reason": "SHIR offline" },
+      "DF-SAPODATA-StageAuthInvalid": { "type": 3, "reason": "Stage auth invalid" },
+      "DF-SAPODP-AuthInvalid": { "type": 3, "reason": "SAP auth invalid" },
+      "DF-SAPODP-StageAuthInvalid": { "type": 3, "reason": "Stage auth invalid" },
+      "DF-SAPODP-SystemError": { "type": 5, "reason": "SAP system error" },
+      "DF-SAPODATA-SystemError": { "type": 5, "reason": "SAP OData system error" }
+    }
+  },
+
+  "REST": {
+    "default_type": 5,
+    "overrides": {
+      "RestSinkCallFailed": { "type": 5, "reason": "REST endpoint failure" },
+      "RestSourceCallFailed": { "type": 5, "reason": "REST source call failed" }
+    }
+  },
+
+  "SAP": {
+    "default_type": 1,
+    "overrides": {
+      "SapRfcDestinationAddFailed": { "type": 5, "reason": "SAP server connection failure" },
+      "DF-SQLDW-ErrorRowsFound": { "type": 2, "reason": "Error rows in data" },
+      "DF-Snowflake-IncompatibleDataType": { "type": 2, "reason": "Data type incompatible" },
+      "DF-Snowflake-InvalidStageConfiguration": { "type": 3, "reason": "Invalid stage config" }
+    }
+  },
+
+  "SFTP": {
+    "default_type": 3,
+    "overrides": {
+      "SftpAuthenticationFailure": { "type": 3, "reason": "SFTP auth failed" },
+      "SftpFailedToConnectToSftpServer": { "type": 5, "reason": "SFTP server connection failed" },
+      "SftpInvalidSftpCredential": { "type": 3, "reason": "Invalid SFTP credential" },
+      "SftpOperationFail": { "type": 5, "reason": "SFTP operation failed" },
+      "SftpPermissionDenied": { "type": 3, "reason": "Permission denied" },
+      "UserErrorInvalidColumnMappingColumnNotFound": { "type": 2, "reason": "Column mapping error" }
+    }
+  },
+
+  "SharePoint": {
+    "default_type": 3,
+    "overrides": {
+      "SharePointOnlineAuthFailed": { "type": 3, "reason": "SharePoint auth failed" }
+    }
+  },
+
+  "Snowflake": {
+    "default_type": 5,
+    "overrides": {
+      "NotAllowToAccessSnowflake": { "type": 6, "reason": "Firewall blocking access" },
+      "SnowflakeFailToAccess": { "type": 5, "reason": "Snowflake access/connection failure" }
+    }
+  },
+
+  "FTP": {
+    "default_type": 5,
+    "overrides": {
+      "FtpFailedToConnectToFtpServer": { "type": 5, "reason": "FTP connection failed" },
+      "FtpFailedToReadFtpData": { "type": 5, "reason": "FTP read failed / port issue" }
+    }
+  },
+
+  "HTTP": {
+    "default_type": 5,
+    "overrides": {
+      "HttpFileFailedToRead": { "type": 5, "reason": "HTTP server error" },
+      "HttpSourceUnsupportedStatusCode": { "type": 5, "reason": "Unsupported HTTP status" }
+    }
+  },
+
+  "XML": {
+    "default_type": 2,
+    "overrides": {
+      "XmlInvalid": { "type": 1, "reason": "Invalid XML file" },
+      "XmlSinkNotSupported": { "type": 1, "reason": "XML write not supported" }
+    }
+  },
+
+  "Lakehouse": {
+    "default_type": 3,
+    "overrides": {
+      "LakehouseForbiddenError": { "type": 3, "reason": "Lakehouse permission denied" },
+      "DWCopyCommandOperationFailed": { "type": 5, "reason": "Transport/connection error" }
     }
   }
 }
