@@ -271,7 +271,9 @@ class ADFListener:
                     StartTime, EndTime, DurationInSeconds,
                     ErrorCode, ErrorMessage, FailureType, FailedActivityName,
                     RowsCopied, DataRead, DataWritten
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                )
+                OUTPUT INSERTED.LogId
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 AzureConfig.FACTORY_NAME, run.pipeline_name, run.run_id,
                 None, None, None,  # trigger info not available from SDK
@@ -280,17 +282,18 @@ class ADFListener:
                 error_code, error_message, failure_type, failed_activity,
                 None, None, None  # metrics
             )
-            conn.commit()
 
-            # Get the auto-generated LogId
-            cursor.execute("SELECT SCOPE_IDENTITY()")
+            # OUTPUT INSERTED.LogId returns the identity as a result set
             row = cursor.fetchone()
             log_id = int(row[0]) if row and row[0] else None
+            conn.commit()
 
             if log_id:
                 status_label = "✓" if is_success else "✗"
                 print(f"   [{status_label}] Logged: '{run.pipeline_name}' "
                       f"({run.status}) → LogId {log_id}")
+            else:
+                print(f"   [WARN] INSERT succeeded but no LogId returned for {run.run_id}")
             return log_id
 
         except Exception as e:
