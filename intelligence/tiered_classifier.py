@@ -2,10 +2,10 @@
 Tiered Classifier — The central orchestrator for the 3-layer classification pipeline.
 
 Routes errors through:
-  L1a: CSV exact match by error_code        (~10ms, $0)
-  L1b: CSV keyword match via TF-IDF         (~50ms, $0)
-  L2:  ChromaDB consensus (3/5 must agree)  (~200ms, $0)
-  L3:  LLM fallback (for truly novel errors) (~3s, $0.01)
+  L1a: CSV 3-step waterfall (code number → code name disambig → direct name)  (~10ms, $0)
+  L1b: CSV keyword match via TF-IDF on error messages                         (~50ms, $0)
+  L2:  ChromaDB consensus (3/5 must agree)                                    (~200ms, $0)
+  L3:  LLM fallback (for truly novel errors)                                  (~3s, $0.01)
 
 After L3 classifies a novel error, the result is stored back into:
   - CSV knowledge base (L1 for next time)
@@ -27,44 +27,72 @@ from intelligence.error_classifier import classify_error
 from config.settings import KnowledgeBaseConfig
 
 
-def extract_error_code(error_details: dict) -> str:
+def extract_error_code(error_details: dict) -> tuple:
     """
-    Extract the most likely error code from the error details.
+    Extract error_code_number and error_code_name from the error details.
 
-    Checks (in order):
-      1. error_details["error_code"] if present
-      2. First failed activity's error code
-      3. Regex pattern from the combined error message
+    Returns:
+        (error_code_number: str, error_code_name: str)
+
+    Logic:
+      - If error_code is purely numeric → it's a code number
+      - If error_code is text (e.g. 'ActionTimedOut') → it's a code name
+      - Also checks failed_activities and regex patterns in the message
     """
+    code_number = ""
+    code_name = ""
+
     # Direct field
-    code = error_details.get("error_code", "")
-    if code:
-        return str(code).strip()
+    raw_code = str(error_details.get("error_code", "")).strip()
+    if raw_code:
+        if raw_code.isdigit():
+            code_number = raw_code
+        else:
+            code_name = raw_code
 
-    # From failed activities
-    activities = error_details.get("failed_activities", [])
-    if activities:
-        for act in activities:
-            code = act.get("error_code", "") or act.get("errorCode", "")
-            if code:
-                return str(code).strip()
+    # From failed activities (can refine further)
+    if not code_number and not code_name:
+        activities = error_details.get("failed_activities", [])
+        if activities:
+            for act in activities:
+                raw = str(act.get("error_code", "") or act.get("errorCode", "")).strip()
+                if raw:
+                    if raw.isdigit():
+                        code_number = raw
+                    else:
+                        code_name = raw
+                    break
 
-    # Regex fallback: look for common ADF error code patterns in the message
+    # Regex fallback: look for patterns in the combined error message
     message = error_details.get("combined_error", "")
     if message:
-        # Match patterns like "Error 3200", "error_code: 3200", "ErrorCode=3200"
-        patterns = [
-            r'Error\s+(\d{3,5})',
-            r'error[_\s]?code[:\s=]+["\']?(\w+)',
-            r'AADSTS(\d+)',
-            r'(\d{4,5})\s*[-:]\s*\w+Error',
-        ]
-        for pattern in patterns:
-            match = re.search(pattern, message, re.IGNORECASE)
-            if match:
-                return match.group(1).strip()
+        if not code_number:
+            # Try to extract numeric code
+            num_patterns = [
+                r'Error\s+(\d{3,5})',
+                r'error[_\s]?code[:\s=]+["\']?(\d{3,5})',
+                r'AADSTS(\d+)',
+                r'(\d{4,5})\s*[-:]\s*\w+Error',
+            ]
+            for pattern in num_patterns:
+                match = re.search(pattern, message, re.IGNORECASE)
+                if match:
+                    code_number = match.group(1).strip()
+                    break
 
-    return ""
+        if not code_name:
+            # Try to extract text code name
+            name_patterns = [
+                r'error[_\s]?code[:\s=]+["\']?([A-Z][a-zA-Z]+(?:[A-Z][a-zA-Z]+)+)',
+                r'"code"\s*:\s*"([A-Z][a-zA-Z]+)"',
+            ]
+            for pattern in name_patterns:
+                match = re.search(pattern, message)
+                if match:
+                    code_name = match.group(1).strip()
+                    break
+
+    return (code_number, code_name)
 
 
 def extract_category(error_details: dict) -> str:
@@ -105,20 +133,28 @@ def classify_tiered(error_details: dict,
     """
     pipeline_name = error_details.get("pipeline_name", "unknown")
     error_text = error_details.get("combined_error", "")
-    error_code = extract_error_code(error_details)
+    error_code_number, error_code_name = extract_error_code(error_details)
     category = extract_category(error_details)
 
     kb = get_knowledge_base()
 
-    # ── Layer 1a: Exact code match ─────────────────────────────
-    if error_code:
-        print(f"   [L1a] Trying exact code lookup: '{error_code}' (category: '{category}')...")
-        result = kb.lookup_by_code(error_code, category)
+    # ── Layer 1a: 3-step code waterfall ────────────────────────
+    has_code = error_code_number or error_code_name
+    if has_code:
+        code_display = error_code_number or error_code_name
+        print(f"   [L1a] Trying code lookup: number='{error_code_number}', "
+              f"name='{error_code_name}' (category: '{category}')...")
+        result = kb.lookup_by_code(
+            error_code_number=error_code_number,
+            error_code_name=error_code_name,
+            category=category,
+        )
         if result:
             print(f"   [L1a] ✅ MATCH → Type {result['error_type']} "
-                  f"({result['error_type_name']}), code='{error_code}'")
+                  f"({result['error_type_name']}), "
+                  f"via {result['classified_by']}")
             return result
-        print(f"   [L1a] No exact match for code '{error_code}'")
+        print(f"   [L1a] No match for code '{code_display}'")
 
     # ── Layer 1b: Keyword (TF-IDF) match ───────────────────────
     if error_text:
@@ -169,12 +205,14 @@ def classify_tiered(error_details: dict,
           f"confidence={classification.get('confidence', '?')}")
 
     # ── Feedback loop: store L3 result for future L1/L2 ────────
-    _feedback_loop(error_code, category, error_text, classification, pipeline_name)
+    _feedback_loop(error_code_number, error_code_name, category,
+                   error_text, classification, pipeline_name)
 
     return classification
 
 
-def _feedback_loop(error_code: str, category: str, error_text: str,
+def _feedback_loop(error_code_number: str, error_code_name: str,
+                   category: str, error_text: str,
                    classification: dict, pipeline_name: str):
     """
     After L3 (LLM) classifies a novel error, store it back so future
@@ -182,10 +220,12 @@ def _feedback_loop(error_code: str, category: str, error_text: str,
     """
     try:
         # Feed back into CSV knowledge base (L1)
-        if error_code:
+        has_code = error_code_number or error_code_name
+        if has_code:
             kb = get_knowledge_base()
             kb.add_new_error(
-                error_code=error_code,
+                error_code_number=error_code_number,
+                error_code_name=error_code_name,
                 category=category or "LLM-Classified",
                 message=error_text[:500],
                 cause=classification.get("root_cause_summary", ""),
