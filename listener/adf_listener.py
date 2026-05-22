@@ -263,9 +263,17 @@ class ADFListener:
                     first = act_errors["failed_activities"][0]
                     error_code = first.get("error_code")
                     error_message = first.get("error_message") or run.message
+                    failure_type = first.get("failure_type") or "ActivityFailed"
                     failed_activity = first.get("activity_name")
+                else:
+                    failure_type = "PipelineFailed"
 
             is_success = 1 if run.status == "Succeeded" else 0
+
+            # Extract trigger info from SDK run object
+            trigger_name = getattr(run, 'invoke_by', None) or None
+            trigger_type = getattr(run, 'parameters', {}).get('TriggerType') if hasattr(run, 'parameters') and run.parameters else None
+            trigger_time = run.run_start  # Best available proxy from SDK
 
             cursor.execute("""
                 INSERT INTO adf.PipelineRunLog (
@@ -274,13 +282,14 @@ class ADFListener:
                     IsSuccess, ExecutionStatus,
                     StartTime, EndTime, DurationInSeconds,
                     ErrorCode, ErrorMessage, FailureType, FailedActivityName,
-                    RowsCopied, DataRead, DataWritten
+                    RowsCopied, DataRead, DataWritten,
+                    LoggedAt, LoggedBy
                 )
                 OUTPUT INSERTED.LogId
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSUTCDATETIME(), 'ADF_SDK')
             """,
                 AzureConfig.FACTORY_NAME, run.pipeline_name, run.run_id,
-                None, None, None,  # trigger info not available from SDK
+                trigger_name, trigger_type, trigger_time,
                 is_success, run.status,
                 run.run_start, run.run_end, duration,
                 error_code, error_message, failure_type, failed_activity,
