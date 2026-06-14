@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # ── OpenAI ──────────────────────────────────────────────────────────────
     openai_api_key: str = Field(..., description="OpenAI API key")
     openai_model: str = Field(default="gpt-4o", description="Chat model name")
+    openai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        description="Base URL for the OpenAI-compatible API endpoint",
+    )
 
     # ── Neo4j ───────────────────────────────────────────────────────────────
     neo4j_uri: str = Field(

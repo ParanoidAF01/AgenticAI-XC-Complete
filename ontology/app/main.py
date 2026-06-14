@@ -73,6 +73,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     llm_service = LLMService(
         api_key=settings.openai_api_key,
         model=settings.openai_model,
+        base_url=settings.openai_base_url,
     )
     app.state.llm_service = llm_service
     logger.info("LLM service initialised  model=%s", settings.openai_model)

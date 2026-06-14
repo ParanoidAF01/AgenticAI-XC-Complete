@@ -12,6 +12,7 @@ import logging
 import re
 from typing import Any
 
+import httpx
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
@@ -20,16 +21,24 @@ logger = logging.getLogger(__name__)
 class LLMService:
     """Async OpenAI Chat Completions client tailored for the ontology chatbot."""
 
-    def __init__(self, api_key: str, model: str = "gpt-4o") -> None:
+    def __init__(self, api_key: str, model: str = "gpt-4o", base_url: str | None = None) -> None:
         """Initialise the async OpenAI client.
 
         Args:
             api_key: OpenAI API key.
-            model: Model identifier (e.g. ``gpt-4o``, ``gpt-4o-mini``).
+            model: Model identifier (e.g. ``gpt-4o``, ``claude-sonnet-4-5``).
+            base_url: Custom API base URL (for company proxies / gateways).
         """
-        self._client = AsyncOpenAI(api_key=api_key)
+        # Use a custom httpx client with SSL verification disabled
+        # to work behind corporate proxies that intercept SSL traffic.
+        http_client = httpx.AsyncClient(verify=False)
+        self._client = AsyncOpenAI(
+            api_key=api_key,
+            base_url=base_url,
+            http_client=http_client,
+        )
         self._model = model
-        logger.info("LLMService initialised (model=%s)", model)
+        logger.info("LLMService initialised (model=%s, base_url=%s)", model, base_url or "default")
 
     # ── generic helpers ─────────────────────────────────────────────────────
 

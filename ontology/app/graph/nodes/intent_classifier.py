@@ -10,10 +10,8 @@ from __future__ import annotations
 import json
 import logging
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
 from app.prompts.intent_prompt import INTENT_CLASSIFICATION_PROMPT
-from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +38,12 @@ async def intent_classifier(state: WorkflowState) -> dict:
     logger.info("intent_classifier ▸ ENTER")
 
     try:
-        settings = get_settings()
         cleaned_query: str = state.get("cleaned_query", "")
 
-        llm = LLMService(api_key=settings.openai_api_key, model=settings.openai_model)
+        llm = state.get("llm_service")
+        if llm is None:
+            raise RuntimeError("llm_service not found in workflow state")
+
         parsed: dict = await llm.chat_json(
             system_prompt=INTENT_CLASSIFICATION_PROMPT,
             user_message=cleaned_query,

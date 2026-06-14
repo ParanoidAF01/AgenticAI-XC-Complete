@@ -20,7 +20,6 @@ import spacy
 from app.config import get_settings
 from app.graph.state import WorkflowState
 from app.prompts.entity_prompt import ENTITY_EXTRACTION_PROMPT
-from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +179,6 @@ async def entity_extractor(state: WorkflowState) -> dict:
     logger.info("entity_extractor ▸ ENTER")
 
     try:
-        settings = get_settings()
         cleaned_query: str = state.get("cleaned_query", "")
 
         # ── Phase 1: SpaCy NER ──────────────────────────────────────
@@ -190,8 +188,9 @@ async def entity_extractor(state: WorkflowState) -> dict:
             len(spacy_entities),
         )
 
-        # ── Phase 2: LLM domain extraction ──────────────────────────
-        llm = LLMService(api_key=settings.openai_api_key, model=settings.openai_model)
+        llm = state.get("llm_service")
+        if llm is None:
+            raise RuntimeError("llm_service not found in workflow state")
 
         spacy_context = json.dumps(spacy_entities, default=str)
         user_message = (
