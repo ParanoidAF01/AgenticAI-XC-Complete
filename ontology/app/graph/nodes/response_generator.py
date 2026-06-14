@@ -10,9 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
-from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +33,6 @@ async def response_generator(state: WorkflowState) -> dict:
     logger.info("response_generator ▸ ENTER")
 
     try:
-        settings = get_settings()
         user_query: str = state.get("user_query", "")
         generated_sql: str | None = state.get("generated_sql")
         query_result: list[dict[str, Any]] | None = state.get("query_result")
@@ -54,6 +51,10 @@ async def response_generator(state: WorkflowState) -> dict:
                 "current_node": "response_generator",
             }
 
+        llm = state.get("llm_service")
+        if llm is None:
+            raise RuntimeError("llm_service not found in workflow state")
+
         # Truncate results for the LLM context window.
         truncated_results: list[dict[str, Any]] = (query_result or [])[:_MAX_RESULT_ROWS]
 
@@ -65,7 +66,6 @@ async def response_generator(state: WorkflowState) -> dict:
                 k: v for k, v in ent.items() if k != "source"
             }
 
-        llm = LLMService(api_key=settings.openai_api_key, model=settings.openai_model)
         response: str = await llm.format_response(
             question=user_query,
             sql=generated_sql or "N/A",

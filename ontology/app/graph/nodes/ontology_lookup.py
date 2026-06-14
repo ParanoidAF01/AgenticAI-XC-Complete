@@ -11,9 +11,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
-from app.services.neo4j_service import Neo4jService
 
 logger = logging.getLogger(__name__)
 
@@ -39,17 +37,13 @@ async def ontology_lookup(state: WorkflowState) -> dict:
     """
     logger.info("ontology_lookup ▸ ENTER")
 
-    neo4j: Neo4jService | None = None
     try:
-        settings = get_settings()
         tables_used: list[str] = state.get("tables_used", [])
         graphrag_ctx: dict[str, Any] = state.get("graphrag_context", {})
 
-        neo4j = Neo4jService(
-            uri=settings.neo4j_uri,
-            user=settings.neo4j_user,
-            password=settings.neo4j_password,
-        )
+        neo4j = state.get("neo4j_service")
+        if neo4j is None:
+            raise RuntimeError("neo4j_service not found in workflow state")
 
         # ── 8.1  JOINS_TO relationships ─────────────────────────────
         joins: list[dict[str, Any]] = []
@@ -113,6 +107,3 @@ async def ontology_lookup(state: WorkflowState) -> dict:
             "current_node": "ontology_lookup",
             "error": f"Ontology lookup failed: {exc}",
         }
-    finally:
-        if neo4j is not None:
-            await neo4j.close()

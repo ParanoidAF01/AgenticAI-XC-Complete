@@ -12,9 +12,7 @@ import logging
 import re
 from typing import Any
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
-from app.services.sql_service import SQLService
 
 logger = logging.getLogger(__name__)
 
@@ -138,14 +136,9 @@ async def sql_validator(state: WorkflowState) -> dict:
 
         # ── 1. Security check via SQLService ────────────────────────
         #   validate_sql() is synchronous → run in a thread.
-        settings = get_settings()
-        sql_svc = SQLService(
-            server=settings.mssql_server,
-            database=settings.mssql_database,
-            user=settings.mssql_user,
-            password=settings.mssql_password,
-            driver=settings.mssql_driver,
-        )
+        sql_svc = state.get("sql_service")
+        if sql_svc is None:
+            raise RuntimeError("sql_service not found in workflow state")
         is_safe, reason = await asyncio.to_thread(sql_svc.validate_sql, sql)
         if not is_safe:
             logger.warning("sql_validator ▸ security check failed: %s", reason)

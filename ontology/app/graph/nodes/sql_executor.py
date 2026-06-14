@@ -12,10 +12,8 @@ import logging
 import time
 from typing import Any
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
-from app.services.redis_service import RedisService, create_cache_service
-from app.services.sql_service import SQLService
+from app.services.redis_service import RedisService
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +38,7 @@ async def sql_executor(state: WorkflowState) -> dict:
     """
     logger.info("sql_executor ▸ ENTER")
 
-    cache_svc = None
     try:
-        settings = get_settings()
         sql: str | None = state.get("generated_sql")
 
         if not sql:
@@ -59,9 +55,11 @@ async def sql_executor(state: WorkflowState) -> dict:
 
         # ── 1. Cache check ──────────────────────────────────────────
         sql_hash = RedisService.hash_sql(sql)
-        cache_svc = await create_cache_service(redis_url=settings.redis_url)
+        cache_svc = state.get("redis_service")
 
-        cached_result = await cache_svc.get_cached_result(sql_hash)
+        cached_result = None
+        if cache_svc is not None:
+            cached_result = await cache_svc.get_cached_result(sql_hash)
         if cached_result is not None:
             elapsed = (time.perf_counter() - t0) * 1000
             logger.info(
@@ -78,13 +76,9 @@ async def sql_executor(state: WorkflowState) -> dict:
 
         # ── 2. Execute query (sync → thread) ────────────────────────
         logger.info("sql_executor ▸ cache MISS — executing SQL")
-        sql_svc = SQLService(
-            server=settings.mssql_server,
-            database=settings.mssql_database,
-            user=settings.mssql_user,
-            password=settings.mssql_password,
-            driver=settings.mssql_driver,
-        )
+        sql_svc = state.get("sql_service")
+        if sql_svc is None:
+            raise RuntimeError("sql_service not found in workflow state")
         result: list[dict[str, Any]] = await asyncio.to_thread(
             sql_svc.execute_query, sql
         )
@@ -92,9 +86,10 @@ async def sql_executor(state: WorkflowState) -> dict:
 
         # ── 3. Cache result ─────────────────────────────────────────
         try:
-            await cache_svc.cache_result(
-                sql_hash, result, ttl=settings.redis_cache_ttl
-            )
+            if cache_svc is not None:
+                await cache_svc.cache_result(
+                    sql_hash, result, ttl=300
+                )
         except Exception as cache_err:
             logger.warning("sql_executor ▸ failed to cache result: %s", cache_err)
 
@@ -117,9 +112,3 @@ async def sql_executor(state: WorkflowState) -> dict:
             "current_node": "sql_executor",
             "error": f"SQL execution failed: {exc}",
         }
-    finally:
-        if cache_svc is not None:
-            try:
-                await cache_svc.close()
-            except Exception:
-                pass

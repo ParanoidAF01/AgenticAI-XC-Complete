@@ -10,9 +10,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
-from app.services.neo4j_service import Neo4jService
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +18,8 @@ logger = logging.getLogger(__name__)
 async def graphrag_retriever(state: WorkflowState) -> dict:
     """Retrieve semantic context from the Neo4j ontology graph.
 
-    Sub‑steps
-    ---------
-    1. **Full‑text table search** — ``find_relevant_tables()`` to discover
-       ``Table`` nodes whose name, description, or business_purpose match.
-    2. **Business concept search** — ``get_business_concepts()`` to surface
-       high‑level domain concepts with SQL logic hints.
-    3. **Query pattern search** — ``get_query_patterns()`` to find canonical
-       SQL templates for similar questions.
-    4. **Domain context** — ``get_domain_context()`` to pull ``Domain`` nodes
-       linked to the matched tables.
+    Uses the shared ``neo4j_service`` from state to query full-text
+    indexes and discover relevant tables, concepts, and patterns.
 
     Returns
     -------
@@ -39,17 +29,13 @@ async def graphrag_retriever(state: WorkflowState) -> dict:
     """
     logger.info("graphrag_retriever ▸ ENTER")
 
-    neo4j: Neo4jService | None = None
     try:
-        settings = get_settings()
         cleaned_query: str = state.get("cleaned_query", "")
         entities: list[dict[str, Any]] = state.get("entities", [])
 
-        neo4j = Neo4jService(
-            uri=settings.neo4j_uri,
-            user=settings.neo4j_user,
-            password=settings.neo4j_password,
-        )
+        neo4j = state.get("neo4j_service")
+        if neo4j is None:
+            raise RuntimeError("neo4j_service not found in workflow state")
 
         # Build a combined search string from the query and entity values.
         entity_values = " ".join(
@@ -121,6 +107,3 @@ async def graphrag_retriever(state: WorkflowState) -> dict:
             "current_node": "graphrag_retriever",
             "error": f"GraphRAG retrieval failed: {exc}",
         }
-    finally:
-        if neo4j is not None:
-            await neo4j.close()

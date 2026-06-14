@@ -10,10 +10,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from app.config import get_settings
 from app.graph.state import WorkflowState
 from app.prompts.sql_prompt import SQL_GENERATION_PROMPT
-from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -40,12 +38,15 @@ async def sql_generator(state: WorkflowState) -> dict:
     logger.info("sql_generator ▸ ENTER")
 
     try:
-        settings = get_settings()
         cleaned_query: str = state.get("cleaned_query", "")
         intent: str = state.get("intent") or "OTHER"
         entities: list[dict[str, Any]] = state.get("entities", [])
         schema_context: dict[str, Any] = state.get("schema_context", {})
         sql_error: str | None = state.get("sql_error")
+
+        llm = state.get("llm_service")
+        if llm is None:
+            raise RuntimeError("llm_service not found in workflow state")
 
         # On retry, include the previous validation error for self-correction.
         question = cleaned_query
@@ -65,7 +66,6 @@ async def sql_generator(state: WorkflowState) -> dict:
                 k: v for k, v in ent.items() if k != "source"
             }
 
-        llm = LLMService(api_key=settings.openai_api_key, model=settings.openai_model)
         sql: str = await llm.generate_sql(
             system_prompt=SQL_GENERATION_PROMPT,
             schema_context=schema_context,
