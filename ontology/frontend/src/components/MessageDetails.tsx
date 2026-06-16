@@ -7,20 +7,15 @@ interface MessageDetailsProps {
 }
 
 export function MessageDetails({ metadata }: MessageDetailsProps) {
-  const { sql, results, tablesUsed, intent, entities, executionTimeMs } = metadata;
+  const { sql, results, tablesUsed, entities, executionTimeMs } = metadata;
 
   return (
     <div className="mt-3 space-y-3 border-t border-slate-700/50 pt-3">
-      {(intent || executionTimeMs !== undefined) && (
+      {(executionTimeMs !== undefined || metadata.isClarification) && (
         <div className="flex flex-wrap gap-2">
-          {intent && (
-            <span className="rounded-md bg-violet-500/15 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-violet-300">
-              {intent}
-            </span>
-          )}
           {executionTimeMs !== undefined && (
             <span className="rounded-md bg-slate-700/50 px-2 py-0.5 text-[11px] text-slate-400">
-              {executionTimeMs.toFixed(0)} ms
+              Query ran in {executionTimeMs.toFixed(0)} ms
             </span>
           )}
           {metadata.isClarification && (

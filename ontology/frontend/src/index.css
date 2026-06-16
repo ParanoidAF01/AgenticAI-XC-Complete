@@ -47,3 +47,57 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+.markdown-content .markdown-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.markdown-content .markdown-list > li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.markdown-content .markdown-list > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-accent-400) 80%, transparent);
+}
+
+.markdown-content .markdown-ordered {
+  padding-left: 1.25rem;
+  list-style: decimal;
+  marker-color: var(--color-accent-400);
+}
+
+.markdown-content .markdown-ordered > li::marker {
+  color: var(--color-accent-400);
+  font-weight: 600;
+}
+
+.markdown-content .markdown-ordered > li {
+  padding-left: 0.35rem;
+}
+
+.markdown-content table td:first-child,
+.markdown-content table th:first-child {
+  padding-left: 1rem;
+}
+
+.markdown-content table td:last-child,
+.markdown-content table th:last-child {
+  padding-right: 1rem;
+}
+
+.markdown-content table tbody tr:nth-child(even) {
+  background: rgb(15 23 42 / 0.25);
+}
+
+.markdown-content table td:first-child strong {
+  color: #f1f5f9;
+}
