@@ -20,7 +20,7 @@ export function ResultsTable({ rows }: ResultsTableProps) {
 
   if (rows.length === 0) {
     return (
-      <p className="rounded-lg bg-surface-900/60 px-3 py-2 text-xs text-slate-500">
+      <p className="detail-badge rounded-lg px-3 py-2 text-xs">
         Query returned no rows.
       </p>
     );
@@ -33,29 +33,29 @@ export function ResultsTable({ rows }: ResultsTableProps) {
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-700/60">
-      <div className="flex items-center justify-between border-b border-slate-700/60 bg-surface-900/80 px-3 py-2">
-        <span className="text-xs font-medium text-slate-300">
+    <div className="data-panel">
+      <div className="data-panel__head flex items-center justify-between px-3 py-2">
+        <span className="text-xs font-medium">
           {rows.length} row{rows.length === 1 ? "" : "s"}
         </span>
         {rows.length > 10 && (
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="text-xs text-teal-400 hover:text-teal-300"
+            className="data-panel__link text-xs"
           >
             {expanded ? "Show less" : `Show all ${rows.length}`}
           </button>
         )}
       </div>
       <div className="max-h-64 overflow-auto">
-        <table className="min-w-full text-left text-xs">
-          <thead className="sticky top-0 bg-surface-800">
+        <table className="data-table min-w-full text-left text-xs">
+          <thead className="sticky top-0">
             <tr>
               {columns.map((col) => (
                 <th
                   key={col}
-                  className="whitespace-nowrap border-b border-slate-700/60 px-3 py-2 font-mono font-medium text-slate-400"
+                  className="whitespace-nowrap px-3 py-2 font-mono font-medium"
                 >
                   {col}
                 </th>
@@ -64,14 +64,11 @@ export function ResultsTable({ rows }: ResultsTableProps) {
           </thead>
           <tbody>
             {visibleRows.map((row, index) => (
-              <tr
-                key={index}
-                className="border-b border-slate-800/80 odd:bg-surface-900/30 hover:bg-surface-800/40"
-              >
+              <tr key={index}>
                 {columns.map((col) => (
                   <td
                     key={col}
-                    className="max-w-[220px] truncate whitespace-nowrap px-3 py-2 font-mono text-slate-300"
+                    className="max-w-[220px] truncate whitespace-nowrap px-3 py-2 font-mono"
                     title={formatCell(row[col])}
                   >
                     {formatCell(row[col])}

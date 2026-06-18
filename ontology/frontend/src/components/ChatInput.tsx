@@ -31,10 +31,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled }: ChatInputPr
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="rounded-2xl border border-slate-700/80 bg-surface-800/80 p-2 shadow-xl shadow-black/20 ring-1 ring-white/5 backdrop-blur"
-    >
+    <form onSubmit={handleSubmit} className="chat-input-form rounded-2xl p-2">
       <textarea
         name="question"
         rows={1}
@@ -42,10 +39,10 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled }: ChatInputPr
         disabled={disabled || isLoading}
         onKeyDown={handleKeyDown}
         onChange={autoResize}
-        className="w-full resize-none bg-transparent px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+        className="w-full resize-none bg-transparent px-3 py-2 text-sm focus:outline-none disabled:opacity-50"
       />
       <div className="flex items-center justify-between gap-2 px-2 pb-1 pt-1">
-        <p className="text-[11px] text-slate-500">
+        <p className="chat-input-hint text-[11px]">
           Enter to send · Shift+Enter for new line
         </p>
         <div className="flex gap-2">
@@ -53,7 +50,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled }: ChatInputPr
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-surface-700 hover:text-white"
+              className="chat-btn-cancel rounded-lg px-3 py-1.5 text-xs font-medium"
             >
               Cancel
             </button>
@@ -61,7 +58,7 @@ export function ChatInput({ onSend, onCancel, isLoading, disabled }: ChatInputPr
           <button
             type="submit"
             disabled={disabled || isLoading}
-            className="rounded-lg bg-gradient-to-r from-teal-600 to-cyan-600 px-4 py-1.5 text-xs font-semibold text-white shadow-lg shadow-teal-900/30 transition hover:from-teal-500 hover:to-cyan-500 disabled:cursor-not-allowed disabled:opacity-40"
+            className="chat-btn-submit rounded-lg px-4 py-1.5 text-xs font-semibold disabled:cursor-not-allowed"
           >
             {isLoading ? "Processing…" : "Ask"}
           </button>

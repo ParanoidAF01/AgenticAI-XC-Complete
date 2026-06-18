@@ -21,9 +21,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   if (isSystem) {
     return (
       <div className="flex justify-center px-4 py-1">
-        <p className="rounded-full bg-rose-500/10 px-3 py-1 text-xs text-rose-300">
-          {message.content}
-        </p>
+        <p className="msg-system rounded-full px-3 py-1 text-xs">{message.content}</p>
       </div>
     );
   }
@@ -34,17 +32,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         className={`${
           isUser ? "max-w-[min(100%,36rem)]" : "max-w-[min(100%,52rem)] w-full"
         } rounded-2xl px-4 py-3 sm:px-5 sm:py-4 ${
-          isUser
-            ? "bg-gradient-to-br from-teal-600 to-cyan-700 text-white shadow-lg shadow-teal-950/30"
-            : "border border-slate-700/60 bg-surface-800/90 text-slate-100 shadow-lg shadow-black/10"
+          isUser ? "msg-user" : "msg-assistant"
         }`}
       >
         {!isUser && (
           <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-500/15 ring-1 ring-teal-500/25">
+            <span className="msg-assistant__icon flex h-6 w-6 items-center justify-center rounded-lg">
               <svg
                 viewBox="0 0 24 24"
-                className="h-3.5 w-3.5 text-teal-400"
+                className="h-3.5 w-3.5"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -54,11 +50,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 <circle cx="12" cy="12" r="4" />
               </svg>
             </span>
-            <span className="text-xs font-semibold uppercase tracking-wide text-teal-400/90">
+            <span className="msg-assistant__label text-xs font-semibold uppercase tracking-wide">
               Assistant
             </span>
             {message.metadata?.intent && (
-              <span className="rounded-md bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-300">
+              <span className="msg-intent-badge rounded-md px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
                 {message.metadata.intent}
               </span>
             )}
@@ -72,11 +68,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         )}
 
         {!isUser && hasDetails && (
-          <div className="mt-4 border-t border-slate-700/50 pt-3">
+          <div className="msg-details-divider mt-4 border-t pt-3">
             <button
               type="button"
               onClick={() => setShowDetails((v) => !v)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-surface-900/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-teal-500/30 hover:bg-surface-900 hover:text-white"
+              className="msg-details-toggle inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium"
             >
               <svg
                 viewBox="0 0 20 20"
@@ -98,15 +94,13 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         )}
 
-        <p
-          className={`mt-3 text-[10px] ${isUser ? "text-teal-100/60" : "text-slate-500"}`}
-        >
+        <p className="msg-meta mt-3 text-[10px]">
           {message.timestamp.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           })}
           {!isUser && message.metadata?.executionTimeMs !== undefined && (
-            <span className="ml-2 text-slate-600">
+            <span className="ml-2 opacity-80">
               · {message.metadata.executionTimeMs.toFixed(0)} ms
             </span>
           )}

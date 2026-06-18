@@ -1,5 +1,5 @@
 import { apiUrl } from "../config";
-import type { ChatRequest, ChatResponse, HealthResponse } from "../types";
+import type { ChatRequest, ChatResponse } from "../types";
 
 async function parseJson<T>(response: Response): Promise<T> {
   const data = await response.json();
@@ -20,9 +20,4 @@ export async function askQuestion(payload: ChatRequest): Promise<ChatResponse> {
     body: JSON.stringify(payload),
   });
   return parseJson<ChatResponse>(response);
-}
-
-export async function fetchHealth(): Promise<HealthResponse> {
-  const response = await fetch(apiUrl("/health"));
-  return parseJson<HealthResponse>(response);
 }

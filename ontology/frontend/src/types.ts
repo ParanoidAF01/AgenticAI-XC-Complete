@@ -24,16 +24,6 @@ export interface ChatResponse {
   session_id?: string | null;
 }
 
-export interface HealthResponse {
-  status: string;
-  version?: string;
-  timestamp?: string;
-  services?: Record<string, boolean>;
-  neo4j_connected?: boolean;
-  mssql_connected?: boolean;
-  redis_connected?: boolean;
-}
-
 export type WsMessageType =
   | "progress"
   | "final"

@@ -14,8 +14,12 @@ export default function App() {
   } = useChat();
 
   return (
-    <div className="flex h-full flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-surface-800/40 via-surface-950 to-surface-950">
-      <Header sessionId={sessionId} onNewSession={newSession} />
+    <div className="app-shell flex h-full flex-col">
+      <Header
+        sessionId={sessionId}
+        onNewSession={newSession}
+        onGoHome={newSession}
+      />
       <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col">
         <ChatPanel
           messages={messages}

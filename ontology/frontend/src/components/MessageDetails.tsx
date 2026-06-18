@@ -10,16 +10,16 @@ export function MessageDetails({ metadata }: MessageDetailsProps) {
   const { sql, results, tablesUsed, entities, executionTimeMs } = metadata;
 
   return (
-    <div className="mt-3 space-y-3 border-t border-slate-700/50 pt-3">
+    <div className="msg-details-divider mt-3 space-y-3 border-t pt-3">
       {(executionTimeMs !== undefined || metadata.isClarification) && (
         <div className="flex flex-wrap gap-2">
           {executionTimeMs !== undefined && (
-            <span className="rounded-md bg-slate-700/50 px-2 py-0.5 text-[11px] text-slate-400">
+            <span className="detail-badge rounded-md px-2 py-0.5 text-[11px]">
               Query ran in {executionTimeMs.toFixed(0)} ms
             </span>
           )}
           {metadata.isClarification && (
-            <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-300">
+            <span className="detail-warning rounded-md px-2 py-0.5 text-[11px]">
               Needs clarification
             </span>
           )}
@@ -31,9 +31,9 @@ export function MessageDetails({ metadata }: MessageDetailsProps) {
           {entities.slice(0, 8).map((entity, index) => (
             <span
               key={`${entity.type}-${index}`}
-              className="rounded-full border border-slate-700 bg-surface-900/60 px-2 py-0.5 text-[11px] text-slate-400"
+              className="detail-chip rounded-full px-2 py-0.5 text-[11px]"
             >
-              <span className="text-slate-500">{entity.type ?? "Entity"}:</span>{" "}
+              <span className="detail-chip__label">{entity.type ?? "Entity"}:</span>{" "}
               {String(entity.resolved ?? entity.value ?? "—")}
             </span>
           ))}
@@ -42,14 +42,14 @@ export function MessageDetails({ metadata }: MessageDetailsProps) {
 
       {tablesUsed && tablesUsed.length > 0 && (
         <div>
-          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
+          <p className="detail-chip__label mb-1 text-[11px] font-medium uppercase tracking-wide">
             Tables used
           </p>
           <div className="flex flex-wrap gap-1">
             {tablesUsed.map((table) => (
               <span
                 key={table}
-                className="rounded bg-surface-900 px-1.5 py-0.5 font-mono text-[10px] text-slate-400"
+                className="detail-badge rounded px-1.5 py-0.5 font-mono text-[10px]"
               >
                 {table}
               </span>
