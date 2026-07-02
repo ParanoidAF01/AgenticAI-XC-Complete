@@ -1,0 +1,81 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL (Application Database) ──────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ontology-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ontology_user
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: ontology_chatbot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ontology_user -d ontology_chatbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Cache) ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ontology-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend (FastAPI) ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ontology-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URL: postgresql+asyncpg://ontology_user:changeme@postgres:5432/ontology_chatbot
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # ── Frontend (React + Vite) ────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ontology-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+
+volumes:
+  postgres_data:
+  redis_data:

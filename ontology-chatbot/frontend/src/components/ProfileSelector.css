@@ -1,0 +1,37 @@
+/* ═══ Profile Selector ═════════════════════════════════════ */
+
+.profile-selector {
+  position: relative;
+}
+
+.profile-select {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  appearance: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.profile-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.profile-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.profile-select-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--text-tertiary);
+}
