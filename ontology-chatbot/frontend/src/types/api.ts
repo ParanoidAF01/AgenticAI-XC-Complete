@@ -5,6 +5,7 @@ export interface ApiError {
 
 export interface ProfileResponse {
   name: string;
+  display_name?: string;
   description?: string;
   database_type?: string;
 }

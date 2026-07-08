@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import ProfileSelector from './ProfileSelector';
+import { Link } from 'react-router-dom';
 import type { Session } from '@/types/chat';
-import type { ProfileResponse } from '@/types/api';
 import type { User } from '@/types/auth';
 import './ChatSidebar.css';
 
@@ -9,13 +8,10 @@ interface Props {
   sessions: Session[];
   activeSessionId: string | null;
   isOpen: boolean;
-  profiles: ProfileResponse[];
-  selectedProfile: string;
   sessionsLoading: boolean;
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
-  onSelectProfile: (name: string) => void;
   onLogout: () => void;
   onToggle: () => void;
   user: User | null;
@@ -25,13 +21,10 @@ export default function ChatSidebar({
   sessions,
   activeSessionId,
   isOpen,
-  profiles,
-  selectedProfile,
   sessionsLoading,
   onSelectSession,
   onNewChat,
   onDeleteSession,
-  onSelectProfile,
   onLogout,
   onToggle,
   user,
@@ -69,18 +62,12 @@ export default function ChatSidebar({
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
         {/* New Chat Section */}
         <div className="sidebar-top">
-          <button className="new-chat-btn" onClick={onNewChat}>
+          <button className="new-chat-btn" onClick={onNewChat} style={{ backgroundColor: 'var(--figma-primary)', color: '#000', fontWeight: 600 }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
               <path d="M9 2a1 1 0 011 1v5h5a1 1 0 010 2h-5v5a1 1 0 01-2 0v-5H3a1 1 0 010-2h5V3a1 1 0 011-1z" />
             </svg>
             New Chat
           </button>
-
-          <ProfileSelector
-            profiles={profiles}
-            selected={selectedProfile}
-            onSelect={onSelectProfile}
-          />
         </div>
 
         {/* Session List */}
@@ -139,9 +126,9 @@ export default function ChatSidebar({
         </div>
 
         {/* User section */}
-        <div className="sidebar-bottom">
+        <div className="sidebar-bottom" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="sidebar-user">
-            <div className="user-avatar">
+            <div className="user-avatar" style={{ backgroundColor: 'var(--figma-primary)', color: '#000' }}>
               {user?.display_name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="user-info">
@@ -149,11 +136,19 @@ export default function ChatSidebar({
               <span className="user-email">{user?.email || ''}</span>
             </div>
           </div>
-          <button className="logout-btn" onClick={onLogout} title="Sign out">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-              <path d="M6 3a1 1 0 00-1 1v10a1 1 0 001 1h2a1 1 0 010 2H6a3 3 0 01-3-3V4a3 3 0 013-3h2a1 1 0 010 2H6zm6.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10H8a1 1 0 010-2h5.586l-1.293-1.293a1 1 0 010-1.414z" />
-            </svg>
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link to="/settings" className="logout-btn" title="Settings" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </Link>
+            <button className="logout-btn" onClick={() => { if(window.confirm('Are you sure you want to sign out?')) onLogout(); }} title="Sign out">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                <path d="M6 3a1 1 0 00-1 1v10a1 1 0 001 1h2a1 1 0 010 2H6a3 3 0 01-3-3V4a3 3 0 013-3h2a1 1 0 010 2H6zm6.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10H8a1 1 0 010-2h5.586l-1.293-1.293a1 1 0 010-1.414z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </aside>
     </>

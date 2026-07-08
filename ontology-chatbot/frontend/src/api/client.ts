@@ -69,14 +69,21 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        const storedRefreshToken = useAuthStore.getState().refreshToken;
+        if (!storedRefreshToken) {
+          throw new Error('No refresh token available');
+        }
+
         const response = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
-          {},
+          { refresh_token: storedRefreshToken },
           { withCredentials: true }
         );
 
-        const { access_token, user } = response.data;
-        useAuthStore.getState().setAuth(access_token, user);
+        const { access_token, refresh_token } = response.data;
+        // The user object is not returned by refresh, we just set tokens. 
+        // useAuth uses getMe to fetch user if needed on startup.
+        useAuthStore.getState().setAuth(access_token, refresh_token, useAuthStore.getState().user!);
         processQueue(null, access_token);
 
         originalRequest.headers.Authorization = `Bearer ${access_token}`;

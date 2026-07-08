@@ -1,0 +1,172 @@
+.auth-layout-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.auth-layout-left {
+  flex: 1;
+  background-color: var(--figma-bg-dark);
+  color: var(--figma-text-white);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-2xl);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Optional gradient background element to simulate Figma's decorative background */
+.auth-layout-left::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(circle at top left, rgba(255, 214, 0, 0.1), transparent 50%),
+              radial-gradient(circle at bottom right, rgba(108, 99, 255, 0.1), transparent 50%);
+  pointer-events: none;
+}
+
+.auth-layout-left-content {
+  max-width: 480px;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-layout-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: var(--space-2xl);
+  color: var(--figma-primary);
+}
+
+.auth-layout-headline {
+  font-family: var(--font-heading);
+  font-size: 48px;
+  line-height: 1.1;
+  font-weight: 700;
+  margin-bottom: var(--space-lg);
+  color: var(--figma-text-white);
+}
+
+.auth-layout-subheadline {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--figma-text-subtle);
+}
+
+.auth-layout-right {
+  flex: 1;
+  background-color: var(--figma-bg-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--space-2xl);
+}
+
+.auth-form-wrapper {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--figma-bg-card);
+  padding: 48px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Shared form styles for Auth screens */
+.auth-form-title {
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--figma-text-dark);
+  margin-bottom: var(--space-sm);
+}
+
+.auth-form-subtitle {
+  font-size: 15px;
+  color: var(--figma-text-tertiary);
+  margin-bottom: var(--space-xl);
+}
+
+.auth-form-group {
+  margin-bottom: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.auth-form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--figma-text-dark);
+}
+
+.auth-form-input {
+  height: 48px;
+  width: 100%;
+  padding: 0 var(--space-md);
+  border: 1px solid var(--figma-border);
+  border-radius: var(--radius-md);
+  background-color: var(--figma-bg-card);
+  color: var(--figma-text-dark);
+  font-size: 15px;
+  transition: border-color var(--transition-fast);
+}
+
+.auth-form-input:focus {
+  border-color: var(--figma-primary);
+  outline: none;
+}
+
+.auth-form-button {
+  height: 48px;
+  width: 100%;
+  background-color: var(--figma-primary);
+  color: #000000;
+  font-weight: 600;
+  font-size: 16px;
+  border-radius: var(--radius-md);
+  transition: opacity var(--transition-fast), transform var(--transition-fast);
+  margin-top: var(--space-md);
+}
+
+.auth-form-button:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.auth-form-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-form-link {
+  color: var(--figma-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-form-link:hover {
+  text-decoration: underline;
+  color: var(--figma-text-dark);
+}
+
+.auth-form-error {
+  color: var(--error);
+  font-size: 14px;
+  margin-top: var(--space-sm);
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+}
+
+.auth-form-footer {
+  margin-top: var(--space-xl);
+  text-align: center;
+  font-size: 14px;
+  color: var(--figma-text-tertiary);
+}

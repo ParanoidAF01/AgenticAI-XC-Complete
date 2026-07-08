@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { authApi } from '@/api/auth';
-import type { LoginRequest, SignupRequest } from '@/types/auth';
+import type { LoginRequest } from '@/types/auth';
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -14,9 +14,18 @@ export function useAuth() {
   // Try to refresh token on mount (session recovery)
   useEffect(() => {
     const tryRefresh = async () => {
+      const storedRefreshToken = useAuthStore.getState().refreshToken;
+      if (!storedRefreshToken) {
+        clearAuth();
+        setIsInitialized(true);
+        return;
+      }
       try {
-        const data = await authApi.refresh();
-        setAuth(data.access_token, data.user);
+        const tokenData = await authApi.refresh(storedRefreshToken);
+        // Need to temporarily set access token so that getMe uses it
+        useAuthStore.getState().setToken(tokenData.access_token);
+        const userData = await authApi.getMe();
+        setAuth(tokenData.access_token, tokenData.refresh_token, userData);
       } catch {
         // No valid refresh token — stay logged out
         clearAuth();
@@ -38,9 +47,11 @@ export function useAuth() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await authApi.login(data);
-        setAuth(response.access_token, response.user);
-        navigate('/');
+        const tokenData = await authApi.login(data);
+        // Set token first so the apiClient can use it for getMe
+        useAuthStore.getState().setToken(tokenData.access_token);
+        const userData = await authApi.getMe();
+        setAuth(tokenData.access_token, tokenData.refresh_token, userData);
       } catch (err: unknown) {
         const message =
           (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -51,33 +62,15 @@ export function useAuth() {
         setIsLoading(false);
       }
     },
-    [setAuth, navigate]
-  );
-
-  const signup = useCallback(
-    async (data: SignupRequest) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await authApi.signup(data);
-        setAuth(response.access_token, response.user);
-        navigate('/');
-      } catch (err: unknown) {
-        const message =
-          (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-          'Signup failed. Please try again.';
-        setError(message);
-        throw err;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [setAuth, navigate]
+    [setAuth]
   );
 
   const logout = useCallback(async () => {
     try {
-      await authApi.logout();
+      const refreshToken = useAuthStore.getState().refreshToken;
+      if (refreshToken) {
+        await authApi.logout(refreshToken);
+      }
     } catch {
       // Ignore logout errors
     } finally {
@@ -88,7 +81,6 @@ export function useAuth() {
 
   return {
     login,
-    signup,
     logout,
     isLoading,
     error,
