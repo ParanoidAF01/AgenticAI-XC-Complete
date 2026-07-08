@@ -59,7 +59,7 @@ class ChatResponse(BaseModel):
     message: MessageResponse
     route: Dict[str, Any] | None = None
     plan: Dict[str, Any] | None = None
-    sql: Dict[str, Any] | None = None
-    validation_trace: Dict[str, Any] | None = None
+    sql: List[Any] | None = None
+    validation_trace: List[Any] | None = None
     results: Dict[str, Any] | None = None
     is_clarification: bool = False

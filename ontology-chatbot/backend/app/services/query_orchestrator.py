@@ -109,8 +109,7 @@ class QueryOrchestrator:
             context_text = context.get("summary", "")
 
             # ── 5. Check query cache ────────────────────────────
-            q_hash = hashlib.sha256(message.lower().strip().encode()).hexdigest()[:16]
-            cached = await self._cache.get_cached_query_result(user_id, profile, q_hash)
+            cached = await self._cache.get_cached_query_result(uid, profile, message)
             if cached is not None:
                 logger.info("Query cache HIT")
                 answer_text = cached.get("answer", "")
@@ -144,7 +143,7 @@ class QueryOrchestrator:
 
                 # ── 7. Cache result ─────────────────────────────
                 await self._cache.cache_query_result(
-                    user_id, profile, q_hash,
+                    uid, profile, message,
                     {
                         "answer": answer_text,
                         "route": route_info,
@@ -199,7 +198,7 @@ class QueryOrchestrator:
 
         # ── 10. Update cache ───────────────────────────────────
         await self._cache.cache_recent_messages(
-            session_id,
+            sid,
             [{"role": "user", "content": message},
              {"role": "assistant", "content": answer_text}],
         )
@@ -267,7 +266,7 @@ class QueryOrchestrator:
             }
 
         # Execute plan tasks
-        task_outputs = []
+        task_outputs: List[Dict[str, Any]] = []
         task_contexts: Dict[str, Dict[str, Any]] = {}
         tasks = await asyncio.to_thread(augment_tasks_for_placeholders, plan.get("tasks", []), repo)
 

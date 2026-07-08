@@ -122,10 +122,13 @@ async def update_chat(
 
     updated = await update_session(
         db,
-        session=session,
+        session_id=session_id,
+        user_id=uuid.UUID(current_user["sub"]),
         title=body.title,
         is_archived=body.is_archived,
     )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
     return SessionResponse(
         id=updated.id,
         title=updated.title,
@@ -146,7 +149,7 @@ async def delete_chat(
     session = await get_session(db, session_id=session_id, user_id=uuid.UUID(current_user["sub"]))
     if not session:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
-    await delete_session(db, session)
+    await delete_session(db, session_id=session_id, user_id=uuid.UUID(current_user["sub"]))
     return None
 
 

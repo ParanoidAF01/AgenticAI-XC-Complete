@@ -1,59 +1,80 @@
-"""Profile manager – maps logical profile names to MSSQL connection URLs."""
+"""Profile manager – maps logical profile names to MSSQL connections.
+
+Builds connection URLs from individual credential fields (server, database,
+user, password, driver, port) stored in environment variables.
+"""
 from __future__ import annotations
 
 import logging
 from typing import Dict, List, Optional
+from urllib.parse import quote_plus
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
-from ..core.config import get_settings
+from ..core.config import Settings, get_settings
 from ..schemas.common import ProfileResponse
 
 logger = logging.getLogger(__name__)
 
 # ── Profile catalogue ────────────────────────────────────────────
-# Each entry maps a logical name to its env-var connection URL.
+# Maps logical name → display metadata + Settings field prefix.
 _PROFILE_CATALOGUE: Dict[str, Dict[str, str]] = {
     "idp_reporting": {
         "display_name": "IDP Reporting",
         "description": "IDP Reporting database (production read-only)",
-        "env_key": "MSSQL_IDP_REPORTING_URL",
+        "prefix": "MSSQL_IDP_REPORTING",
     },
     "idp_stage_ext": {
         "display_name": "IDP Stage External",
         "description": "IDP Stage External database",
-        "env_key": "MSSQL_IDP_STAGE_EXT_URL",
+        "prefix": "MSSQL_IDP_STAGE_EXT",
     },
 }
+
+
+def _build_mssql_url(settings: Settings, prefix: str) -> Optional[str]:
+    """Retrieve the pyodbc connection URL from the settings.
+
+    Reads settings attributes like {prefix}_URL.
+    """
+    url = getattr(settings, f"{prefix}_URL", "") or ""
+    return url if url else None
 
 
 class ProfileManager:
     """Manages MSSQL profile connections with a lightweight pool per profile."""
 
-    def __init__(self) -> None:
+    def __init__(self, settings: Settings | None = None) -> None:
         self._engines: Dict[str, Engine] = {}
-        self._settings = get_settings()
+        self._settings = settings or get_settings()
+
+    def initialize(self) -> None:
+        """Log which profiles are configured (called on startup)."""
+        for name in _PROFILE_CATALOGUE:
+            url = self._resolve_url(name)
+            if url:
+                logger.info("Profile '%s' configured", name)
+            else:
+                logger.warning("Profile '%s' has no credentials configured", name)
 
     # ── public API ───────────────────────────────────────────────
 
-    def get_profiles(self) -> List[ProfileResponse]:
+    def get_profiles(self) -> List[dict]:
         """Return metadata for every configured profile."""
-        profiles: List[ProfileResponse] = []
+        profiles: List[dict] = []
         for name, meta in _PROFILE_CATALOGUE.items():
             url = self._resolve_url(name)
             if url:
-                profiles.append(
-                    ProfileResponse(
-                        name=name,
-                        display_name=meta["display_name"],
-                        description=meta["description"],
-                    )
-                )
+                profiles.append({
+                    "name": name,
+                    "display_name": meta["display_name"],
+                    "description": meta["description"],
+                })
         return profiles
 
     def validate_profile(self, profile_name: str) -> bool:
-        """Return True if *profile_name* is known and has a configured URL."""
+        """Return True if *profile_name* is known and has credentials."""
         return profile_name in _PROFILE_CATALOGUE and bool(
             self._resolve_url(profile_name)
         )
@@ -70,7 +91,8 @@ class ProfileManager:
         url = self._resolve_url(profile_name)
         if not url:
             raise ValueError(
-                f"Profile '{profile_name}' is not configured or has no URL"
+                f"Profile '{profile_name}' is not configured. "
+                f"Set MSSQL_{profile_name.upper()}_SERVER and related env vars."
             )
 
         engine = create_engine(
@@ -97,7 +119,7 @@ class ProfileManager:
 
     # ── lifecycle ────────────────────────────────────────────────
 
-    def dispose_all(self) -> None:
+    def cleanup(self) -> None:
         """Dispose all cached engines (call on shutdown)."""
         for name, engine in self._engines.items():
             logger.info("Disposing MSSQL engine for profile=%s", name)
@@ -107,10 +129,8 @@ class ProfileManager:
     # ── internals ────────────────────────────────────────────────
 
     def _resolve_url(self, profile_name: str) -> Optional[str]:
-        """Resolve a profile name to its connection URL from settings."""
+        """Build the connection URL for a profile from its credential fields."""
         meta = _PROFILE_CATALOGUE.get(profile_name)
         if meta is None:
             return None
-        attr = meta["env_key"]
-        url: str = getattr(self._settings, attr, "") or ""
-        return url if url else None
+        return _build_mssql_url(self._settings, meta["prefix"])

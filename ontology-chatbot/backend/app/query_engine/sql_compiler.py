@@ -139,7 +139,7 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
     else:
         if task.get("task_type") in {"aggregate", "ranking", "trend"}:
             count_entity_name = task.get("fact_entity") or task.get("target_entity") or base_entity_name
-            count_entity = repo.get_entity(count_entity_name)
+            count_entity = repo.get_entity(str(count_entity_name))
             if not count_entity or not count_entity.get("primary_key"):
                 raise SQLBuildError(f"Generic count requires entity primary key: {count_entity_name}")
             pk_expr = f"[{count_entity['table_name']}].[{count_entity['primary_key']}]"

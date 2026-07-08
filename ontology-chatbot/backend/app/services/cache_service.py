@@ -139,3 +139,41 @@ class RedisCacheService:
         """Drop all cached data for a session."""
         await self._delete(self._recent_key(session_id))
         await self._delete(self._summary_key(session_id))
+
+    # ── OTP & Signup ─────────────────────────────────────────────
+
+    async def set_signup_data(self, email: str, data: Dict[str, Any], otp: str) -> None:
+        """Store pending signup data and expected OTP (10 min TTL)."""
+        await self._set(f"signup:data:{email}", data, 600)
+        await self._set(f"signup:otp:{email}", otp, 600)
+        
+    async def get_signup_data(self, email: str) -> Optional[Dict[str, Any]]:
+        return await self._get(f"signup:data:{email}")
+        
+    async def get_signup_otp(self, email: str) -> Optional[str]:
+        return await self._get(f"signup:otp:{email}")
+        
+    async def clear_signup_data(self, email: str) -> None:
+        await self._delete(f"signup:data:{email}")
+        await self._delete(f"signup:otp:{email}")
+
+    async def set_reset_otp(self, email: str, otp: str) -> None:
+        """Store password reset OTP (10 min TTL)."""
+        await self._set(f"reset:otp:{email}", otp, 600)
+        
+    async def get_reset_otp(self, email: str) -> Optional[str]:
+        return await self._get(f"reset:otp:{email}")
+        
+    async def clear_reset_otp(self, email: str) -> None:
+        await self._delete(f"reset:otp:{email}")
+        
+    async def set_reset_token(self, token: str, email: str) -> None:
+        """Store short-lived token mapping to email (15 min TTL)."""
+        await self._set(f"reset:token:{token}", email, 900)
+
+    async def get_reset_email_by_token(self, token: str) -> Optional[str]:
+        return await self._get(f"reset:token:{token}")
+        
+    async def clear_reset_token(self, token: str) -> None:
+        await self._delete(f"reset:token:{token}")
+

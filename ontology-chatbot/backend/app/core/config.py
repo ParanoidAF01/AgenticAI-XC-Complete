@@ -41,9 +41,18 @@ class Settings(BaseSettings):
     NEO4J_USERNAME: str = ""
     NEO4J_PASSWORD: str = ""
 
-    # ── MSSQL profiles (full connection URLs) ───────────────────
+    # ── MSSQL Profile: IDP Reporting ─────────────────────────────
     MSSQL_IDP_REPORTING_URL: str = ""
+
+    # ── MSSQL Profile: IDP Stage External ───────────────────────
     MSSQL_IDP_STAGE_EXT_URL: str = ""
+
+    # ── SMTP (Email) ────────────────────────────────────────────
+    SMTP_SERVER: str = "smtp.office365.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = ""
 
     # ── CORS ────────────────────────────────────────────────────
     CORS_ORIGINS: List[str] = ["http://localhost:5173"]

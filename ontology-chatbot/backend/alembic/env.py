@@ -4,13 +4,20 @@ from __future__ import annotations
 import asyncio
 import os
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+# Load .env from backend dir (or parent)
+_backend_dir = Path(__file__).resolve().parent.parent
+load_dotenv(_backend_dir / ".env")
+load_dotenv(_backend_dir.parent / ".env")
+
 # Import all models so Alembic can detect them
-from app.db.models import Base  # noqa: F401
+from app.db.models import Base  # noqa: F401, E402
 
 config = context.config
 

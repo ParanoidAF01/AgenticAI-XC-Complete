@@ -44,3 +44,17 @@ async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> Optional[User]
     stmt = select(User).where(User.id == user_id)
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
+
+
+async def update_user(db: AsyncSession, user: User) -> User:
+    """Update user instance."""
+    db.add(user)
+    await db.flush()
+    await db.refresh(user)
+    return user
+
+
+async def delete_user(db: AsyncSession, user: User) -> None:
+    """Delete user."""
+    await db.delete(user)
+    await db.flush()

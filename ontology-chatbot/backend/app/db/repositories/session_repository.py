@@ -101,4 +101,4 @@ async def delete_session(
     )
     result = await db.execute(stmt)
     await db.flush()
-    return result.rowcount > 0  # type: ignore[union-attr]
+    return result.rowcount > 0  # type: ignore[attr-defined]

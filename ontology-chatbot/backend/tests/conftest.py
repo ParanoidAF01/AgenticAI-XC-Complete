@@ -28,8 +28,14 @@ os.environ.setdefault("LLM_MODEL", "claude-sonnet-4-20250514")
 os.environ.setdefault("NEO4J_URI", "bolt://localhost:7687")
 os.environ.setdefault("NEO4J_USERNAME", "neo4j")
 os.environ.setdefault("NEO4J_PASSWORD", "test")
-os.environ.setdefault("MSSQL_IDP_REPORTING_URL", "mssql+pyodbc://test:test@localhost/idp_reporting")
-os.environ.setdefault("MSSQL_IDP_STAGE_EXT_URL", "mssql+pyodbc://test:test@localhost/idp_stage_ext")
+os.environ.setdefault("MSSQL_IDP_REPORTING_SERVER", "localhost")
+os.environ.setdefault("MSSQL_IDP_REPORTING_DATABASE", "idp_reporting")
+os.environ.setdefault("MSSQL_IDP_REPORTING_USER", "test")
+os.environ.setdefault("MSSQL_IDP_REPORTING_PASSWORD", "test")
+os.environ.setdefault("MSSQL_IDP_STAGE_EXT_SERVER", "localhost")
+os.environ.setdefault("MSSQL_IDP_STAGE_EXT_DATABASE", "idp_stage_ext")
+os.environ.setdefault("MSSQL_IDP_STAGE_EXT_USER", "test")
+os.environ.setdefault("MSSQL_IDP_STAGE_EXT_PASSWORD", "test")
 
 from app.core.config import Settings, get_settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
@@ -61,8 +67,14 @@ def test_settings() -> Settings:
         NEO4J_URI="bolt://localhost:7687",
         NEO4J_USERNAME="neo4j",
         NEO4J_PASSWORD="test",
-        MSSQL_IDP_REPORTING_URL="mssql+pyodbc://test:test@localhost/idp_reporting",
-        MSSQL_IDP_STAGE_EXT_URL="mssql+pyodbc://test:test@localhost/idp_stage_ext",
+        MSSQL_IDP_REPORTING_SERVER="localhost",
+        MSSQL_IDP_REPORTING_DATABASE="idp_reporting",
+        MSSQL_IDP_REPORTING_USER="test",
+        MSSQL_IDP_REPORTING_PASSWORD="test",
+        MSSQL_IDP_STAGE_EXT_SERVER="localhost",
+        MSSQL_IDP_STAGE_EXT_DATABASE="idp_stage_ext",
+        MSSQL_IDP_STAGE_EXT_USER="test",
+        MSSQL_IDP_STAGE_EXT_PASSWORD="test",
     )
 
 

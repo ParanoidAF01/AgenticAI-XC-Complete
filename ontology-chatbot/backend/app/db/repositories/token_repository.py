@@ -67,7 +67,7 @@ async def revoke_refresh_token(
     )
     result = await db.execute(stmt)
     await db.flush()
-    return result.rowcount > 0  # type: ignore[union-attr]
+    return result.rowcount > 0  # type: ignore[attr-defined]
 
 
 async def revoke_all_user_tokens(
@@ -85,4 +85,4 @@ async def revoke_all_user_tokens(
     )
     result = await db.execute(stmt)
     await db.flush()
-    return result.rowcount  # type: ignore[union-attr]
+    return result.rowcount  # type: ignore[attr-defined]
