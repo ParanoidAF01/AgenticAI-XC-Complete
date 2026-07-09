@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Message } from '@/types/chat';
 import './MessageList.css';
 
@@ -20,6 +22,17 @@ export default function MessageList({
   selectedMessageId,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [expandedSql, setExpandedSql] = useState<Set<string>>(new Set());
+
+  const toggleSql = (e: React.MouseEvent, msgId: string) => {
+    e.stopPropagation();
+    setExpandedSql(prev => {
+      const next = new Set(prev);
+      if (next.has(msgId)) next.delete(msgId);
+      else next.add(msgId);
+      return next;
+    });
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,8 +81,37 @@ export default function MessageList({
           </div>
           <div className="message-body">
             <div className="message-content">
-              {msg.content}
+              {msg.role === 'assistant' ? (
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {msg.content}
+                </ReactMarkdown>
+              ) : (
+                msg.content
+              )}
             </div>
+            {msg.role === 'assistant' && !!msg.metadata_?.sql && (
+              <div className="message-sql-container">
+                <button 
+                  className="view-sql-btn" 
+                  onClick={(e) => toggleSql(e, msg.id)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                  </svg>
+                  {expandedSql.has(msg.id) ? 'Hide SQL' : 'View SQL'}
+                </button>
+                {expandedSql.has(msg.id) && (
+                  <div className="sql-code-block" onClick={(e) => e.stopPropagation()}>
+                    <pre>
+                      <code>
+                        {Array.isArray(msg.metadata_.sql) ? (msg.metadata_.sql as string[]).join('\n\n') : String(msg.metadata_.sql)}
+                      </code>
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="message-time">
               {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </div>
