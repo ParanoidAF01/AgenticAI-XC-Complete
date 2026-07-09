@@ -219,6 +219,15 @@ export default function ChatPage() {
                 Dev
               </button>
             )}
+
+            <img 
+              src="/company-logo.png" 
+              alt="Company Logo" 
+              style={{ height: '32px', marginLeft: '8px', objectFit: 'contain' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
           </div>
         </header>
 

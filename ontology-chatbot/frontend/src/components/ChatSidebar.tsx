@@ -58,6 +58,18 @@ export default function ChatSidebar({
       {isOpen && <div className="sidebar-overlay" onClick={onToggle} />}
 
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
+        {/* Header Logo */}
+        <div className="sidebar-header" style={{ padding: '16px 16px 8px 16px', display: 'flex', justifyContent: 'center' }}>
+          <img 
+            src="/nexus-logo.png" 
+            alt="NexusAI" 
+            style={{ width: '100%', maxWidth: '140px', objectFit: 'contain' }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        </div>
+
         {/* New Chat Section */}
         <div className="sidebar-top">
           <button className="new-chat-btn" onClick={onNewChat} style={{ backgroundColor: 'var(--figma-primary)', color: '#000', fontWeight: 600 }}>

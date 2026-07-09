@@ -93,8 +93,9 @@
 }
 
 .message--user .message-content {
-  background: var(--accent);
-  color: white;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
   border-bottom-right-radius: 4px;
 }
 
