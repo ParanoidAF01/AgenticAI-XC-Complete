@@ -31,8 +31,8 @@ export default function ChatPage() {
   const deleteSessionMutation = useDeleteSession();
 
   const activeSession = sessions.find((s) => s.id === activeSessionId);
-  // Default to first profile if none selected
-  const activeProfileName = selectedProfile || profiles[0]?.name || '';
+  // Require explicit profile selection
+  const activeProfileName = selectedProfile || '';
 
   const handleNewChat = async () => {
     if (!activeProfileName) return;
@@ -162,7 +162,7 @@ export default function ChatPage() {
               }}
             >
               {profiles.length === 0 && <option value="">No databases available</option>}
-              {!selectedProfile && profiles.length > 0 && <option value="">Select a database...</option>}
+              {!selectedProfile && profiles.length > 0 && <option value="" disabled>Select a database...</option>}
               {profiles.map((p) => (
                 <option key={p.name} value={p.name}>
                   {p.display_name || p.name}
@@ -199,19 +199,12 @@ export default function ChatPage() {
           ) : (
             <div className="welcome-screen">
               <div className="welcome-content" style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-                <div className="welcome-icon" style={{ margin: '0 auto 24px auto', width: '64px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                    <rect width="48" height="48" rx="14" fill="var(--figma-primary)" opacity="0.15" />
-                    <path
-                      d="M16 24C16 19.5817 19.5817 16 24 16C28.4183 16 32 19.5817 32 24C32 28.4183 28.4183 32 24 32"
-                      stroke="var(--figma-primary)"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-                    <circle cx="24" cy="24" r="3" fill="var(--figma-primary)" />
+                <div className="welcome-icon" style={{ margin: '0 auto 24px auto', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFD600', borderRadius: '12px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C14.03 4.2 15 4.52 15.87 5H13V4.07ZM13 7H17.24C18.13 8.39 18.76 9.97 18.95 11H13V7ZM13 13H18.95C18.76 14.03 18.13 15.61 17.24 17H13V13ZM13 19.93V19H15.87C15 19.48 14.03 19.8 13 19.93Z" fill="#111111" />
                   </svg>
                 </div>
-                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '32px', marginBottom: '16px', color: 'var(--figma-text-white)' }}>
+                <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', marginBottom: '16px', color: 'var(--text-primary)', fontWeight: 700 }}>
                   Welcome to Ontology
                 </h2>
                 <p style={{ color: 'var(--figma-text-subtle)', marginBottom: '48px', fontSize: '16px' }}>
@@ -220,46 +213,42 @@ export default function ChatPage() {
                     : 'Please select a database from the top right to start querying.'}
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', textAlign: 'left' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', textAlign: 'left', maxWidth: '800px', margin: '0 auto' }}>
                   <button
                     className="suggestion-card"
                     disabled={!activeProfileName}
                     onClick={() => handleSendMessage('Show me all tables and their descriptions')}
-                    style={{ padding: '24px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-secondary)', borderRadius: '12px', cursor: activeProfileName ? 'pointer' : 'not-allowed', opacity: activeProfileName ? 1 : 0.5, transition: 'background-color 0.2s', textAlign: 'left' }}
                   >
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>📊</div>
-                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--figma-text-white)' }}>Database Schema</div>
-                    <div style={{ fontSize: '13px', color: 'var(--figma-text-subtle)' }}>Show me all tables and their descriptions</div>
+                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--text-primary)', fontSize: '15px' }}>Database Schema</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Show me all tables and their descriptions</div>
                   </button>
                   <button
                     className="suggestion-card"
                     disabled={!activeProfileName}
                     onClick={() => handleSendMessage('What are the key entities in this database?')}
-                    style={{ padding: '24px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-secondary)', borderRadius: '12px', cursor: activeProfileName ? 'pointer' : 'not-allowed', opacity: activeProfileName ? 1 : 0.5, transition: 'background-color 0.2s', textAlign: 'left' }}
                   >
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>🧬</div>
-                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--figma-text-white)' }}>Key Entities</div>
-                    <div style={{ fontSize: '13px', color: 'var(--figma-text-subtle)' }}>What are the key entities in this database?</div>
+                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--text-primary)', fontSize: '15px' }}>Key Entities</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>What are the key entities in this database?</div>
                   </button>
                   <button
                     className="suggestion-card"
                     disabled={!activeProfileName}
                     onClick={() => handleSendMessage('Can you summarize the relationships between tables?')}
-                    style={{ padding: '24px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-secondary)', borderRadius: '12px', cursor: activeProfileName ? 'pointer' : 'not-allowed', opacity: activeProfileName ? 1 : 0.5, transition: 'background-color 0.2s', textAlign: 'left' }}
                   >
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔗</div>
-                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--figma-text-white)' }}>Relationships</div>
-                    <div style={{ fontSize: '13px', color: 'var(--figma-text-subtle)' }}>Can you summarize the relationships between tables?</div>
+                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--text-primary)', fontSize: '15px' }}>Relationships</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Can you summarize the relationships between tables?</div>
                   </button>
                   <button
                     className="suggestion-card"
                     disabled={!activeProfileName}
                     onClick={() => handleSendMessage('Help me construct a complex join query')}
-                    style={{ padding: '24px', backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-secondary)', borderRadius: '12px', cursor: activeProfileName ? 'pointer' : 'not-allowed', opacity: activeProfileName ? 1 : 0.5, transition: 'background-color 0.2s', textAlign: 'left' }}
                   >
                     <div style={{ fontSize: '20px', marginBottom: '8px' }}>🔍</div>
-                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--figma-text-white)' }}>Query Assistance</div>
-                    <div style={{ fontSize: '13px', color: 'var(--figma-text-subtle)' }}>Help me construct a complex join query</div>
+                    <div style={{ fontWeight: 600, marginBottom: '4px', color: 'var(--text-primary)', fontSize: '15px' }}>Query Assistance</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Help me construct a complex join query</div>
                   </button>
                 </div>
               </div>
@@ -267,12 +256,33 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* Composer */}
-        <MessageComposer
-          onSend={handleSendMessage}
-          isLoading={sendMessageMutation.isPending || createSessionMutation.isPending}
-          disabled={!activeProfileName}
-        />
+        {/* Composer wrapper for relative positioning of the locked overlay */}
+        <div style={{ position: 'relative' }}>
+          {!activeProfileName && (
+            <div style={{
+              position: 'absolute',
+              top: '-24px',
+              left: '0',
+              right: '0',
+              textAlign: 'center',
+              zIndex: 10,
+              pointerEvents: 'none'
+            }}>
+              <span style={{
+                color: 'var(--figma-text-secondary)',
+                fontSize: '12px',
+                fontFamily: 'var(--font-sans)',
+              }}>
+                Please select a database to start chatting.
+              </span>
+            </div>
+          )}
+          <MessageComposer
+            onSend={handleSendMessage}
+            isLoading={sendMessageMutation.isPending || createSessionMutation.isPending}
+            disabled={!activeProfileName}
+          />
+        </div>
       </main>
 
       {/* Dev Panel */}

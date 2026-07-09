@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { authApi } from '@/api/auth';
 import type { LoginRequest } from '@/types/auth';
 
+let initialRefreshPromise: Promise<void> | null = null;
+
 export function useAuth() {
   const navigate = useNavigate();
   const { setAuth, clearAuth, isAuthenticated, user, accessToken } = useAuthStore();
@@ -14,21 +16,33 @@ export function useAuth() {
   // Try to refresh token on mount (session recovery)
   useEffect(() => {
     const tryRefresh = async () => {
-      const storedRefreshToken = useAuthStore.getState().refreshToken;
-      if (!storedRefreshToken) {
-        clearAuth();
-        setIsInitialized(true);
+      if (initialRefreshPromise) {
+        try {
+          await initialRefreshPromise;
+        } finally {
+          setIsInitialized(true);
+        }
         return;
       }
+
+      initialRefreshPromise = (async () => {
+        const storedRefreshToken = useAuthStore.getState().refreshToken;
+        if (!storedRefreshToken) {
+          clearAuth();
+          return;
+        }
+        try {
+          const tokenData = await authApi.refresh(storedRefreshToken);
+          useAuthStore.getState().setToken(tokenData.access_token);
+          const userData = await authApi.getMe();
+          setAuth(tokenData.access_token, tokenData.refresh_token, userData);
+        } catch {
+          clearAuth();
+        }
+      })();
+
       try {
-        const tokenData = await authApi.refresh(storedRefreshToken);
-        // Need to temporarily set access token so that getMe uses it
-        useAuthStore.getState().setToken(tokenData.access_token);
-        const userData = await authApi.getMe();
-        setAuth(tokenData.access_token, tokenData.refresh_token, userData);
-      } catch {
-        // No valid refresh token — stay logged out
-        clearAuth();
+        await initialRefreshPromise;
       } finally {
         setIsInitialized(true);
       }

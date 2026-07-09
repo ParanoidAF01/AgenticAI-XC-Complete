@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { authApi } from '@/api/auth';
-import { useAuth } from '@/hooks/useAuth';
 
 export const ChangePasswordPage: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -11,9 +9,7 @@ export const ChangePasswordPage: React.FC = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,17 +36,7 @@ export const ChangePasswordPage: React.FC = () => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    try {
-      await authApi.deleteAccount();
-      // Clearing local auth state
-      logout();
-      navigate('/signup');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete account.');
-      setShowDeleteConfirm(false);
-    }
-  };
+
 
   return (
     <div>
@@ -105,31 +91,6 @@ export const ChangePasswordPage: React.FC = () => {
             {isLoading ? 'Updating...' : 'Update Password'}
           </button>
         </form>
-      </div>
-
-      <div className="settings-card" style={{ borderColor: 'rgba(231, 76, 60, 0.3)' }}>
-        <h4 style={{ marginBottom: '8px', fontSize: '18px', color: 'var(--error)' }}>Danger Zone</h4>
-        <p style={{ fontSize: '14px', color: 'var(--figma-text-subtle)', marginBottom: '16px' }}>
-          Once you delete your account, there is no going back. Please be certain.
-        </p>
-
-        {!showDeleteConfirm ? (
-          <button className="settings-btn-danger" onClick={() => setShowDeleteConfirm(true)}>
-            Delete Account
-          </button>
-        ) : (
-          <div style={{ padding: '16px', backgroundColor: 'rgba(231, 76, 60, 0.1)', borderRadius: '8px' }}>
-            <p style={{ marginBottom: '16px', fontWeight: 500 }}>Are you absolutely sure you want to delete your account? This action cannot be undone.</p>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="settings-btn-danger" style={{ backgroundColor: 'var(--error)', color: '#fff' }} onClick={handleDeleteAccount}>
-                Yes, delete my account
-              </button>
-              <button className="settings-btn-primary" style={{ backgroundColor: 'var(--bg-surface)', color: 'var(--figma-text-white)' }} onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

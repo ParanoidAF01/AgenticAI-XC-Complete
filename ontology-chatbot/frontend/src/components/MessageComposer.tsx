@@ -39,15 +39,15 @@ export default function MessageComposer({ onSend, isLoading, disabled }: Message
   };
 
   return (
-    <div className="composer">
-      <div className="composer-inner">
+    <div className={`composer ${disabled ? 'composer-disabled' : ''}`}>
+      <div className="composer-inner" style={{ boxShadow: disabled ? '0px 1px 2px 0px rgba(0, 0, 0, 0.05)' : undefined }}>
         <textarea
           ref={textareaRef}
           className="composer-input"
           value={content}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder={disabled ? 'Select a profile to start...' : 'Ask about your insurance data...'}
+          placeholder={disabled ? '' : 'Ask a question about your data...'}
           disabled={isLoading || disabled}
           rows={1}
         />
@@ -70,7 +70,11 @@ export default function MessageComposer({ onSend, isLoading, disabled }: Message
           )}
         </button>
       </div>
-      <p className="composer-hint">Enter to send • Shift+Enter for new line</p>
+      {!disabled ? (
+        <p className="composer-hint">Enter to send • Shift+Enter for new line</p>
+      ) : (
+        <p className="composer-hint">Ontology AI can make mistakes. Consider verifying critical data.</p>
+      )}
     </div>
   );
 }
