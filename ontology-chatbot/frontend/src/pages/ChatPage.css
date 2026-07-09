@@ -145,7 +145,7 @@
 
 .suggestion-card {
   padding: 24px;
-  background-color: var(--figma-bg-dark);
+  background-color: var(--figma-bg-card);
   border: 1px solid var(--border-secondary);
   border-radius: 12px;
   cursor: pointer;

@@ -21,7 +21,8 @@
 .message {
   display: flex;
   gap: 0.75rem;
-  max-width: 85%;
+  width: 100%;
+  max-width: 100%;
   animation: messageIn 0.3s ease-out;
   cursor: default;
   transition: background 0.15s;
@@ -32,6 +33,7 @@
 .message--user {
   align-self: flex-end;
   flex-direction: row-reverse;
+  max-width: 85%;
 }
 
 .message--assistant {
@@ -77,6 +79,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+  width: 100%;
 }
 
 .message-content {
@@ -114,7 +118,8 @@
 /* Typing indicator */
 .typing-indicator {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 12px;
   padding: 0.75rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -122,16 +127,33 @@
   border-bottom-left-radius: 4px;
 }
 
-.typing-indicator span {
+.typing-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.typing-dots span {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--text-muted);
+  background: var(--accent);
   animation: bounce 1.4s ease-in-out infinite;
 }
 
-.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+.typing-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
 
 /* Loading dots */
 .loading-dots {

@@ -131,7 +131,10 @@ export default function MessageList({
           </div>
           <div className="message-body">
             <div className="typing-indicator">
-              <span /><span /><span />
+              <div className="typing-dots">
+                <span /><span /><span />
+              </div>
+              <span className="typing-text">Analyzing your data...</span>
             </div>
           </div>
         </div>

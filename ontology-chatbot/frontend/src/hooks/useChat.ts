@@ -58,6 +58,28 @@ export function useSendMessage() {
 
   return useMutation({
     mutationFn: (data: MessageRequest) => chatApi.sendMessage(data),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['messages', variables.session_id] });
+      const previousMessages = queryClient.getQueryData(['messages', variables.session_id]);
+      
+      queryClient.setQueryData(['messages', variables.session_id], (old: any) => {
+        const optimisticMsg = {
+          id: 'optimistic-' + Date.now(),
+          session_id: variables.session_id,
+          role: 'user',
+          content: variables.content,
+          created_at: new Date().toISOString(),
+        };
+        return old ? [...old, optimisticMsg] : [optimisticMsg];
+      });
+
+      return { previousMessages };
+    },
+    onError: (_err, variables, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(['messages', variables.session_id], context.previousMessages);
+      }
+    },
     onSuccess: (_response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['messages', variables.session_id] });
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
