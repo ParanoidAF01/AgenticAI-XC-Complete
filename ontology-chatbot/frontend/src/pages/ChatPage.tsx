@@ -12,11 +12,12 @@ import {
   useDeleteSession,
   useProfiles,
 } from '@/hooks/useChat';
+import { chatApi } from '@/api/chat';
 import type { Message } from '@/types/chat';
 import './ChatPage.css';
 
 export default function ChatPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<string>('');
@@ -35,13 +36,13 @@ export default function ChatPage() {
   const activeProfileName = selectedProfile || '';
 
   const handleNewChat = async () => {
-    if (!activeProfileName) return;
-
     try {
       const session = await createSessionMutation.mutateAsync({
-        profile: activeProfileName,
+        profile: undefined,
       });
       setActiveSessionId(session.id);
+      setSelectedMessage(null);
+      setSelectedProfile('');
     } catch {
       // handled by mutation
     }
@@ -64,6 +65,16 @@ export default function ChatPage() {
         setActiveSessionId(session.id);
       } catch {
         return;
+      }
+    } else {
+      // Update session profile if we are reusing a "New Chat" empty session
+      const currentSession = sessions.find(s => s.id === sessionId);
+      if (currentSession && !currentSession.profile) {
+        try {
+          await chatApi.updateSession(sessionId, { profile: activeProfileName });
+        } catch {
+          // ignore error and proceed
+        }
       }
     }
 
@@ -113,7 +124,6 @@ export default function ChatPage() {
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
-        onLogout={logout}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         user={user}
       />

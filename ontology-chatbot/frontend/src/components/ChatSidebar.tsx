@@ -12,7 +12,6 @@ interface Props {
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
-  onLogout: () => void;
   onToggle: () => void;
   user: User | null;
 }
@@ -25,7 +24,6 @@ export default function ChatSidebar({
   onSelectSession,
   onNewChat,
   onDeleteSession,
-  onLogout,
   onToggle,
   user,
 }: Props) {
@@ -143,11 +141,6 @@ export default function ChatSidebar({
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
             </Link>
-            <button className="logout-btn" onClick={() => { if(window.confirm('Are you sure you want to sign out?')) onLogout(); }} title="Sign out">
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                <path d="M6 3a1 1 0 00-1 1v10a1 1 0 001 1h2a1 1 0 010 2H6a3 3 0 01-3-3V4a3 3 0 013-3h2a1 1 0 010 2H6zm6.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L13.586 10H8a1 1 0 010-2h5.586l-1.293-1.293a1 1 0 010-1.414z" />
-              </svg>
-            </button>
           </div>
         </div>
       </aside>

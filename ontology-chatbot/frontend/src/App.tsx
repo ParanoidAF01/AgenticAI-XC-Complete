@@ -12,6 +12,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import { SettingsLayout } from './pages/Settings/SettingsLayout';
 import { ProfileSettingsPage } from './pages/Settings/ProfileSettingsPage';
 import { ChangePasswordPage } from './pages/Settings/ChangePasswordPage';
+import { LogoutPage } from './pages/Settings/LogoutPage';
+import { DeleteAccountPage } from './pages/Settings/DeleteAccountPage';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
         <Route index element={<Navigate to="profile" replace />} />
         <Route path="profile" element={<ProfileSettingsPage />} />
         <Route path="security" element={<ChangePasswordPage />} />
+        <Route path="logout" element={<LogoutPage />} />
+        <Route path="delete-account" element={<DeleteAccountPage />} />
       </Route>
 
       {/* Auth Routes */}

@@ -28,6 +28,12 @@ export const SettingsLayout: React.FC = () => {
             <NavLink to="/settings/security" className={({isActive}) => isActive ? "settings-nav-item active" : "settings-nav-item"}>
               Security
             </NavLink>
+            <NavLink to="/settings/logout" className={({isActive}) => isActive ? "settings-nav-item active" : "settings-nav-item"}>
+              Logout
+            </NavLink>
+            <NavLink to="/settings/delete-account" className={({isActive}) => isActive ? "settings-nav-item active delete-account-link" : "settings-nav-item delete-account-link"} style={{ color: '#ff4d4f' }}>
+              Delete Account
+            </NavLink>
           </nav>
         </aside>
 

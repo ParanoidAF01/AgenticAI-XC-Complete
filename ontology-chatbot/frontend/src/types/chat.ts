@@ -1,7 +1,7 @@
 export interface Session {
   id: string;
-  title: string;
-  profile: string;
+  title: string | null;
+  profile: string | null;
   is_archived: boolean;
   created_at: string;
   updated_at: string;
@@ -27,8 +27,8 @@ export interface ChatResponse {
 }
 
 export interface CreateSessionRequest {
+  profile?: string;
   title?: string;
-  profile: string;
 }
 
 export interface MessageRequest {
@@ -39,4 +39,5 @@ export interface MessageRequest {
 export interface UpdateSessionRequest {
   title?: string;
   is_archived?: boolean;
+  profile?: string | null;
 }
