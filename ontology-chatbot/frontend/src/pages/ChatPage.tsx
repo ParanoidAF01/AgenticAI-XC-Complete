@@ -37,6 +37,30 @@ export default function ChatPage() {
 
   const handleNewChat = async () => {
     try {
+      // 1. Cleanup any existing empty sessions before creating a new one
+      const emptySessions = sessions.filter(s => !s.profile);
+      for (const emptySession of emptySessions) {
+        if (emptySession.id !== activeSessionId) {
+          try {
+            await deleteSessionMutation.mutateAsync(emptySession.id);
+          } catch {
+            // ignore cleanup errors
+          }
+        }
+      }
+
+      // 2. Check if the currently active session is already empty
+      if (activeSessionId) {
+        const currentActive = sessions.find(s => s.id === activeSessionId);
+        if (currentActive && !currentActive.profile) {
+          // If we are already on an empty session, just clear the screen and do nothing else
+          setSelectedMessage(null);
+          setSelectedProfile('');
+          return;
+        }
+      }
+
+      // 3. Create a fresh empty session
       const session = await createSessionMutation.mutateAsync({
         profile: undefined,
       });
@@ -67,11 +91,14 @@ export default function ChatPage() {
         return;
       }
     } else {
-      // Update session profile if we are reusing a "New Chat" empty session
+      // Update session profile and title if we are reusing a "New Chat" empty session
       const currentSession = sessions.find(s => s.id === sessionId);
       if (currentSession && !currentSession.profile) {
         try {
-          await chatApi.updateSession(sessionId, { profile: activeProfileName });
+          await chatApi.updateSession(sessionId, { 
+            profile: activeProfileName,
+            title: content.slice(0, 60)
+          });
         } catch {
           // ignore error and proceed
         }

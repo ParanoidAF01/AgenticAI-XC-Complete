@@ -46,6 +46,7 @@ from app.db.repositories.token_repository import (
     revoke_refresh_token,
     revoke_all_user_tokens,
 )
+from app.db.repositories.session_repository import delete_empty_sessions
 from app.schemas.auth import (
     LoginRequest,
     RefreshRequest,
@@ -144,8 +145,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
     """Rotate refresh token and issue a new access token."""
-    incoming_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
-    token_record = await get_refresh_token(db, incoming_hash)
+    token_record = await get_refresh_token(db, body.refresh_token)
 
     if not token_record:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
@@ -174,11 +174,13 @@ async def refresh(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(body: RefreshRequest, db: AsyncSession = Depends(get_db)):
-    """Revoke the provided refresh token."""
-    incoming_hash = hashlib.sha256(body.refresh_token.encode()).hexdigest()
-    token_record = await get_refresh_token(db, incoming_hash)
-    if token_record and not token_record.revoked:
-        await revoke_refresh_token(db, body.refresh_token)
+    """Revoke the provided refresh token and cleanup empty sessions."""
+    token_record = await get_refresh_token(db, body.refresh_token)
+    if token_record:
+        if not token_record.revoked:
+            await revoke_refresh_token(db, body.refresh_token)
+        # Clean up empty sessions when the user explicitly logs out
+        await delete_empty_sessions(db, token_record.user_id)
     return None
 
 

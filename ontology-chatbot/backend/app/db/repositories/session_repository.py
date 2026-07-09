@@ -16,7 +16,7 @@ async def create_session(
     *,
     session_id: uuid.UUID | None = None,
     user_id: uuid.UUID,
-    profile: str,
+    profile: str | None = None,
     title: str | None = None,
 ) -> ChatSession:
     """Create a new chat session for the given user."""
@@ -68,6 +68,7 @@ async def update_session(
     *,
     title: str | None = None,
     is_archived: bool | None = None,
+    profile: str | None = None,
 ) -> Optional[ChatSession]:
     """Update mutable session fields. Returns the updated session or None."""
     values: dict = {"updated_at": datetime.now(timezone.utc)}
@@ -75,6 +76,8 @@ async def update_session(
         values["title"] = title
     if is_archived is not None:
         values["is_archived"] = is_archived
+    if profile is not None:
+        values["profile"] = profile
 
     stmt = (
         sa_update(ChatSession)
@@ -102,3 +105,14 @@ async def delete_session(
     result = await db.execute(stmt)
     await db.flush()
     return result.rowcount > 0  # type: ignore[attr-defined]
+
+
+async def delete_empty_sessions(db: AsyncSession, user_id: uuid.UUID) -> int:
+    """Delete all sessions for a user that have no profile (empty chats). Returns count."""
+    stmt = sa_delete(ChatSession).where(
+        ChatSession.user_id == user_id, ChatSession.profile.is_(None)
+    )
+    result = await db.execute(stmt)
+    if result.rowcount > 0:
+        await db.flush()
+    return result.rowcount  # type: ignore[attr-defined]
