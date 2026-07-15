@@ -1,0 +1,66 @@
+# SKC Default Configuration
+pipeline:
+  output_dir: ./output
+  fail_fast: true
+  checkpoint_enabled: true
+  resume_from:
+  stages:
+    schema_parser: {enabled: true}
+    schema_graph_builder: {enabled: true}
+    data_profiler: {enabled: true, sample_size: 100000}
+    semantic_inferencer: {enabled: true}
+    relationship_analyzer: {enabled: true}
+    metric_discovery: {enabled: true}
+    rule_discovery: {enabled: true}
+    confidence_engine: {enabled: true}
+    validation_engine: {enabled: true}
+    human_review: {enabled: true, mode: batch}  # batch | cli | api
+    graph_generator: {enabled: true}
+
+connector:
+  type: postgres  # postgres | mysql | snowflake | bigquery | ddl_file
+  connection_string: ""
+  ddl_path: ""
+
+llm:
+  enabled: false
+  provider: openai
+  model: gpt-4o
+  temperature: 0.1
+  max_tokens: 4096
+  rate_limit_rpm: 60
+  cache_responses: true
+  max_retries: 3
+
+neo4j:
+  uri: bolt://localhost:7687
+  username: neo4j
+  password: ""
+  database: skc
+  dry_run: true
+  batch_size: 1000
+  incremental: false
+
+confidence:
+  auto_approve_threshold: 0.85
+  mandatory_review_threshold: 0.60
+  signal_weights:
+    naming_convention_match: 0.15
+    fk_backed: 0.20
+    data_profile_support: 0.15
+    plugin_match: 0.15
+    llm_confidence: 0.10
+    glossary_match: 0.10
+    cross_reference_count: 0.10
+    sample_data_support: 0.05
+
+review:
+  auto_approve_high: true
+  mode: batch  # batch | cli | api
+  api_port: 8000
+  store_path:
+
+plugins:
+  search_paths:
+    - ./plugins
+  enabled: []

@@ -1,0 +1,21 @@
+rules:
+  - name: Premium Positive
+    description: Premium amounts must be greater than zero.
+    rule_type: validation
+    expression: premium > 0
+    applies_to:
+      - Premium
+  - name: Claim Amount Within Coverage Limit
+    description: Claim amount must not exceed the applicable coverage limit.
+    rule_type: validation
+    expression: claim_amount <= coverage_limit
+    applies_to:
+      - Claim
+      - Coverage
+  - name: Policy Must Have Insured
+    description: Every active policy must be associated with an insured party.
+    rule_type: integrity
+    expression: policy.insured_id IS NOT NULL
+    applies_to:
+      - Policy
+      - Insured

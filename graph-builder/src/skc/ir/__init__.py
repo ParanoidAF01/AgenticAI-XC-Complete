@@ -1,0 +1,63 @@
+"""Intermediate Representation layer: MIR and KIR data models."""
+
+from skc.ir.common import (
+    CandidateKnowledge,
+    Confidence,
+    ConfidenceSignal,
+    ConfidenceTier,
+    NormalizedType,
+    Provenance,
+    ReviewStatus,
+    SourceType,
+    StageStatus,
+)
+from skc.ir.kir import (
+    BusinessConcept,
+    BusinessEntity,
+    BusinessRelationship,
+    BusinessRule,
+    KnowledgeGraph,
+    Metric,
+    SecurityTag,
+    Synonym,
+    TimeIntelligence,
+)
+from skc.ir.mir import (
+    MIRColumn,
+    MIRDatabase,
+    MIRForeignKey,
+    MIRIndex,
+    MIRPrimaryKey,
+    MIRProfileSet,
+    MIRSchema,
+    MIRTable,
+)
+
+__all__ = [
+    "BusinessConcept",
+    "BusinessEntity",
+    "BusinessRelationship",
+    "BusinessRule",
+    "CandidateKnowledge",
+    "Confidence",
+    "ConfidenceSignal",
+    "ConfidenceTier",
+    "KnowledgeGraph",
+    "MIRColumn",
+    "MIRDatabase",
+    "MIRForeignKey",
+    "MIRIndex",
+    "MIRPrimaryKey",
+    "MIRProfileSet",
+    "MIRSchema",
+    "MIRTable",
+    "Metric",
+    "NormalizedType",
+    "Provenance",
+    "ReviewStatus",
+    "SecurityTag",
+    "SourceType",
+    "StageStatus",
+    "Synonym",
+    "TimeIntelligence",
+]

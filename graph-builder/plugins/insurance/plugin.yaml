@@ -1,0 +1,7 @@
+name: insurance
+version: 1.0.0
+description: Seed ontology, metrics, rules, and synonyms for insurance domains.
+trust_score: 0.9
+industries:
+  - insurance
+  - reinsurance

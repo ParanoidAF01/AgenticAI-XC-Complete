@@ -1,0 +1,43 @@
+entities:
+  - name: Policy
+    description: A contract defining insurance coverage, limits, terms, and premiums.
+    entity_type: core
+    tags:
+      - insurance
+      - contract
+  - name: Claim
+    description: A request for payment or service under an insurance policy.
+    entity_type: transactional
+    tags:
+      - insurance
+      - loss
+  - name: Premium
+    description: Amount charged to maintain insurance coverage.
+    entity_type: measure
+    tags:
+      - insurance
+      - billing
+  - name: Coverage
+    description: A covered risk, benefit, deductible, limit, or protection within a policy.
+    entity_type: core
+    tags:
+      - insurance
+      - product
+  - name: Insured
+    description: Person or organization protected by an insurance policy.
+    entity_type: party
+    tags:
+      - insurance
+      - party
+  - name: Agent
+    description: Producer or intermediary associated with a policy or customer.
+    entity_type: party
+    tags:
+      - insurance
+      - distribution
+  - name: Beneficiary
+    description: Party designated to receive policy benefits.
+    entity_type: party
+    tags:
+      - insurance
+      - party

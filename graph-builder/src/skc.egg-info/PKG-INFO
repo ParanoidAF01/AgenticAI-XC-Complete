@@ -1,0 +1,30 @@
+Metadata-Version: 2.4
+Name: skc
+Version: 0.1.0
+Summary: Semantic Knowledge Compiler — extract, infer, and compile database semantics into a knowledge graph.
+Author: SKC Team
+License: MIT
+Classifier: Development Status :: 3 - Alpha
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Programming Language :: Python :: 3.13
+Classifier: Typing :: Typed
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: pydantic>=2.0
+Requires-Dist: sqlalchemy>=2.0
+Requires-Dist: neo4j>=5.0
+Requires-Dist: litellm
+Requires-Dist: typer[all]
+Requires-Dist: dynaconf
+Requires-Dist: structlog
+Requires-Dist: jinja2
+Requires-Dist: rich
+Requires-Dist: httpx
+Requires-Dist: sqlglot
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: testcontainers; extra == "dev"

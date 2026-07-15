@@ -1,0 +1,25 @@
+Policy:
+  - Contract
+  - Insurance Contract
+  - Policy Record
+Claim:
+  - Loss
+  - Claim Event
+  - Notice of Loss
+Premium:
+  - Payment
+  - Written Premium
+  - Earned Premium
+Coverage:
+  - Benefit
+  - Limit
+  - Protection
+Insured:
+  - Policyholder
+  - Covered Party
+Agent:
+  - Producer
+  - Broker
+Beneficiary:
+  - Recipient
+  - Payee

@@ -1,0 +1,25 @@
+metrics:
+  - name: Loss Ratio
+    description: Incurred losses divided by earned premium.
+    formula: incurred_losses / NULLIF(earned_premium, 0)
+    formula_type: ratio
+    unit: ratio
+    base_columns: []
+  - name: Combined Ratio
+    description: Loss ratio plus expense ratio.
+    formula: (incurred_losses + underwriting_expenses) / NULLIF(earned_premium, 0)
+    formula_type: ratio
+    unit: ratio
+    base_columns: []
+  - name: Claim Frequency
+    description: Number of claims divided by exposure count.
+    formula: claim_count / NULLIF(exposure_count, 0)
+    formula_type: ratio
+    unit: claims_per_exposure
+    base_columns: []
+  - name: Severity
+    description: Average loss amount per claim.
+    formula: incurred_losses / NULLIF(claim_count, 0)
+    formula_type: ratio
+    unit: currency_per_claim
+    base_columns: []
