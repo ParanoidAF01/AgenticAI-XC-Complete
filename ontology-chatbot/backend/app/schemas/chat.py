@@ -11,13 +11,14 @@ from pydantic import BaseModel, Field
 # ── Session ──────────────────────────────────────────────────────
 
 class CreateSessionRequest(BaseModel):
-    profile: str
+    profile: str | None = None
     title: str | None = None
 
 
 class UpdateSessionRequest(BaseModel):
     title: str | None = None
     is_archived: bool | None = None
+    profile: str | None = None
 
 
 class SessionResponse(BaseModel):
@@ -25,7 +26,7 @@ class SessionResponse(BaseModel):
 
     id: UUID
     title: str | None = None
-    profile: str
+    profile: str | None
     is_archived: bool = False
     created_at: datetime
     updated_at: datetime

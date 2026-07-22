@@ -79,7 +79,7 @@ async def signup_request(body: SignupRequest, request: Request, db: AsyncSession
             detail="Email already registered",
         )
         
-    cache = request.app.state.redis_cache
+    cache = request.app.state.cache_service
     otp = generate_otp()
     
     signup_data = {
@@ -89,7 +89,7 @@ async def signup_request(body: SignupRequest, request: Request, db: AsyncSession
     }
     
     await cache.set_signup_data(body.email, signup_data, otp)
-    await send_signup_otp_email(body.email, otp)
+    await send_signup_otp_email(body.email, otp, body.display_name)
     
     return {"message": "OTP sent to email."}
 
@@ -97,7 +97,7 @@ async def signup_request(body: SignupRequest, request: Request, db: AsyncSession
 @router.post("/signup/verify", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup_verify(body: SignupVerifyRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """Verify OTP and create user."""
-    cache = request.app.state.redis_cache
+    cache = request.app.state.cache_service
     stored_otp = await cache.get_signup_otp(body.email)
     
     if not stored_otp:
@@ -189,17 +189,17 @@ async def forgot_password(body: ForgotPasswordRequest, request: Request, db: Asy
     """Request password reset OTP."""
     user = await get_user_by_email(db, body.email)
     if user:
-        cache = request.app.state.redis_cache
+        cache = request.app.state.cache_service
         otp = generate_otp()
         await cache.set_reset_otp(body.email, otp)
-        await send_password_reset_otp_email(body.email, otp)
+        await send_password_reset_otp_email(body.email, otp, user.display_name)
     return {"message": "If that email exists, we have sent a reset code."}
 
 
 @router.post("/verify-reset-otp")
 async def verify_reset_otp(body: VerifyOtpRequest, request: Request):
     """Verify reset OTP and return short-lived reset token."""
-    cache = request.app.state.redis_cache
+    cache = request.app.state.cache_service
     stored_otp = await cache.get_reset_otp(body.email)
     
     if not stored_otp:
@@ -218,7 +218,7 @@ async def verify_reset_otp(body: VerifyOtpRequest, request: Request):
 @router.post("/reset-password", status_code=status.HTTP_200_OK)
 async def reset_password(body: ResetPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
     """Reset password using reset token."""
-    cache = request.app.state.redis_cache
+    cache = request.app.state.cache_service
     email = await cache.get_reset_email_by_token(body.reset_token)
     
     if not email:

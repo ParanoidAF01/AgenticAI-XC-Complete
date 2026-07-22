@@ -9,8 +9,13 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.types import JSON
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .config import get_settings
+
+# Use JSONB on Postgres, fallback to JSON on SQLite (for tests)
+JSONVariant = JSON().with_variant(JSONB, "postgresql")
 
 _settings = get_settings()
 

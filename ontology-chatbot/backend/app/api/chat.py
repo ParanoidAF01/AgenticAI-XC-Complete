@@ -126,6 +126,7 @@ async def update_chat(
         user_id=uuid.UUID(current_user["sub"]),
         title=body.title,
         is_archived=body.is_archived,
+        profile=body.profile,
     )
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")

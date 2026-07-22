@@ -74,10 +74,10 @@ class TestPostMessageIntegration:
         )
 
         # Mock the LLM call for general chat
-        with patch("app.query_engine.router.route_question") as mock_route:
+        with patch("app.services.query_orchestrator.route_question") as mock_route:
             mock_route.return_value = {"route": "general_chat", "reason": "greeting"}
 
-            with patch("app.query_engine.answer_generator.build_general_llm_answer") as mock_answer:
+            with patch("app.services.query_orchestrator.build_general_llm_answer") as mock_answer:
                 mock_answer.return_value = "Hello! How can I help you with your insurance data?"
 
                 response = await orchestrator.process_chat_message(

@@ -27,7 +27,7 @@ class ChatSession(Base):
         index=True,
     )
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
-    profile: Mapped[str] = mapped_column(String(128), nullable=False)
+    profile: Mapped[str | None] = mapped_column(String(128), nullable=True)
     is_archived: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )

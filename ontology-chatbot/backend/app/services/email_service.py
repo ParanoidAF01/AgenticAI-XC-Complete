@@ -45,13 +45,13 @@ async def send_email(receiver: str, subject: str, html_body: str) -> None:
     await asyncio.to_thread(_send_email_sync, receiver, subject, html_body)
 
 
-async def send_signup_otp_email(receiver: str, otp: str) -> None:
+async def send_signup_otp_email(receiver: str, otp: str, username: str = "User") -> None:
     """Send the 6-digit OTP for signup verification."""
     subject = "Verify your email address - Ontology Chatbot"
     html_body = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Verify your email address</h2>
-        <p>Thank you for signing up for Ontology Chatbot.</p>
+        <p>Thank You {username} for signing up.</p>
         <p>Please use the following 6-digit verification code to complete your registration:</p>
         <div style="background-color: #f4f4f5; padding: 16px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; border-radius: 8px; margin: 24px 0;">
             {otp}
@@ -63,13 +63,13 @@ async def send_signup_otp_email(receiver: str, otp: str) -> None:
     await send_email(receiver, subject, html_body)
 
 
-async def send_password_reset_otp_email(receiver: str, otp: str) -> None:
+async def send_password_reset_otp_email(receiver: str, otp: str, username: str = "User") -> None:
     """Send the 6-digit OTP for password reset."""
     subject = "Reset your password - Ontology Chatbot"
     html_body = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
-        <p>We received a request to reset your password for your Ontology Chatbot account.</p>
+        <p>Hello {username}, We received a request to reset your password for your Ontology Chatbot account.</p>
         <p>Please use the following 6-digit verification code to reset your password:</p>
         <div style="background-color: #f4f4f5; padding: 16px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 4px; border-radius: 8px; margin: 24px 0;">
             {otp}

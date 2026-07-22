@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.ontology.neo4j_repository import Neo4jRepo
 from app.query_engine.helpers import normalize_period, parse_property_ref
@@ -11,20 +11,97 @@ from app.query_engine.helpers import normalize_period, parse_property_ref
 logger = logging.getLogger(__name__)
 
 
-def validate_property_ref(property_ref: str, repo: Neo4jRepo, schema_cache: Dict[str, List[str]]) -> bool:
+def validate_property_ref(
+    property_ref: str,
+    repo: Neo4jRepo,
+    schema_cache: Dict[str, List[str]],
+) -> bool:
+    """Validate that a property_ref (Entity.Column) exists in both the
+    ontology graph and the live MSSQL schema."""
     try:
         entity_name, column_name = parse_property_ref(property_ref)
         entity = repo.get_entity(entity_name)
         if not entity:
             return False
         table_name = entity["table_name"]
-        return column_name in schema_cache.get(table_name, [])
+        # Check live MSSQL schema
+        if column_name not in schema_cache.get(table_name, []):
+            return False
+        return True
     except Exception:
         return False
 
 
-def validate_task(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo, schema_cache: Dict[str, List[str]]) -> List[str]:
+def _get_column_meta(
+    entity_name: str,
+    column_name: str,
+    repo: Neo4jRepo,
+) -> Optional[Dict[str, Any]]:
+    """Look up a single column's metadata from the ontology graph.
+
+    Returns None if the column is not found in the entity's ontology columns.
+    """
+    columns = repo.get_entity_columns(entity_name)
+    for col in columns:
+        if col.get("column_name") == column_name:
+            return col
+    return None
+
+
+def _validate_column_flags(
+    property_ref: str,
+    usage: str,
+    repo: Neo4jRepo,
+) -> List[str]:
+    """Validate that the column's boolean flags allow its intended usage.
+
+    Args:
+        property_ref: "Entity.Column" format
+        usage: one of "select", "filter", "group", "aggregate", "date"
+    """
+    warnings: List[str] = []
+    try:
+        entity_name, column_name = parse_property_ref(property_ref)
+    except Exception:
+        return warnings
+
+    col_meta = _get_column_meta(entity_name, column_name, repo)
+    if col_meta is None:
+        # Column not found in ontology — flag as warning (not hard error,
+        # since it may still exist in MSSQL)
+        warnings.append(
+            f"Column {property_ref} not found in ontology graph (HAS_COLUMN). "
+            f"It may exist in MSSQL but lacks ontology metadata."
+        )
+        return warnings
+
+    if col_meta.get("is_selectable") is False and usage == "select":
+        warnings.append(f"{property_ref}: is_selectable=false, should not be in selected_properties")
+
+    if col_meta.get("is_filterable") is False and usage == "filter":
+        warnings.append(f"{property_ref}: is_filterable=false, should not be used in WHERE filter")
+
+    if col_meta.get("is_groupable") is False and usage == "group":
+        warnings.append(f"{property_ref}: is_groupable=false, should not be used in GROUP BY")
+
+    if col_meta.get("is_aggregatable") is False and usage == "aggregate":
+        warnings.append(f"{property_ref}: is_aggregatable=false, should not be aggregated")
+
+    if usage == "date" and col_meta.get("supports_time_grouping") is False:
+        warnings.append(f"{property_ref}: supports_time_grouping=false, may not be suitable for date filtering")
+
+    return warnings
+
+
+def validate_task(
+    task: Dict[str, Any],
+    profile_name: str,
+    repo: Neo4jRepo,
+    schema_cache: Dict[str, List[str]],
+) -> List[str]:
     errs: List[str] = []
+
+    # Metric validation
     if task.get("metric_name"):
         metric = repo.get_metric(profile_name, task["metric_name"])
         if not metric:
@@ -32,29 +109,47 @@ def validate_task(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo, sche
         else:
             if metric["source_column"] not in schema_cache.get(metric["source_table"], []):
                 errs.append(f"Metric source not in live schema: {metric['source_table']}.{metric['source_column']}")
+
+    # Selected properties validation
     for prop in task.get("selected_properties", []):
         if not validate_property_ref(prop, repo, schema_cache):
             errs.append(f"Invalid property_ref: {prop}")
-    if task.get("date_property") and not validate_property_ref(task["date_property"], repo, schema_cache):
-        errs.append(f"Invalid date_property: {task['date_property']}")
+        else:
+            errs.extend(_validate_column_flags(prop, "select", repo))
+
+    # Date property validation
+    if task.get("date_property"):
+        if not validate_property_ref(task["date_property"], repo, schema_cache):
+            errs.append(f"Invalid date_property: {task['date_property']}")
+        else:
+            errs.extend(_validate_column_flags(task["date_property"], "date", repo))
+
+    # Filter validation
     for flt in task.get("filters", []):
         ftype = flt.get("type")
         if ftype == "field":
             if not validate_property_ref(flt.get("property_ref"), repo, schema_cache):
                 errs.append(f"Invalid filter property_ref: {flt.get('property_ref')}")
+            else:
+                errs.extend(_validate_column_flags(flt["property_ref"], "filter", repo))
         elif ftype == "date_range":
             if not validate_property_ref(flt.get("property_ref"), repo, schema_cache):
                 errs.append(f"Invalid date filter property_ref: {flt.get('property_ref')}")
+            else:
+                errs.extend(_validate_column_flags(flt["property_ref"], "date", repo))
             if not normalize_period(flt.get("operator")):
                 errs.append(f"Invalid date operator: {flt.get('operator')}")
         else:
             errs.append(f"Unsupported filter type: {ftype}")
+
+    # Path validation
     for branch in task.get("chosen_path", []):
         if len(branch) <= 1:
             continue
         rows = repo.find_preferred_path(branch[0], branch[-1], max_hops=max(2, len(branch)))
         if not rows:
             errs.append(f"Chosen path not resolvable: {branch}")
+
     return errs
 
 

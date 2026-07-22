@@ -172,6 +172,7 @@ class QueryOrchestrator:
                 "route": route_info,
                 "is_clarification": is_clarification,
                 "has_error": error_text is not None,
+                "sql": final_sql_list,
             },
         )
 

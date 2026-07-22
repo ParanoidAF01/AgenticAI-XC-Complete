@@ -6,10 +6,10 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ...core.database import Base
+from ...core.database import Base, JSONVariant
 
 
 class QueryAudit(Base):
@@ -40,12 +40,12 @@ class QueryAudit(Base):
     )
     profile: Mapped[str | None] = mapped_column(String(128), nullable=True)
     question: Mapped[str | None] = mapped_column(Text, nullable=True)
-    route: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    planner_json: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    raw_sql: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    final_sql: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    validation_trace: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    result_summary: Mapped[Dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    route: Mapped[Dict[str, Any] | None] = mapped_column(JSONVariant, nullable=True)
+    planner_json: Mapped[Dict[str, Any] | None] = mapped_column(JSONVariant, nullable=True)
+    raw_sql: Mapped[Dict[str, Any] | None] = mapped_column(JSONVariant, nullable=True)
+    final_sql: Mapped[Dict[str, Any] | None] = mapped_column(JSONVariant, nullable=True)
+    validation_trace: Mapped[Dict[str, Any] | None] = mapped_column(JSONVariant, nullable=True)
+    result_summary: Mapped[Dict[str, Any] | None] = mapped_column(JSONVariant, nullable=True)
     answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -43,16 +43,6 @@ from app.core.security import create_access_token, hash_password  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Event loop
-# ---------------------------------------------------------------------------
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-# ---------------------------------------------------------------------------
 # Test settings override
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="session")

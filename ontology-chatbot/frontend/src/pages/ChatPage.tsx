@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ChatSidebar from '@/components/ChatSidebar';
 import MessageList from '@/components/MessageList';
 import MessageComposer from '@/components/MessageComposer';
@@ -23,6 +23,18 @@ export default function ChatPage() {
   const [selectedProfile, setSelectedProfile] = useState<string>('');
   const [devPanelOpen, setDevPanelOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions();
   const { data: messages = [], isLoading: messagesLoading } = useMessages(activeSessionId);
@@ -184,28 +196,41 @@ export default function ChatPage() {
           {/* Database Selector in Top Bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontSize: '14px', color: 'var(--figma-text-subtle)' }}>Database:</span>
-            <select
-              value={selectedProfile}
-              onChange={(e) => setSelectedProfile(e.target.value)}
-              style={{
-                backgroundColor: 'var(--figma-bg-card)',
-                color: 'var(--figma-text-dark)',
-                border: '1px solid var(--figma-border)',
-                borderRadius: '8px',
-                padding: '6px 12px',
-                fontSize: '14px',
-                outline: 'none',
-                minWidth: '200px'
-              }}
-            >
-              {profiles.length === 0 && <option value="">No databases available</option>}
-              {!selectedProfile && profiles.length > 0 && <option value="" disabled>Select a database...</option>}
-              {profiles.map((p) => (
-                <option key={p.name} value={p.name}>
-                  {p.display_name || p.name}
-                </option>
-              ))}
-            </select>
+            <div className="custom-dropdown" ref={dropdownRef}>
+              <button
+                className="custom-dropdown-btn"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+              >
+                <span className={!selectedProfile ? 'placeholder' : ''}>
+                  {selectedProfile 
+                    ? (profiles.find(p => p.name === selectedProfile)?.display_name || selectedProfile)
+                    : 'Select a database...'}
+                </span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              
+              {dropdownOpen && (
+                <ul className="custom-dropdown-list">
+                  {profiles.length === 0 && (
+                    <li className="custom-dropdown-item disabled">No databases available</li>
+                  )}
+                  {profiles.map((p) => (
+                    <li 
+                      key={p.name} 
+                      className={`custom-dropdown-item ${selectedProfile === p.name ? 'selected' : ''}`}
+                      onClick={() => {
+                        setSelectedProfile(p.name);
+                        setDropdownOpen(false);
+                      }}
+                    >
+                      {p.display_name || p.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
 
             {user?.is_admin && activeSessionId && (
               <button
@@ -253,10 +278,10 @@ export default function ChatPage() {
                 <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', marginBottom: '16px', color: 'var(--text-primary)', fontWeight: 700 }}>
                   Welcome to Ontology
                 </h2>
-                <p style={{ color: 'var(--figma-text-subtle)', marginBottom: '48px', fontSize: '16px' }}>
+                <p style={{ color: activeProfileName ? 'var(--figma-text-subtle)' : '#000000', marginBottom: '48px', fontSize: '16px' }}>
                   {activeProfileName 
                     ? `You are connected to ${activeProfileName}. Try asking one of the questions below.` 
-                    : 'Please select a database from the top right to start querying.'}
+                    : 'Insurance Chatbot powered by Xceedance Insurance Data Platform'}
                 </p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '16px', textAlign: 'left', maxWidth: '800px', margin: '0 auto' }}>

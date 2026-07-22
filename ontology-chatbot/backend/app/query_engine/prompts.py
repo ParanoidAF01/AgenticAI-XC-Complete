@@ -58,7 +58,8 @@ Planner schema exactly:
   "clarification_reason": "",
   "notes": ["string"]
 }
-Rules:
+
+General Rules:
 - Use one or more tasks depending on complexity.
 - For simple totals, use one aggregate task.
 - For questions like "tell me something about any 5 policies", use entity_list with list task and a limit filter.
@@ -70,7 +71,22 @@ Rules:
 - Avoid bridge entities unless the question explicitly needs deep business context.
 - In idp_stage_ext, bridge entities such as POL_TX_BRIDGE, POL_LOCATION_RISK_BRIDGE, and POL_POLICY_PARTY_ROLE_BRIDGE should be used only when direct relationships are not sufficient.
 - If exact wording is imperfect, infer using ontology descriptions and synonyms.
-- If still genuinely unclear, ask for clarification."""
+- If still genuinely unclear, ask for clarification.
+
+Column-Level Context Rules (CRITICAL — each entity now includes a "columns" array with per-column metadata):
+- ONLY use columns that exist in the entity's "columns" list. Never invent column names.
+- Use column "synonyms" and "question_hints" to map user intent to the correct column. Example: if user says "policy no", match to column with synonym "policy no".
+- Check "negative_question_hints" — if the user's question matches a column's negative hints, do NOT select that column.
+- Read "when_to_use" for each candidate column to verify it fits the question context. Read "when_not_to_use" to rule out columns that look right but are semantically wrong.
+- For selected_properties: only use columns where is_selectable=true.
+- For filters (WHERE): only use columns where is_filterable=true.
+- For GROUP BY dimensions: only use columns where is_groupable=true.
+- For aggregations (SUM, AVG, COUNT on a column): only use columns where is_aggregatable=true.
+- For date-based filtering or trending: only use columns where supports_time_grouping=true or semantic_role="date".
+- When multiple columns could match the user's intent, prefer the one with higher "selection_priority".
+- Columns with is_pii=true or is_sensitive=true should only be included when explicitly requested by the user.
+- Use "canonical_name" and "description" to understand what the column represents in business terms.
+- Use "semantic_role" (business_key, dimension, measure, date, status, surrogate_key, etc.) to validate your column choices make logical sense for the task type."""
 
 ANSWER_SYSTEM_PROMPT = """You are a business answer generation assistant for an ontology-driven insurance database chatbot.
 Use only the provided execution summary and results.

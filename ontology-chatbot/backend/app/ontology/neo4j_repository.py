@@ -225,6 +225,83 @@ class Neo4jRepo:
             {"profile_name": profile_name},
         )
 
+    def get_entity_columns(self, entity_name: str) -> List[Dict[str, Any]]:
+        """Fetch all active column nodes for a single entity."""
+        return self._run(
+            """
+            MATCH (e:OntologyEntity {entity_name:$entity_name})-[r:HAS_COLUMN]->(c:Column)
+            WHERE coalesce(r.active, true) = true
+            RETURN c.column_name AS column_name,
+                   c.canonical_name AS canonical_name,
+                   c.description AS description,
+                   c.data_type AS data_type,
+                   c.semantic_role AS semantic_role,
+                   c.business_role AS business_role,
+                   c.synonyms AS synonyms,
+                   c.when_to_use AS when_to_use,
+                   c.when_not_to_use AS when_not_to_use,
+                   c.question_hints AS question_hints,
+                   c.negative_question_hints AS negative_question_hints,
+                   c.is_selectable AS is_selectable,
+                   c.is_filterable AS is_filterable,
+                   c.is_groupable AS is_groupable,
+                   c.is_aggregatable AS is_aggregatable,
+                   c.is_joinable AS is_joinable,
+                   c.supports_time_grouping AS supports_time_grouping,
+                   c.selection_priority AS selection_priority,
+                   c.key_type AS key_type,
+                   c.is_pii AS is_pii,
+                   c.is_sensitive AS is_sensitive,
+                   r.ordinal_position AS ordinal_position
+            ORDER BY r.ordinal_position
+            """,
+            {"entity_name": entity_name},
+        )
+
+    def get_all_entity_columns(self, profile_name: str) -> Dict[str, List[Dict[str, Any]]]:
+        """Bulk-fetch all active columns for every entity in a profile.
+
+        Returns a dict keyed by entity_name -> list of column dicts.
+        Single Cypher query to avoid N+1.
+        """
+        rows = self._run(
+            """
+            MATCH (:OntologyDatabaseProfile {profile_name:$profile_name})-[:USES_ENTITY]->(e:OntologyEntity)
+            MATCH (e)-[r:HAS_COLUMN]->(c:Column)
+            WHERE coalesce(r.active, true) = true
+            RETURN e.entity_name AS entity_name,
+                   c.column_name AS column_name,
+                   c.canonical_name AS canonical_name,
+                   c.description AS description,
+                   c.data_type AS data_type,
+                   c.semantic_role AS semantic_role,
+                   c.business_role AS business_role,
+                   c.synonyms AS synonyms,
+                   c.when_to_use AS when_to_use,
+                   c.when_not_to_use AS when_not_to_use,
+                   c.question_hints AS question_hints,
+                   c.negative_question_hints AS negative_question_hints,
+                   c.is_selectable AS is_selectable,
+                   c.is_filterable AS is_filterable,
+                   c.is_groupable AS is_groupable,
+                   c.is_aggregatable AS is_aggregatable,
+                   c.is_joinable AS is_joinable,
+                   c.supports_time_grouping AS supports_time_grouping,
+                   c.selection_priority AS selection_priority,
+                   c.key_type AS key_type,
+                   c.is_pii AS is_pii,
+                   c.is_sensitive AS is_sensitive,
+                   r.ordinal_position AS ordinal_position
+            ORDER BY e.entity_name, r.ordinal_position
+            """,
+            {"profile_name": profile_name},
+        )
+        result: Dict[str, List[Dict[str, Any]]] = {}
+        for row in rows:
+            ename = row.pop("entity_name")
+            result.setdefault(ename, []).append(row)
+        return result
+
     def find_preferred_path(self, start_entity: str, end_entity: str, max_hops: int = 4) -> List[Dict[str, Any]]:
         query = f"""
         MATCH p=(start:OntologyEntity {{entity_name:$start_entity}})-[rels:ONTOLOGY_RELATION*1..{max_hops}]->(end:OntologyEntity {{entity_name:$end_entity}})

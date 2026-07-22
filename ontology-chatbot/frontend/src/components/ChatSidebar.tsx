@@ -63,7 +63,7 @@ export default function ChatSidebar({
           <img 
             src="/nexus-logo.png" 
             alt="NexusAI" 
-            style={{ width: '100%', maxWidth: '140px', objectFit: 'contain' }}
+            style={{ width: '100%', maxWidth: '110px', objectFit: 'contain' }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}

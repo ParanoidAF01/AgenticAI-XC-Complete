@@ -32,6 +32,60 @@ logger = logging.getLogger(__name__)
 # Ontology context builder
 # ------------------------------------------------------------------
 
+def _build_compact_column_summary(columns: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Build a token-efficient column summary for the LLM context.
+
+    Only includes columns where is_selectable is not explicitly False,
+    and only includes non-default/non-empty attributes to save tokens.
+    """
+    compact: List[Dict[str, Any]] = []
+    for col in columns:
+        # Skip columns that are explicitly not selectable
+        if col.get("is_selectable") is False:
+            continue
+
+        entry: Dict[str, Any] = {
+            "column_name": col["column_name"],
+        }
+        # Always include these core fields if present
+        if col.get("canonical_name"):
+            entry["canonical_name"] = col["canonical_name"]
+        if col.get("description"):
+            entry["description"] = col["description"]
+        if col.get("data_type"):
+            entry["data_type"] = col["data_type"]
+        if col.get("semantic_role"):
+            entry["semantic_role"] = col["semantic_role"]
+
+        # Semantic guidance — only include when non-empty
+        if col.get("synonyms"):
+            entry["synonyms"] = col["synonyms"]
+        if col.get("when_to_use"):
+            entry["when_to_use"] = col["when_to_use"]
+        if col.get("when_not_to_use"):
+            entry["when_not_to_use"] = col["when_not_to_use"]
+        if col.get("question_hints"):
+            entry["question_hints"] = col["question_hints"]
+        if col.get("negative_question_hints"):
+            entry["negative_question_hints"] = col["negative_question_hints"]
+
+        # Boolean flags — only include True values (False is default)
+        for flag in ("is_filterable", "is_groupable", "is_aggregatable",
+                     "is_joinable", "supports_time_grouping", "is_pii", "is_sensitive"):
+            if col.get(flag) is True:
+                entry[flag] = True
+
+        # Selection priority — only include if non-zero
+        if col.get("selection_priority") and col["selection_priority"] > 0:
+            entry["selection_priority"] = col["selection_priority"]
+
+        if col.get("key_type") and col["key_type"] != "none":
+            entry["key_type"] = col["key_type"]
+
+        compact.append(entry)
+    return compact
+
+
 def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> Dict[str, Any]:
     nq = normalize_text(question)
     candidate_terms = extract_candidate_terms(nq)
@@ -39,6 +93,10 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
     entities = repo.get_entities(profile_name)
     metrics = repo.get_metrics(profile_name)
     relationships = repo.get_relationships(profile_name)
+
+    # Bulk-fetch all column metadata for the profile (single Cypher query)
+    all_columns = repo.get_all_entity_columns(profile_name)
+
     matched_term_summary = []
     for r in term_hits[:50]:
         matched_term_summary.append(
@@ -53,9 +111,13 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
         )
     entity_summary = []
     for e in entities:
+        entity_name = e["entity_name"]
+        entity_columns = all_columns.get(entity_name, [])
+        compact_columns = _build_compact_column_summary(entity_columns)
+
         entity_summary.append(
             {
-                "entity_name": e["entity_name"],
+                "entity_name": entity_name,
                 "canonical_name": e.get("canonical_name"),
                 "entity_type": e.get("entity_type"),
                 "business_role": e.get("business_role"),
@@ -68,6 +130,7 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
                 "measure_fields": e.get("measure_fields", []),
                 "synonyms": e.get("synonyms", []),
                 "description": e.get("description"),
+                "columns": compact_columns,
             }
         )
     metric_summary = []
@@ -103,8 +166,11 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
                 "question_hints": r.get("question_hints", []),
             }
         )
+    total_columns = sum(len(v) for v in all_columns.values())
     logger.info(
-        f"Ontology context built -> term_hits={len(matched_term_summary)}, entities={len(entity_summary)}, metrics={len(metric_summary)}, rels={len(rel_summary)}"
+        f"Ontology context built -> term_hits={len(matched_term_summary)}, "
+        f"entities={len(entity_summary)}, columns={total_columns}, "
+        f"metrics={len(metric_summary)}, rels={len(rel_summary)}"
     )
     return {
         "normalized_question": nq,
