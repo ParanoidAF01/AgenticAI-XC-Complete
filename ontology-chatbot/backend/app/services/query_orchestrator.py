@@ -106,7 +106,20 @@ class QueryOrchestrator:
 
             # ── 4. Build context ────────────────────────────────
             context = await self._context_service.get_context(sid, uid, db)
-            context_text = context.get("summary", "")
+            recent_messages = context.get("recent_messages", [])
+
+            # Build a conversation transcript from recent messages
+            # for the router and planner to understand follow-ups.
+            conversation_parts: list[str] = []
+            for msg in recent_messages:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if content:
+                    # Truncate very long assistant responses to save tokens
+                    if role == "assistant" and len(content) > 500:
+                        content = content[:500] + "..."
+                    conversation_parts.append(f"{role}: {content}")
+            context_text = "\n".join(conversation_parts) if conversation_parts else ""
 
             # ── 5. Check query cache ────────────────────────────
             cached = await self._cache.get_cached_query_result(uid, profile, message)
@@ -120,7 +133,7 @@ class QueryOrchestrator:
                 validation_trace_list = cached.get("validation_trace")
             else:
                 # ── 6. Route ────────────────────────────────────
-                route_info = await route_question(message)
+                route_info = await route_question(message, context_text)
 
                 if route_info["route"] == "general_chat":
                     # ── General chat path ───────────────────────
@@ -252,7 +265,7 @@ class QueryOrchestrator:
         context = await asyncio.to_thread(build_planner_context, profile, question, repo)
 
         # Build plan (async — calls LLM)
-        plan = await build_plan(profile, question, route, context, repo, schema_cache)
+        plan = await build_plan(profile, question, route, context, repo, schema_cache, conversation_context=context_text)
 
         if plan.get("question_type") == "general_chat":
             answer = await build_general_llm_answer(question, context_text)

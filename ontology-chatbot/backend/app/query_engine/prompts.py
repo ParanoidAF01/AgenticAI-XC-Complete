@@ -9,6 +9,7 @@ Classify the message into one of these routes:
 - complex_db
 Use general_chat only if the user is not asking about business data/database results.
 Use complex_db if the user asks compare, trend, rank, top N, multiple metrics, or multi-part analytical questions.
+IMPORTANT: If conversation_context is provided, use it to understand the user's intent. A short reply like "yes", "show me more", "the first one", "now filter by state", etc. is likely a follow-up to the previous database query — route it as simple_db or complex_db accordingly, NOT as general_chat.
 Respond JSON only in this exact shape:
 {"route":"general_chat|simple_db|complex_db","reason":"short reason"}"""
 

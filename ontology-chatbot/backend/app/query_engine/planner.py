@@ -230,6 +230,7 @@ async def build_plan(
     context: Dict[str, Any],
     repo: Neo4jRepo,
     schema_cache: Dict[str, List[str]],
+    conversation_context: str = "",
 ) -> Dict[str, Any]:
     if route["route"] == "general_chat":
         return {
@@ -252,6 +253,8 @@ async def build_plan(
         "database_profile": profile_name,
         "ontology_context": context,
     }
+    if conversation_context:
+        payload["conversation_context"] = conversation_context
     raw = await call_llm(
         [
             {"role": "system", "content": PLANNER_V2_PROMPT},

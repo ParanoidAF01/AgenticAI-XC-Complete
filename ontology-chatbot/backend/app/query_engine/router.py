@@ -29,12 +29,15 @@ def extract_candidate_terms(q: str) -> List[str]:
     return sorted(terms, key=lambda x: (-len(x.split()), x))
 
 
-async def route_question(question: str) -> Dict[str, Any]:
+async def route_question(question: str, conversation_context: str = "") -> Dict[str, Any]:
     nq = normalize_text(question)
-    if is_greeting_or_general(nq):
+    if is_greeting_or_general(nq) and not conversation_context:
         return {"route": "general_chat", "reason": "greeting"}
     try:
-        routed = await llm_json(ROUTER_PROMPT, {"user_question": question}, max_tokens=150)
+        payload: Dict[str, Any] = {"user_question": question}
+        if conversation_context:
+            payload["conversation_context"] = conversation_context
+        routed = await llm_json(ROUTER_PROMPT, payload, max_tokens=150)
         route = routed.get("route")
         if route not in {"general_chat", "simple_db", "complex_db"}:
             route = "simple_db"
