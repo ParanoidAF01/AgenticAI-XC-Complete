@@ -22,11 +22,47 @@ logger = logging.getLogger(__name__)
 
 
 def resolve_join_steps(task: Dict[str, Any], repo: Neo4jRepo) -> List[Dict[str, Any]]:
+    """Resolve join steps from the planner's chosen_path.
+
+    For a path like [A, B, C], resolve each consecutive pair (A→B, B→C)
+    individually, so intermediate entities are never skipped. Falls back
+    to start→end resolution if consecutive pairs fail.
+    """
     steps: List[Dict[str, Any]] = []
     for branch in task.get("chosen_path", []):
         if len(branch) <= 1:
             continue
+
+        # Strategy 1: Resolve consecutive pairs (A→B, B→C, ...)
+        # This respects the planner's chosen intermediate entities.
+        pair_steps: List[Dict[str, Any]] = []
+        pair_ok = True
+        for i in range(len(branch) - 1):
+            seg_start, seg_end = branch[i], branch[i + 1]
+            rows = repo.find_preferred_path(seg_start, seg_end, max_hops=2)
+            if not rows:
+                # Try reverse direction
+                rows = repo.find_preferred_path(seg_end, seg_start, max_hops=2)
+            if not rows:
+                logger.warning(
+                    "No preferred path for segment %s -> %s in branch %s, "
+                    "falling back to full branch resolution",
+                    seg_start, seg_end, branch,
+                )
+                pair_ok = False
+                break
+            for s in rows[0]["relationship_path"]:
+                pair_steps.append(s)
+
+        if pair_ok and pair_steps:
+            steps.extend(pair_steps)
+            continue
+
+        # Strategy 2: Fallback – resolve full branch start→end
         rows = repo.find_preferred_path(branch[0], branch[-1], max_hops=max(2, len(branch)))
+        if not rows:
+            # Try reverse direction as last resort
+            rows = repo.find_preferred_path(branch[-1], branch[0], max_hops=max(2, len(branch)))
         if not rows:
             raise SQLBuildError(f"No preferred path for branch: {branch}")
         for s in rows[0]["relationship_path"]:
@@ -90,12 +126,14 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
         progress = False
         remain: List[Dict[str, Any]] = []
         for s in pending:
+            jt = (s.get("join_type") or "inner").upper()
+            join_keyword = "LEFT JOIN" if jt == "LEFT" else "JOIN"
             if s["from_table"] in joined and s["to_table"] not in joined:
-                join_sql.append(f"JOIN [{s['to_table']}] ON [{s['from_table']}].[{s['from_column']}] = [{s['to_table']}].[{s['to_column']}]")
+                join_sql.append(f"{join_keyword} [{s['to_table']}] ON [{s['from_table']}].[{s['from_column']}] = [{s['to_table']}].[{s['to_column']}]")
                 joined.add(s["to_table"])
                 progress = True
             elif s["to_table"] in joined and s["from_table"] not in joined:
-                join_sql.append(f"JOIN [{s['from_table']}] ON [{s['from_table']}].[{s['from_column']}] = [{s['to_table']}].[{s['to_column']}]")
+                join_sql.append(f"{join_keyword} [{s['from_table']}] ON [{s['from_table']}].[{s['from_column']}] = [{s['to_table']}].[{s['to_column']}]")
                 joined.add(s["from_table"])
                 progress = True
             elif s["from_table"] in joined and s["to_table"] in joined:

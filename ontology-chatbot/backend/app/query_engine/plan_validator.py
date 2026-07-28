@@ -150,6 +150,61 @@ def validate_task(
         if not rows:
             errs.append(f"Chosen path not resolvable: {branch}")
 
+    # ── Aggregation safety enforcement ──
+    if task.get("task_type") in {"aggregate", "ranking", "trend"}:
+        for branch in task.get("chosen_path", []):
+            if len(branch) <= 1:
+                continue
+            for i in range(len(branch) - 1):
+                seg_rows = repo.find_preferred_path(branch[i], branch[i + 1], max_hops=2)
+                if not seg_rows:
+                    seg_rows = repo.find_preferred_path(branch[i + 1], branch[i], max_hops=2)
+                if seg_rows:
+                    for rel in seg_rows[0]["relationship_path"]:
+                        safety = (rel.get("aggregation_safety") or "safe").lower()
+                        if safety == "unsafe":
+                            errs.append(
+                                f"Join {rel.get('from_table')} -> {rel.get('to_table')} has "
+                                f"aggregation_safety='unsafe' and will produce wrong aggregate numbers"
+                            )
+                        elif safety == "preaggregate_required":
+                            errs.append(
+                                f"Join {rel.get('from_table')} -> {rel.get('to_table')} requires "
+                                f"pre-aggregation (aggregation_safety='preaggregate_required'). "
+                                f"Metric must be aggregated before this join"
+                            )
+
+    # ── Default date property enforcement ──
+    if task.get("metric_name"):
+        metric = repo.get_metric(profile_name, task["metric_name"])
+        if metric and metric.get("default_date_property"):
+            default_dp = metric["default_date_property"]
+            date_filters = [f for f in task.get("filters", []) if f.get("type") == "date_range"]
+            for df in date_filters:
+                if df.get("property_ref") and df["property_ref"] != default_dp:
+                    errs.append(
+                        f"Date filter uses '{df['property_ref']}' but metric "
+                        f"'{task['metric_name']}' defines default_date_property='{default_dp}'. "
+                        f"Use '{default_dp}' instead"
+                    )
+
+    # ── Metric dimension validation ──
+    if task.get("metric_name") and task.get("selected_properties"):
+        metric = repo.get_metric(profile_name, task["metric_name"])
+        if metric and metric.get("allowed_dimension_entities"):
+            allowed = set(metric["allowed_dimension_entities"])
+            fact_entity = metric.get("fact_entity")
+            for prop in task.get("selected_properties", []):
+                try:
+                    entity_name, _ = parse_property_ref(prop)
+                except Exception:
+                    continue
+                if entity_name != fact_entity and entity_name not in allowed:
+                    errs.append(
+                        f"Metric '{task['metric_name']}' does not allow dimension "
+                        f"entity '{entity_name}'. Allowed: {sorted(allowed)}"
+                    )
+
     return errs
 
 

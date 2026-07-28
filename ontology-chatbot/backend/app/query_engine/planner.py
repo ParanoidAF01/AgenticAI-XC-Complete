@@ -90,9 +90,31 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
     nq = normalize_text(question)
     candidate_terms = extract_candidate_terms(nq)
     term_hits = repo.lookup_terms(profile_name, candidate_terms)
+    
+    relevant_entity_names = set()
+    for t in term_hits:
+        if t["maps_to_type"] == "entity":
+            relevant_entity_names.add(t["maps_to_name"])
+            
     entities = repo.get_entities(profile_name)
     metrics = repo.get_metrics(profile_name)
+    
+    for m in metrics:
+        if any(t["maps_to_name"] == m["metric_name"] for t in term_hits if t["maps_to_type"] == "metric"):
+            if m.get("fact_entity"):
+                relevant_entity_names.add(m["fact_entity"])
+            for d in m.get("allowed_dimension_entities", []):
+                relevant_entity_names.add(d)
+
     relationships = repo.get_relationships(profile_name)
+    
+    neighbors = set()
+    for r in relationships:
+        if r["from_entity"] in relevant_entity_names:
+            neighbors.add(r["to_entity"])
+        if r["to_entity"] in relevant_entity_names:
+            neighbors.add(r["from_entity"])
+    relevant_entity_names.update(neighbors)
 
     # Bulk-fetch all column metadata for the profile (single Cypher query)
     all_columns = repo.get_all_entity_columns(profile_name)
@@ -112,27 +134,28 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
     entity_summary = []
     for e in entities:
         entity_name = e["entity_name"]
-        entity_columns = all_columns.get(entity_name, [])
-        compact_columns = _build_compact_column_summary(entity_columns)
-
-        entity_summary.append(
-            {
-                "entity_name": entity_name,
-                "canonical_name": e.get("canonical_name"),
-                "entity_type": e.get("entity_type"),
-                "business_role": e.get("business_role"),
-                "grain_description": e.get("grain_description"),
-                "default_list_fields": e.get("default_list_fields", []),
-                "default_detail_fields": e.get("default_detail_fields", []),
-                "groupable_fields": e.get("groupable_fields", []),
-                "filterable_fields": e.get("filterable_fields", []),
-                "date_fields": e.get("date_fields", []),
-                "measure_fields": e.get("measure_fields", []),
-                "synonyms": e.get("synonyms", []),
-                "description": e.get("description"),
-                "columns": compact_columns,
-            }
-        )
+        
+        entry = {
+            "entity_name": entity_name,
+            "canonical_name": e.get("canonical_name"),
+            "entity_type": e.get("entity_type"),
+            "business_role": e.get("business_role"),
+            "synonyms": e.get("synonyms", []),
+            "description": e.get("description"),
+        }
+        
+        if entity_name in relevant_entity_names:
+            entity_columns = all_columns.get(entity_name, [])
+            entry["columns"] = _build_compact_column_summary(entity_columns)
+            entry["grain_description"] = e.get("grain_description")
+            entry["default_list_fields"] = e.get("default_list_fields", [])
+            entry["default_detail_fields"] = e.get("default_detail_fields", [])
+            entry["groupable_fields"] = e.get("groupable_fields", [])
+            entry["filterable_fields"] = e.get("filterable_fields", [])
+            entry["date_fields"] = e.get("date_fields", [])
+            entry["measure_fields"] = e.get("measure_fields", [])
+            
+        entity_summary.append(entry)
     metric_summary = []
     for m in metrics:
         metric_summary.append(
@@ -172,6 +195,15 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
         f"entities={len(entity_summary)}, columns={total_columns}, "
         f"metrics={len(metric_summary)}, rels={len(rel_summary)}"
     )
+    # ── Deterministic ordering for LLM consistency ──
+    entity_summary.sort(key=lambda e: e["entity_name"])
+    for e in entity_summary:
+        if "columns" in e:
+            e["columns"].sort(key=lambda c: c["column_name"])
+    metric_summary.sort(key=lambda m: m["metric_name"])
+    rel_summary.sort(key=lambda r: (r["from_entity"], r["to_entity"]))
+    matched_term_summary.sort(key=lambda t: (t["maps_to_type"], t["maps_to_name"]))
+
     return {
         "normalized_question": nq,
         "matched_terms": matched_term_summary,

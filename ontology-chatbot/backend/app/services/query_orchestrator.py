@@ -279,6 +279,27 @@ class QueryOrchestrator:
                 "is_clarification": True,
             }
 
+        # ── Confidence threshold check ─────────────────────
+        CONFIDENCE_THRESHOLD = 0.65
+        plan_confidence = 0.0
+        try:
+            plan_confidence = float(plan.get("confidence", 0.0))
+        except (ValueError, TypeError):
+            pass
+        if plan_confidence < CONFIDENCE_THRESHOLD:
+            logger.warning(
+                "Plan confidence %.2f below threshold %.2f, requesting clarification",
+                plan_confidence, CONFIDENCE_THRESHOLD,
+            )
+            return {
+                "answer": (
+                    f"⚠️ I'm not fully confident I understood your question correctly "
+                    f"(confidence: {plan_confidence:.0%}). Could you rephrase or provide more detail?"
+                ),
+                "plan": plan,
+                "is_clarification": True,
+            }
+
         # Execute plan tasks
         task_outputs: List[Dict[str, Any]] = []
         task_contexts: Dict[str, Dict[str, Any]] = {}
@@ -303,6 +324,12 @@ class QueryOrchestrator:
 
             # Execute (sync)
             result = await asyncio.to_thread(execute_sql, engine, final_sql)
+
+            # ── Result verification ────────────────────────
+            verification_warnings = _verify_result(resolved, result)
+            if verification_warnings:
+                logger.warning("Result verification warnings for task %s: %s", resolved.get("task_id"), verification_warnings)
+                result["verification_warnings"] = verification_warnings
 
             task_outputs.append({
                 "task": resolved,
@@ -361,3 +388,55 @@ class QueryOrchestrator:
             "results": make_json_safe(merged),
             "is_clarification": False,
         }
+
+
+# ------------------------------------------------------------------
+# Result verification helper (module-level, used by pipeline)
+# ------------------------------------------------------------------
+
+def _verify_result(task: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
+    """Basic sanity checks on query results to catch bad outputs."""
+    warnings: List[str] = []
+    rows = result.get("rows", [])
+    cols = result.get("columns", [])
+
+    # Check: empty result
+    if not rows:
+        warnings.append(
+            "Query returned 0 rows — filter may be too restrictive or data is missing"
+        )
+        return warnings  # no further checks needed
+
+    # Check: metric column is all NULL
+    if "metric_value" in cols:
+        idx = cols.index("metric_value")
+        non_null = sum(1 for r in rows if r[idx] is not None)
+        if non_null == 0:
+            warnings.append(
+                "metric_value column is entirely NULL — aggregation or "
+                "TRY_CAST may be failing on the source data"
+            )
+
+    # Check: unexpected row count vs limit
+    expected_limit = int(task.get("result_limit", 25) or 25)
+    if len(rows) > expected_limit * 2:
+        warnings.append(
+            f"Row count ({len(rows)}) significantly exceeds expected "
+            f"limit ({expected_limit}) — TOP clause may not be applied correctly"
+        )
+
+    # Check: duplicate dimension values (possible row multiplication)
+    if task.get("task_type") in {"aggregate", "ranking"} and task.get("selected_properties"):
+        dim_cols = [c for c in cols if c != "metric_value"]
+        if dim_cols:
+            dim_indices = [cols.index(c) for c in dim_cols if c in cols]
+            if dim_indices:
+                dim_tuples = [tuple(r[i] for i in dim_indices) for r in rows]
+                unique_count = len(set(dim_tuples))
+                if unique_count < len(dim_tuples):
+                    warnings.append(
+                        f"Duplicate dimension values detected ({len(dim_tuples)} rows, "
+                        f"{unique_count} unique) — possible row multiplication from joins"
+                    )
+
+    return warnings
