@@ -223,26 +223,46 @@ def _validate_repair_tables(sql: str, schema_context: Dict[str, List[str]]) -> N
     outside the provided schema context.
     """
     allowed_tables = {t.lower() for t in schema_context}
-    # Extract [TableName] patterns from SQL
-    table_refs = re.findall(r"\[(\w+)\]", sql)
-    # Also check bare table references after FROM/JOIN
+
+    # Known SQL Server system/common schemas to exclude
+    known_schemas = {"dbo", "sys", "information_schema", "guest"}
+
+    # Extract table names from schema-qualified patterns:
+    #   [schema].[table].[column]  → capture table
+    #   [table].[column]           → capture table
+    #   FROM/JOIN [schema].[table] → capture table
+    #   FROM/JOIN [table]          → capture table
+
+    # 3-part references: [schema].[table].[column]
+    three_part = re.findall(r"\[(\w+)\]\.\[(\w+)\]\.\[(\w+)\]", sql)
+    table_refs_from_3part = {tbl.lower() for _, tbl, _ in three_part}
+
+    # 2-part references: [X].[Y] — X is table if not a known schema
+    two_part = re.findall(r"\[(\w+)\]\.\[(\w+)\]", sql)
+    table_refs_from_2part = set()
+    for first, second in two_part:
+        if first.lower() in known_schemas:
+            # [schema].[table] → table is second
+            table_refs_from_2part.add(second.lower())
+        else:
+            # [table].[column] → table is first
+            table_refs_from_2part.add(first.lower())
+
+    # FROM/JOIN bare references
     bare_refs = re.findall(r"(?:FROM|JOIN)\s+(\w+)", sql, re.IGNORECASE)
-    all_refs = {r.lower() for r in table_refs + bare_refs}
+    bare_table_refs = {r.lower() for r in bare_refs} - known_schemas
 
-    # Filter out column names (those that appear after a dot)
-    dot_prefixed = re.findall(r"\[(\w+)\]\.\[(\w+)\]", sql)
-    table_only = {t.lower() for t, c in dot_prefixed}
+    all_table_refs = table_refs_from_3part | table_refs_from_2part | bare_table_refs
+    unknown = all_table_refs - allowed_tables
 
-    if table_only:
-        unknown = table_only - allowed_tables
-        if unknown:
-            logger.warning(
-                "SQL repair introduced unknown tables: %s (allowed: %s)",
-                unknown, allowed_tables,
-            )
-            raise SQLValidationError(
-                f"SQL repair introduced tables outside schema context: {unknown}"
-            )
+    if unknown:
+        logger.warning(
+            "SQL repair introduced unknown tables: %s (allowed: %s)",
+            unknown, allowed_tables,
+        )
+        raise SQLValidationError(
+            f"SQL repair introduced tables outside schema context: {unknown}"
+        )
 
 
 # ── Validate and repair loop ─────────────────────────────────
