@@ -138,6 +138,26 @@ class QueryOrchestrator:
                 if route_info["route"] == "general_chat":
                     # ── General chat path ───────────────────────
                     answer_text = await build_general_llm_answer(message, context_text)
+                elif route_info["route"] == "clarification_response":
+                    # ── Clarification follow-up path ────────────
+                    # Merge the user's clarification with the original
+                    # question from context so the planner gets full intent.
+                    merged = _merge_clarification(message, context_text)
+                    logger.info("Clarification merged question: %s", merged)
+                    route_info["route"] = "complex_db"
+                    result = await self._execute_db_pipeline(
+                        question=merged,
+                        profile=profile,
+                        route=route_info,
+                        context_text=context_text,
+                    )
+                    answer_text = result["answer"]
+                    planner_json = result.get("plan")
+                    raw_sql_list = result.get("raw_sql")
+                    final_sql_list = result.get("sql")
+                    validation_trace_list = result.get("validation_trace")
+                    result_summary = result.get("results")
+                    is_clarification = result.get("is_clarification", False)
                 else:
                     # ── DB query path ───────────────────────────
                     result = await self._execute_db_pipeline(
@@ -440,3 +460,43 @@ def _verify_result(task: Dict[str, Any], result: Dict[str, Any]) -> List[str]:
                     )
 
     return warnings
+
+
+# ------------------------------------------------------------------
+# Clarification merge helper
+# ------------------------------------------------------------------
+
+def _merge_clarification(user_reply: str, context_text: str) -> str:
+    """Combine original question + user's clarification into one query.
+
+    Scans conversation context backwards to find the last user message
+    that preceded the assistant's clarification request, then merges
+    it with the current reply.
+
+    Example:
+        Original: "show me premium"
+        Assistant: "⚠️ Did you mean written premium or earned premium?"
+        User reply: "written premium"
+        Merged: "show me premium — specifically: written premium"
+    """
+    original_question = ""
+    lines = context_text.strip().split("\n") if context_text else []
+
+    # Walk backwards: find the assistant clarification, then the user
+    # message just before it.
+    found_clarification = False
+    for line in reversed(lines):
+        if not found_clarification:
+            if line.startswith("assistant:") and (
+                "⚠️" in line or "clarif" in line.lower()
+            ):
+                found_clarification = True
+        else:
+            if line.startswith("user:"):
+                original_question = line[len("user:"):].strip()
+                break
+
+    if original_question:
+        return f"{original_question} — specifically: {user_reply}"
+    # Fallback: just use the reply as-is
+    return user_reply

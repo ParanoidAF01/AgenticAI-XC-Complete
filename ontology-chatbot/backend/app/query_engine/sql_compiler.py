@@ -111,13 +111,23 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
         entity = repo.get_entity(entity_name)
         if not entity:
             raise SQLBuildError(f"Unknown entity: {entity_name}")
-        return f"[{entity['table_name']}].[{column_name}]"
+        schema = entity.get("schema_name") or "dbo"
+        return f"[{schema}].[{entity['table_name']}].[{column_name}]"
+
+    def schema_table(entity_name: str) -> str:
+        """Return [schema].[table] for an entity."""
+        entity = repo.get_entity(entity_name)
+        if not entity:
+            raise SQLBuildError(f"Unknown entity: {entity_name}")
+        schema = entity.get("schema_name") or "dbo"
+        return f"[{schema}].[{entity['table_name']}]"
 
     base_entity_name = metric["fact_entity"] if metric else (task.get("fact_entity") or task.get("target_entity"))
     base_entity = repo.get_entity(base_entity_name) if base_entity_name else None
     if not base_entity:
         raise SQLBuildError("Could not determine base entity")
     base_table = base_entity["table_name"]
+    base_schema = base_entity.get("schema_name") or "dbo"
     joined = {base_table}
     join_sql: List[str] = []
     pending = join_steps[:]
@@ -128,12 +138,14 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
         for s in pending:
             jt = (s.get("join_type") or "inner").upper()
             join_keyword = "LEFT JOIN" if jt == "LEFT" else "JOIN"
+            s_from_schema = s.get("from_schema") or "dbo"
+            s_to_schema = s.get("to_schema") or "dbo"
             if s["from_table"] in joined and s["to_table"] not in joined:
-                join_sql.append(f"{join_keyword} [{s['to_table']}] ON [{s['from_table']}].[{s['from_column']}] = [{s['to_table']}].[{s['to_column']}]")
+                join_sql.append(f"{join_keyword} [{s_to_schema}].[{s['to_table']}] ON [{s_from_schema}].[{s['from_table']}].[{s['from_column']}] = [{s_to_schema}].[{s['to_table']}].[{s['to_column']}]")
                 joined.add(s["to_table"])
                 progress = True
             elif s["to_table"] in joined and s["from_table"] not in joined:
-                join_sql.append(f"{join_keyword} [{s['from_table']}] ON [{s['from_table']}].[{s['from_column']}] = [{s['to_table']}].[{s['to_column']}]")
+                join_sql.append(f"{join_keyword} [{s_from_schema}].[{s['from_table']}] ON [{s_from_schema}].[{s['from_table']}].[{s['from_column']}] = [{s_to_schema}].[{s['to_table']}].[{s['to_column']}]")
                 joined.add(s["from_table"])
                 progress = True
             elif s["from_table"] in joined and s["to_table"] in joined:
@@ -154,7 +166,9 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
     if task.get("metric_name"):
         if not metric:
             raise SQLBuildError("Aggregate/ranking/trend task missing metric")
-        source_expr = f"[{metric['source_table']}].[{metric['source_column']}]"
+        metric_fact_entity = repo.get_entity(metric["fact_entity"])
+        metric_schema = (metric_fact_entity.get("schema_name") if metric_fact_entity else None) or "dbo"
+        source_expr = f"[{metric_schema}].[{metric['source_table']}].[{metric['source_column']}]"
         agg = metric["aggregation"]
         if agg == "count_distinct":
             metric_expr = f"COUNT(DISTINCT {source_expr})"
@@ -166,7 +180,8 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
             fact_entity = repo.get_entity(metric["fact_entity"])
             if not fact_entity or not fact_entity.get("primary_key"):
                 raise SQLBuildError(f"derived_ratio metric requires fact entity primary key: {metric['metric_name']}")
-            pk_expr = f"[{metric['source_table']}].[{fact_entity['primary_key']}]"
+            pk_schema = (fact_entity.get("schema_name") or "dbo")
+            pk_expr = f"[{pk_schema}].[{metric['source_table']}].[{fact_entity['primary_key']}]"
             metric_expr = (
                 f"CAST(COUNT(DISTINCT CASE WHEN {source_expr} = 'Y' THEN {pk_expr} END) AS DECIMAL(38,10)) "
                 f"/ NULLIF(COUNT(DISTINCT {pk_expr}), 0) * 100"
@@ -180,12 +195,13 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
             count_entity = repo.get_entity(str(count_entity_name))
             if not count_entity or not count_entity.get("primary_key"):
                 raise SQLBuildError(f"Generic count requires entity primary key: {count_entity_name}")
-            pk_expr = f"[{count_entity['table_name']}].[{count_entity['primary_key']}]"
+            count_schema = count_entity.get("schema_name") or "dbo"
+            pk_expr = f"[{count_schema}].[{count_entity['table_name']}].[{count_entity['primary_key']}]"
             metric_expr = f"COUNT(DISTINCT {pk_expr})"
             select_parts.append(f"{metric_expr} AS [metric_value]")
         else:
             if not select_parts:
-                select_parts.append(f"[{base_table}].*")
+                select_parts.append(f"[{base_schema}].[{base_table}].*")
     where_parts: List[str] = []
     for flt in task.get("filters", []):
         ftype = flt.get("type")
@@ -202,10 +218,64 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
                 where_parts.append(f"{qual} IN ({', '.join([quote_sql_literal(v) for v in val])})")
         elif ftype == "date_range":
             where_parts.append(build_date_where(flt.get("property_ref"), flt.get("operator"), repo))
+
+    # ── Apply default entity filters from graph ──
+    # Collect all entities involved in this query
+    involved_entity_names = {base_entity_name}
+    for prop in task.get("selected_properties", []):
+        try:
+            en, _ = parse_property_ref(prop)
+            involved_entity_names.add(en)
+        except Exception:
+            pass
+    for flt in task.get("filters", []):
+        if flt.get("property_ref"):
+            try:
+                en, _ = parse_property_ref(flt["property_ref"])
+                involved_entity_names.add(en)
+            except Exception:
+                pass
+
+    # Track which table.column combos already have user-specified filters
+    existing_filter_cols = set()
+    for flt in task.get("filters", []):
+        if flt.get("property_ref"):
+            try:
+                en, cn = parse_property_ref(flt["property_ref"])
+                entity = repo.get_entity(en)
+                if entity:
+                    existing_filter_cols.add((entity["table_name"], cn))
+            except Exception:
+                pass
+
+    for ent_name in involved_entity_names:
+        default_filters = repo.get_entity_default_filters(ent_name)
+        entity = repo.get_entity(ent_name)
+        if not entity or not default_filters:
+            continue
+        tbl = entity["table_name"]
+        schema = entity.get("schema_name") or "dbo"
+        for df in default_filters:
+            col = df["column"]
+            # Skip if user already filters on this column
+            if (tbl, col) in existing_filter_cols:
+                continue
+            qual = f"[{schema}].[{tbl}].[{col}]"
+            df_op = (df.get("operator") or "equals").lower()
+            df_val = df["value"]
+            if df_op == "equals":
+                where_parts.append(f"{qual} = {quote_sql_literal(df_val)}")
+            elif df_op == "not_equals":
+                where_parts.append(f"{qual} != {quote_sql_literal(df_val)}")
+            elif df_op == "is_null":
+                where_parts.append(f"{qual} IS NULL")
+            elif df_op == "is_not_null":
+                where_parts.append(f"{qual} IS NOT NULL")
+
     sql_lines = [
         f"SELECT TOP {runtime_limit}",
         "    " + ",\n    ".join(select_parts),
-        f"FROM [{base_table}]",
+        f"FROM [{base_schema}].[{base_table}]",
     ]
     sql_lines.extend(join_sql)
     if where_parts:

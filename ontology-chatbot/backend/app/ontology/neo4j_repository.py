@@ -302,6 +302,33 @@ class Neo4jRepo:
             result.setdefault(ename, []).append(row)
         return result
 
+    def get_entity_default_filters(self, entity_name: str) -> List[Dict[str, Any]]:
+        """Fetch default WHERE conditions from column metadata.
+
+        Looks for Column nodes connected to the entity that have a
+        ``default_filter_value`` property set.  Each such column becomes
+        an automatic WHERE clause (e.g., IS_DELETED = 0, RECORD_STATUS = 'Active').
+        """
+        rows = self._run(
+            """
+            MATCH (e:OntologyEntity {entity_name:$entity_name})-[r:HAS_COLUMN]->(c:Column)
+            WHERE coalesce(r.active, true) = true
+              AND c.default_filter_value IS NOT NULL
+            RETURN c.column_name AS column_name,
+                   c.default_filter_value AS default_value,
+                   c.default_filter_operator AS default_operator
+            """,
+            {"entity_name": entity_name},
+        )
+        filters: List[Dict[str, Any]] = []
+        for r in rows:
+            filters.append({
+                "column": r["column_name"],
+                "operator": r.get("default_operator") or "equals",
+                "value": r["default_value"],
+            })
+        return filters
+
     def find_preferred_path(self, start_entity: str, end_entity: str, max_hops: int = 4) -> List[Dict[str, Any]]:
         query = f"""
         MATCH p=(start:OntologyEntity {{entity_name:$start_entity}})-[rels:ONTOLOGY_RELATION*1..{max_hops}]->(end:OntologyEntity {{entity_name:$end_entity}})

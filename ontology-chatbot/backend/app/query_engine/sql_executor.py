@@ -39,14 +39,25 @@ def execute_sql(
     Returns:
         Dict with columns, rows, row_count, execution_time_ms.
     """
+    # Defense-in-depth: re-check SQL safety before execution
+    from app.query_engine.sql_validator import validate_sql_safety
+    is_safe, safety_reason = validate_sql_safety(sql)
+    if not is_safe:
+        raise SQLExecutionError(f"SQL safety check failed at execution: {safety_reason}")
+
     start = time.time()
     try:
         with engine.connect() as conn:
+            # Force read-only isolation and suppress row count messages
+            conn.execute(text("SET NOCOUNT ON"))
+            conn.execute(text("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED"))
             # Set query timeout
             conn = conn.execution_options(timeout=timeout)
             res = conn.execute(text(sql))
             rows = res.fetchall()
             cols = list(res.keys())
+            # Explicit rollback — we never want to commit anything
+            conn.rollback()
 
         ms = int((time.time() - start) * 1000)
         safe_rows = [
@@ -64,5 +75,7 @@ def execute_sql(
             "row_count": len(rows),
             "execution_time_ms": ms,
         }
+    except SQLExecutionError:
+        raise
     except Exception as e:
         raise SQLExecutionError(str(e))

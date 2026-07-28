@@ -33,6 +33,18 @@ async def route_question(question: str, conversation_context: str = "") -> Dict[
     nq = normalize_text(question)
     if is_greeting_or_general(nq) and not conversation_context:
         return {"route": "general_chat", "reason": "greeting"}
+
+    # ── Detect clarification responses ──
+    if conversation_context:
+        ctx_lines = conversation_context.strip().split("\n")
+        last_assistant_msg = ""
+        for line in reversed(ctx_lines):
+            if line.startswith("assistant:"):
+                last_assistant_msg = line
+                break
+        if "⚠️" in last_assistant_msg or "clarif" in last_assistant_msg.lower():
+            return {"route": "clarification_response", "reason": "responding to assistant clarification"}
+
     try:
         payload: Dict[str, Any] = {"user_question": question}
         if conversation_context:

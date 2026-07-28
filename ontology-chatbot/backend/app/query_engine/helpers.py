@@ -108,8 +108,21 @@ def quote_sql_literal(val: Any) -> str:
         return "NULL"
     if isinstance(val, (int, float)):
         return str(val)
-    val = str(val).replace("'", "''")
-    return f"'{val}'"
+    val_str = str(val)
+    # Block suspiciously long values (likely not a legitimate filter)
+    if len(val_str) > 500:
+        raise SQLBuildError(f"Filter value too long ({len(val_str)} chars), max 500")
+    # Block SQL injection patterns — dangerous keywords following a semicolon or standalone
+    _injection_pattern = re.compile(
+        r';\s*(DROP|DELETE|INSERT|UPDATE|ALTER|EXEC|EXECUTE|CREATE|TRUNCATE|MERGE|GRANT|REVOKE)\b',
+        re.IGNORECASE,
+    )
+    if _injection_pattern.search(val_str):
+        raise SQLBuildError(f"Suspicious filter value blocked: {val_str[:80]}")
+    # Strip control characters (null bytes, backspace, etc.)
+    val_str = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', val_str)
+    val_str = val_str.replace("'", "''")
+    return f"'{val_str}'"
 
 
 # ------------------------------------------------------------------
