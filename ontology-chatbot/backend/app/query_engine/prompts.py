@@ -43,10 +43,11 @@ Planner schema exactly:
       "selected_properties": ["Entity.Column"],
       "date_property": "Entity.Column|null",
       "filters": [
-        {"type":"field","property_ref":"Entity.Column","operator":"equals|like|in","value":"..."},
-        {"type":"date_range","property_ref":"Entity.Column","operator":"last quarter|this quarter|last month|this month|last year|this year|today|yesterday|ytd","value":null},
+        {"type":"field","property_ref":"Entity.Column","operator":"equals|not_equals|like|in|gt|gte|lt|lte|is_null|is_not_null","value":"..."},
+        {"type":"date_range","property_ref":"Entity.Column","operator":"last quarter|this quarter|last month|this month|last year|this year|today|yesterday|ytd|mtd|qtd","value":null},
         {"type":"limit","value":5}
       ],
+      "metric_filters": [{"operator":"gt|gte|lt|lte|eq|neq","value":50}],
       "path_candidates": [["EntityA","EntityB"]],
       "chosen_path": [["EntityA","EntityB"]],
       "result_limit": 25,
@@ -103,7 +104,11 @@ STOP Conditions — When you MUST set needs_clarification=true:
 - If the user question asks about an entity not in the entities list, set needs_clarification=true and list available entities.
 - If no relationship path exists between the required entities, set needs_clarification=true and explain.
 - If the question is ambiguous (e.g., "agent" could mean broker or agency), set needs_clarification=true and ask which one they mean.
-- NEVER invent entity names, column names, metric names, or relationship paths not in the provided context. If it's not in the context, it does not exist."""
+- NEVER invent entity names, column names, metric names, or relationship paths not in the provided context. If it's not in the context, it does not exist.
+
+Few-Shot Examples:
+- If the ontology_context includes an "example_queries" array, use them as reference for how to structure your plan for similar questions.
+- Match the structure and reasoning of the examples but adapt entity names, metrics, and filters to the actual question."""
 
 ANSWER_SYSTEM_PROMPT = """You are a business answer generation assistant for an ontology-driven insurance database chatbot.
 Use only the provided execution summary and results.

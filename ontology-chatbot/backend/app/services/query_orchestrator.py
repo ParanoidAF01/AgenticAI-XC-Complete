@@ -301,9 +301,9 @@ class QueryOrchestrator:
 
         # ── Confidence threshold check ─────────────────────
         CONFIDENCE_THRESHOLD = 0.65
-        plan_confidence = 0.0
+        plan_confidence = 1.0  # Default: trust the plan if LLM doesn't set confidence
         try:
-            plan_confidence = float(plan.get("confidence", 0.0))
+            plan_confidence = float(plan.get("confidence", 1.0))
         except (ValueError, TypeError):
             pass
         if plan_confidence < CONFIDENCE_THRESHOLD:

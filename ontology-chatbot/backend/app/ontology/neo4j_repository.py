@@ -329,30 +329,74 @@ class Neo4jRepo:
             })
         return filters
 
-    def find_preferred_path(self, start_entity: str, end_entity: str, max_hops: int = 4) -> List[Dict[str, Any]]:
-        query = f"""
-        MATCH p=(start:OntologyEntity {{entity_name:$start_entity}})-[rels:ONTOLOGY_RELATION*1..{max_hops}]->(end:OntologyEntity {{entity_name:$end_entity}})
-        WHERE ALL(r IN rels WHERE coalesce(r.is_primary_path,false)=true)
-        RETURN [n IN nodes(p) | n.entity_name] AS entity_path,
-               [r IN rels | {{
-                    relationship_name:r.relationship_name,
-                    from_table:r.from_table,
-                    from_column:r.from_column,
-                    to_table:r.to_table,
-                    to_column:r.to_column,
-                    cardinality:r.cardinality,
-                    path_priority:r.path_priority,
-                    duplication_risk:r.duplication_risk,
-                    aggregation_safety:r.aggregation_safety,
-                    business_meaning:r.business_meaning,
-                    when_to_use:r.when_to_use,
-                    when_not_to_use:r.when_not_to_use
-               }}] AS relationship_path,
-               reduce(score = 0, r IN rels | score + (100 - coalesce(r.path_priority,50)) + CASE WHEN coalesce(r.duplication_risk,'')='high' THEN 50 WHEN coalesce(r.duplication_risk,'')='medium' THEN 10 ELSE 0 END) AS path_score
-        ORDER BY path_score ASC, size(rels) ASC
-        LIMIT 5
+    def get_example_queries(self, profile_name: str, limit: int = 3) -> List[Dict[str, Any]]:
+        """Fetch few-shot example queries from the graph.
+
+        Expects optional OntologyExampleQuery nodes linked to the profile via
+        :HAS_EXAMPLE_QUERY.  Each node should have:
+          - question (str): the sample user question
+          - plan_json (str): a JSON string of the expected plan output
+
+        Returns an empty list if no example nodes exist (backward-compatible).
         """
-        return self._run(query, {"start_entity": start_entity, "end_entity": end_entity})
+        try:
+            return self._run(
+                """
+                MATCH (:OntologyDatabaseProfile {profile_name:$profile_name})
+                      -[:HAS_EXAMPLE_QUERY]->(eq:OntologyExampleQuery)
+                WHERE coalesce(eq.active, true) = true
+                RETURN eq.question AS question,
+                       eq.plan_json AS plan_json
+                ORDER BY eq.priority DESC
+                LIMIT $limit
+                """,
+                {"profile_name": profile_name, "limit": limit},
+            )
+        except Exception:
+            # Graph may not have these nodes yet — that's fine
+            return []
+
+    def find_preferred_path(self, start_entity: str, end_entity: str, max_hops: int = 4) -> List[Dict[str, Any]]:
+        # Build the core query template; primary_filter is injected
+        def _path_query(primary_only: bool) -> str:
+            primary_clause = (
+                "WHERE ALL(r IN rels WHERE coalesce(r.is_primary_path,false)=true)"
+                if primary_only else ""
+            )
+            return f"""
+            MATCH p=(start:OntologyEntity {{entity_name:$start_entity}})-[rels:ONTOLOGY_RELATION*1..{max_hops}]-(end:OntologyEntity {{entity_name:$end_entity}})
+            {primary_clause}
+            RETURN [n IN nodes(p) | n.entity_name] AS entity_path,
+                   [r IN rels | {{
+                        relationship_name:r.relationship_name,
+                        from_table:r.from_table,
+                        from_column:r.from_column,
+                        to_table:r.to_table,
+                        to_column:r.to_column,
+                        cardinality:r.cardinality,
+                        path_priority:r.path_priority,
+                        duplication_risk:r.duplication_risk,
+                        aggregation_safety:r.aggregation_safety,
+                        join_type:r.join_type,
+                        business_meaning:r.business_meaning,
+                        when_to_use:r.when_to_use,
+                        when_not_to_use:r.when_not_to_use
+                   }}] AS relationship_path,
+                   reduce(score = 0, r IN rels | score + (100 - coalesce(r.path_priority,50)) + CASE WHEN coalesce(r.duplication_risk,'')='high' THEN 50 WHEN coalesce(r.duplication_risk,'')='medium' THEN 10 ELSE 0 END) + size(rels) * 5 AS path_score
+            ORDER BY path_score ASC, size(rels) ASC
+            LIMIT 5
+            """
+        params = {"start_entity": start_entity, "end_entity": end_entity}
+        # Strategy 1: primary paths only
+        rows = self._run(_path_query(primary_only=True), params)
+        if rows:
+            return rows
+        # Strategy 2: fallback to all paths (including non-primary)
+        logger.info(
+            "No primary path %s -> %s, falling back to non-primary paths",
+            start_entity, end_entity,
+        )
+        return self._run(_path_query(primary_only=False), params)
 
 
 # ------------------------------------------------------------------

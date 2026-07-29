@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any, Dict, List
 
 from app.ontology.neo4j_repository import Neo4jRepo
@@ -89,8 +90,28 @@ def _build_compact_column_summary(columns: List[Dict[str, Any]]) -> List[Dict[st
 def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> Dict[str, Any]:
     nq = normalize_text(question)
     candidate_terms = extract_candidate_terms(nq)
-    term_hits = repo.lookup_terms(profile_name, candidate_terms)
-    
+    term_hits_raw = repo.lookup_terms(profile_name, candidate_terms)
+
+    # Post-filter with word-boundary matching to avoid false positives
+    # e.g., "agent" should NOT match "agency" or "reagent"
+    term_hits = []
+    for t in term_hits_raw:
+        input_term = (t.get("input_term") or "").lower()
+        matched_term = (t.get("normalized_term") or "").lower()
+        # Exact match always passes
+        if input_term == matched_term:
+            term_hits.append(t)
+            continue
+        # Check if the shorter term appears as a whole word in the longer
+        if len(input_term) >= len(matched_term):
+            # input_term contains matched_term — check word boundary
+            if re.search(rf'\b{re.escape(matched_term)}\b', input_term):
+                term_hits.append(t)
+        else:
+            # matched_term contains input_term — check word boundary
+            if re.search(rf'\b{re.escape(input_term)}\b', matched_term):
+                term_hits.append(t)
+
     relevant_entity_names = set()
     for t in term_hits:
         if t["maps_to_type"] == "entity":
@@ -204,13 +225,28 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
     rel_summary.sort(key=lambda r: (r["from_entity"], r["to_entity"]))
     matched_term_summary.sort(key=lambda t: (t["maps_to_type"], t["maps_to_name"]))
 
-    return {
+    # ── Few-shot examples from graph (if available) ──
+    example_queries = repo.get_example_queries(profile_name, limit=3)
+    examples = []
+    for eq in example_queries:
+        try:
+            examples.append({
+                "question": eq["question"],
+                "expected_plan": json.loads(eq["plan_json"]) if eq.get("plan_json") else None,
+            })
+        except (json.JSONDecodeError, KeyError):
+            continue
+
+    result = {
         "normalized_question": nq,
         "matched_terms": matched_term_summary,
         "entities": entity_summary,
         "metrics": metric_summary,
         "relationships": rel_summary,
     }
+    if examples:
+        result["example_queries"] = examples
+    return result
 
 
 # ------------------------------------------------------------------
