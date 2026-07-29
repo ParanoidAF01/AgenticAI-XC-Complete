@@ -42,18 +42,6 @@ async def build_answer(
     Generate a natural language answer from execution results.
     Preserves the exact legacy payload structure for the LLM.
     """
-    # Truncate results to save tokens — LLM doesn't need 500 rows
-    MAX_ANSWER_ROWS = 25
-    truncated_outputs = []
-    for t in execution_output.get("task_outputs", []):
-        result_copy = dict(t["result"])
-        rows = result_copy.get("rows", [])
-        if len(rows) > MAX_ANSWER_ROWS:
-            result_copy["rows"] = rows[:MAX_ANSWER_ROWS]
-            result_copy["truncated"] = True
-            result_copy["total_row_count"] = len(rows)
-        truncated_outputs.append({**t, "result": result_copy})
-
     payload: Dict[str, Any] = {
         "user_question": question,
         "database_profile": profile_name,
@@ -71,10 +59,10 @@ async def build_answer(
                     "selected_properties": t["task"].get("selected_properties", []),
                     "row_count": t["result"].get("row_count", 0),
                 }
-                for t in truncated_outputs
+                for t in execution_output.get("task_outputs", [])
             ],
         },
-        "results": {**execution_output, "task_outputs": truncated_outputs},
+        "results": execution_output,
     }
     if context:
         payload["conversation_context"] = context
