@@ -165,6 +165,12 @@ def resolve_placeholder_value(value: Any, task_contexts: Dict[str, Dict[str, Any
     if task_id not in task_contexts:
         raise SQLBuildError(f"Placeholder references unknown task: {task_id}")
     ctx = task_contexts[task_id]
+    # Guard: upstream task returned 0 rows → context is empty
+    if not ctx:
+        raise SQLBuildError(
+            f"Placeholder '{value}' cannot be resolved: upstream task '{task_id}' "
+            f"returned no rows. Consider adding a fallback or removing this dependency."
+        )
     if field_name in ctx:
         return ctx[field_name]
     for k, v in ctx.items():

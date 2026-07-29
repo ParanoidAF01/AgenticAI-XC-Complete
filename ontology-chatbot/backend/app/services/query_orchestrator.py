@@ -192,7 +192,7 @@ class QueryOrchestrator:
         except Exception as exc:
             logger.exception("Pipeline error for session=%s", session_id)
             error_text = str(exc)
-            answer_text = f"❌ Error: {error_text}"
+            answer_text = "Error! Something went wrong. Please try again!"
 
         # ── 8. Save assistant message ───────────────────────────
         assistant_msg = await message_repository.create_message(

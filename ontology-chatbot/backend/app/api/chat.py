@@ -218,17 +218,18 @@ async def send_message(
         return response
     except Exception as e:
         logger.error("Error processing message: %s", e, exc_info=True)
+        fallback_msg = "Error! Something went wrong. Please try again!"
         # Save error as assistant message
         error_msg = await create_message(
             db,
             message_id=uuid.uuid4(),
             session_id=session_id,
             role="assistant",
-            content=f"❌ Error: {str(e)}",
+            content=fallback_msg,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e),
+            detail=fallback_msg,
         )
 
 

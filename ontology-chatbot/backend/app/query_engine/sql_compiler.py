@@ -99,6 +99,10 @@ def build_date_where(property_ref: str, operator: str, repo: Neo4jRepo) -> str:
         return f"{dq} >= DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()) - 1, 0) AND {dq} < DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0)"
     if op == "this week":
         return f"{dq} >= DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()), 0) AND {dq} < DATEADD(WEEK, DATEDIFF(WEEK, 0, GETDATE()) + 1, 0)"
+    if op == "mtd":
+        return f"{dq} >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0) AND {dq} < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))"
+    if op == "qtd":
+        return f"{dq} >= DATEADD(QUARTER, DATEDIFF(QUARTER, 0, GETDATE()), 0) AND {dq} < DATEADD(DAY, 1, CAST(GETDATE() AS DATE))"
     raise SQLBuildError(f"Unsupported period: {op}")
 
 
@@ -167,8 +171,10 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
             if not fact_entity or not fact_entity.get("primary_key"):
                 raise SQLBuildError(f"derived_ratio metric requires fact entity primary key: {metric['metric_name']}")
             pk_expr = f"[{metric['source_table']}].[{fact_entity['primary_key']}]"
+            # Read positive indicator from metric metadata; fallback to 'Y'
+            positive_val = metric.get("positive_value", "Y")
             metric_expr = (
-                f"CAST(COUNT(DISTINCT CASE WHEN {source_expr} = 'Y' THEN {pk_expr} END) AS DECIMAL(38,10)) "
+                f"CAST(COUNT(DISTINCT CASE WHEN {source_expr} = {quote_sql_literal(positive_val)} THEN {pk_expr} END) AS DECIMAL(38,10)) "
                 f"/ NULLIF(COUNT(DISTINCT {pk_expr}), 0) * 100"
             )
         else:
