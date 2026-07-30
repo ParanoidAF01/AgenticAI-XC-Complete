@@ -330,29 +330,39 @@ class Neo4jRepo:
         return filters
 
     def find_preferred_path(self, start_entity: str, end_entity: str, max_hops: int = 4) -> List[Dict[str, Any]]:
-        query = f"""
-        MATCH p=(start:OntologyEntity {{entity_name:$start_entity}})-[rels:ONTOLOGY_RELATION*1..{max_hops}]->(end:OntologyEntity {{entity_name:$end_entity}})
-        WHERE ALL(r IN rels WHERE coalesce(r.is_primary_path,false)=true)
-        RETURN [n IN nodes(p) | n.entity_name] AS entity_path,
-               [r IN rels | {{
-                    relationship_name:r.relationship_name,
-                    from_table:r.from_table,
-                    from_column:r.from_column,
-                    to_table:r.to_table,
-                    to_column:r.to_column,
-                    cardinality:r.cardinality,
-                    path_priority:r.path_priority,
-                    duplication_risk:r.duplication_risk,
-                    aggregation_safety:r.aggregation_safety,
-                    business_meaning:r.business_meaning,
-                    when_to_use:r.when_to_use,
-                    when_not_to_use:r.when_not_to_use
-               }}] AS relationship_path,
-               reduce(score = 0, r IN rels | score + (100 - coalesce(r.path_priority,50)) + CASE WHEN coalesce(r.duplication_risk,'')='high' THEN 50 WHEN coalesce(r.duplication_risk,'')='medium' THEN 10 ELSE 0 END) AS path_score
-        ORDER BY path_score ASC, size(rels) ASC
-        LIMIT 5
-        """
-        return self._run(query, {"start_entity": start_entity, "end_entity": end_entity})
+        # Build the core query template; primary_filter is injected
+        def _path_query(primary_only: bool) -> str:
+            filter_clause = "WHERE ALL(r IN rels WHERE coalesce(r.is_primary_path,false)=true)" if primary_only else ""
+            return f"""
+            MATCH p=(start:OntologyEntity {{entity_name:$start_entity}})-[rels:ONTOLOGY_RELATION*1..{max_hops}]-(end:OntologyEntity {{entity_name:$end_entity}})
+            {filter_clause}
+            RETURN [n IN nodes(p) | n.entity_name] AS entity_path,
+                   [r IN rels | {{
+                        relationship_name:r.relationship_name,
+                        from_table:r.from_table,
+                        from_column:r.from_column,
+                        to_table:r.to_table,
+                        to_column:r.to_column,
+                        cardinality:r.cardinality,
+                        path_priority:r.path_priority,
+                        duplication_risk:r.duplication_risk,
+                        aggregation_safety:r.aggregation_safety,
+                        business_meaning:r.business_meaning,
+                        when_to_use:r.when_to_use,
+                        when_not_to_use:r.when_not_to_use
+                   }}] AS relationship_path,
+                   reduce(score = 0, r IN rels | score + (100 - coalesce(r.path_priority,50)) + CASE WHEN coalesce(r.duplication_risk,'')='high' THEN 50 WHEN coalesce(r.duplication_risk,'')='medium' THEN 10 ELSE 0 END) + (size(rels) * 5) AS path_score
+            ORDER BY path_score ASC, size(rels) ASC
+            LIMIT 5
+            """
+
+        # Try strict primary paths first
+        primary_results = self._run(_path_query(primary_only=True), {"start_entity": start_entity, "end_entity": end_entity})
+        if primary_results:
+            return primary_results
+        
+        # Fall back to all paths if no primary path exists
+        return self._run(_path_query(primary_only=False), {"start_entity": start_entity, "end_entity": end_entity})
 
 
 # ------------------------------------------------------------------

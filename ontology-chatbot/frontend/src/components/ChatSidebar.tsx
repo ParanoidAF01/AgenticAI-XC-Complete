@@ -59,11 +59,11 @@ export default function ChatSidebar({
 
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
         {/* Header Logo */}
-        <div className="sidebar-header" style={{ padding: '16px 16px 8px 16px', display: 'flex', justifyContent: 'center' }}>
+        <div className="sidebar-header" style={{ padding: '20px 16px 12px 16px', display: 'flex', justifyContent: 'center' }}>
           <img 
             src="/nexus-logo.png" 
             alt="NexusAI" 
-            style={{ width: '100%', maxWidth: '110px', objectFit: 'contain' }}
+            style={{ width: '100%', maxWidth: '160px', objectFit: 'contain' }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
@@ -138,7 +138,7 @@ export default function ChatSidebar({
         {/* User section */}
         <div className="sidebar-bottom" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div className="sidebar-user">
-            <div className="user-avatar" style={{ backgroundColor: 'var(--figma-primary)', color: '#000' }}>
+            <div className="user-avatar">
               {user?.display_name?.charAt(0).toUpperCase() || 'U'}
             </div>
             <div className="user-info">

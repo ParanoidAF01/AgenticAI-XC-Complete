@@ -66,13 +66,17 @@
 }
 
 .avatar--user {
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, #FFD600 0%, #FFA500 100%);
+  color: #1A1C1B;
+  font-weight: 700;
+  font-size: 0.8rem;
+  box-shadow: 0 2px 8px rgba(255, 214, 0, 0.4);
 }
 
 .avatar--assistant {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, #1A1C1B 0%, #2D3139 100%);
+  border: 1.5px solid rgba(255, 214, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .message-body {
@@ -93,17 +97,21 @@
 }
 
 .message--user .message-content {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-primary);
+  background: linear-gradient(135deg, #FFD600 0%, #FFC200 100%);
+  color: #1A1C1B;
+  border: none;
   border-bottom-right-radius: 4px;
+  font-weight: 500;
+  box-shadow: 0 2px 12px rgba(255, 214, 0, 0.25);
 }
 
 .message--assistant .message-content {
-  background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
+  background: #FFFFFF;
+  color: #1A1C1B;
+  border: 1px solid #E7E7E2;
+  border-left: 3px solid #FFD600;
   border-bottom-left-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .message-time {

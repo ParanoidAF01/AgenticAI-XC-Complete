@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message } from '@/types/chat';
+import type { User } from '@/types/auth';
 import './MessageList.css';
 
 interface MessageListProps {
@@ -11,6 +12,7 @@ interface MessageListProps {
   error: string | null;
   onMessageSelect?: (message: Message) => void;
   selectedMessageId?: string;
+  user?: User | null;
 }
 
 export default function MessageList({
@@ -20,6 +22,7 @@ export default function MessageList({
   error,
   onMessageSelect,
   selectedMessageId,
+  user,
 }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const [expandedSql, setExpandedSql] = useState<Set<string>>(new Set());
@@ -69,7 +72,7 @@ export default function MessageList({
         >
           <div className="message-avatar">
             {msg.role === 'user' ? (
-              <div className="avatar avatar--user">U</div>
+              <div className="avatar avatar--user">{user?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}</div>
             ) : (
               <div className="avatar avatar--assistant">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">

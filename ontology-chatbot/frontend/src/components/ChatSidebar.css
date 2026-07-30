@@ -210,14 +210,15 @@
   width: 34px;
   height: 34px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--accent), #9b59b6);
+  background: linear-gradient(135deg, #FFD600 0%, #FFA500 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.85rem;
-  color: white;
+  color: #1A1C1B;
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(255, 214, 0, 0.4);
 }
 
 .user-info {

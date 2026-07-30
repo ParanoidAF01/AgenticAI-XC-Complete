@@ -43,10 +43,11 @@ Planner schema exactly:
       "selected_properties": ["Entity.Column"],
       "date_property": "Entity.Column|null",
       "filters": [
-        {"type":"field","property_ref":"Entity.Column","operator":"equals|like|in","value":"..."},
-        {"type":"date_range","property_ref":"Entity.Column","operator":"last quarter|this quarter|last month|this month|last year|this year|today|yesterday|ytd","value":null},
+        {"type":"field","property_ref":"Entity.Column","operator":"equals|not_equals|like|in|gt|gte|lt|lte|is_null|is_not_null","value":"..."},
+        {"type":"date_range","property_ref":"Entity.Column","operator":"last quarter|this quarter|last month|this month|last year|this year|today|yesterday|ytd|mtd|qtd","value":null},
         {"type":"limit","value":5}
       ],
+      "metric_filters": [{"operator":"gt|gte|lt|lte|eq|neq","value":5}],
       "path_candidates": [["EntityA","EntityB"]],
       "chosen_path": [["EntityA","EntityB"]],
       "result_limit": 25,
@@ -94,7 +95,7 @@ Relationship Selection Rules (CRITICAL):
 - Read each relationship's "when_to_use" to determine if it fits the question context.
 - Read "when_not_to_use" to EXCLUDE relationships that look right but are semantically wrong.
 - Check "question_hints" — if any hint matches the user's question, prefer that relationship.
-- If a relationship has "duplication_risk"="high", avoid it for simple aggregate queries unless required.
+- For questions implying filtering on counts (e.g., "more than one X", "at least 5 Y"), use "metric_filters" and set task_type to "aggregate". Leave metric_name null to default to a COUNT(DISTINCT) on the target entity.
 - Check "aggregation_safety" — if "preaggregate_required" or "unsafe", do NOT use this join path for aggregate/ranking/trend queries. Choose an alternative safer path.
 - Prefer relationships with higher "path_priority" when multiple paths exist.
 

@@ -30,7 +30,7 @@ def resolve_join_steps(task: Dict[str, Any], repo: Neo4jRepo) -> List[Dict[str, 
     """
     steps: List[Dict[str, Any]] = []
     for branch in task.get("chosen_path", []):
-        if len(branch) <= 1:
+        if isinstance(branch, str) or len(branch) <= 1:
             continue
 
         # Strategy 1: Resolve consecutive pairs (A→B, B→C, ...)
@@ -147,19 +147,36 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
         pending = remain
     if pending:
         raise SQLBuildError("Could not resolve join order from ontology path")
+    
+    is_agg = task.get("task_type") in {"aggregate", "ranking", "trend"}
+    metric_filters = task.get("metric_filters", [])
+    if metric_filters:
+        is_agg = True
+
+    # Intelligent Granularity: Ensure primary keys of selected entities are included
+    final_selected = list(task.get("selected_properties", []))
+    selected_entities = {parse_property_ref(prop)[0] for prop in final_selected}
+    
+    for entity_name in selected_entities:
+        entity_data = repo.get_entity(entity_name)
+        if entity_data and entity_data.get("primary_key"):
+            pk_ref = f"{entity_name}.{entity_data['primary_key']}"
+            if pk_ref not in final_selected:
+                final_selected.append(pk_ref)
+
     select_parts: List[str] = []
     group_parts: List[str] = []
-    for prop in task.get("selected_properties", []):
+    for prop in final_selected:
         entity_name, column_name = parse_property_ref(prop)
         alias = f"{entity_name}_{column_name}".lower()
         select_parts.append(f"{qf(entity_name, column_name)} AS [{alias}]")
-        if task.get("task_type") in {"aggregate", "ranking", "trend"}:
+        if is_agg:
             group_parts.append(qf(entity_name, column_name))
-    if task.get("metric_name"):
-        if not metric:
-            raise SQLBuildError("Aggregate/ranking/trend task missing metric")
+
+    metric_expr = ""
+    if metric:
         source_expr = f"[{metric['source_table']}].[{metric['source_column']}]"
-        agg = metric["aggregation"]
+        agg = metric["aggregation"].lower()
         if agg == "count_distinct":
             metric_expr = f"COUNT(DISTINCT {source_expr})"
         elif agg == "sum":
@@ -171,27 +188,36 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
             if not fact_entity or not fact_entity.get("primary_key"):
                 raise SQLBuildError(f"derived_ratio metric requires fact entity primary key: {metric['metric_name']}")
             pk_expr = f"[{metric['source_table']}].[{fact_entity['primary_key']}]"
-            # Read positive indicator from metric metadata; fallback to 'Y'
             positive_val = metric.get("positive_value", "Y")
             metric_expr = (
                 f"CAST(COUNT(DISTINCT CASE WHEN {source_expr} = {quote_sql_literal(positive_val)} THEN {pk_expr} END) AS DECIMAL(38,10)) "
                 f"/ NULLIF(COUNT(DISTINCT {pk_expr}), 0) * 100"
             )
         else:
-            metric_expr = source_expr
+            raise SQLBuildError(f"Unsupported metric aggregation: {agg}")
+    elif is_agg:
+        count_entity = None
+        count_entity_name = None
+        for candidate_name in [task.get("fact_entity"), task.get("target_entity"), base_entity_name]:
+            if not candidate_name:
+                continue
+            candidate = repo.get_entity(str(candidate_name))
+            if candidate and candidate.get("primary_key"):
+                count_entity = candidate
+                count_entity_name = candidate_name
+                break
+                
+        if not count_entity:
+            raise SQLBuildError(f"Generic count requires an entity with a primary key. Failed to find one for: {task.get('fact_entity')}, {task.get('target_entity')}, {base_entity_name}")
+        
+        pk_expr = f"[{count_entity['table_name']}].[{count_entity['primary_key']}]"
+        metric_expr = f"COUNT(DISTINCT {pk_expr})"
+    
+    if metric_expr:
         select_parts.append(f"{metric_expr} AS [metric_value]")
     else:
-        if task.get("task_type") in {"aggregate", "ranking", "trend"}:
-            count_entity_name = task.get("fact_entity") or task.get("target_entity") or base_entity_name
-            count_entity = repo.get_entity(str(count_entity_name))
-            if not count_entity or not count_entity.get("primary_key"):
-                raise SQLBuildError(f"Generic count requires entity primary key: {count_entity_name}")
-            pk_expr = f"[{count_entity['table_name']}].[{count_entity['primary_key']}]"
-            metric_expr = f"COUNT(DISTINCT {pk_expr})"
-            select_parts.append(f"{metric_expr} AS [metric_value]")
-        else:
-            if not select_parts:
-                select_parts.append(f"[{base_table}].*")
+        if not select_parts:
+            select_parts.append(f"[{base_table}].*")
     where_parts: List[str] = []
     for flt in task.get("filters", []):
         ftype = flt.get("type")
@@ -202,10 +228,24 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
             val = flt.get("value")
             if op == "equals":
                 where_parts.append(f"{qual} = {quote_sql_literal(val)}")
+            elif op == "not_equals":
+                where_parts.append(f"{qual} != {quote_sql_literal(val)}")
             elif op == "like":
                 where_parts.append(f"{qual} LIKE {quote_sql_literal('%' + str(val) + '%')}")
             elif op == "in" and isinstance(val, list) and val:
                 where_parts.append(f"{qual} IN ({', '.join([quote_sql_literal(v) for v in val])})")
+            elif op == "gt":
+                where_parts.append(f"{qual} > {quote_sql_literal(val)}")
+            elif op == "gte":
+                where_parts.append(f"{qual} >= {quote_sql_literal(val)}")
+            elif op == "lt":
+                where_parts.append(f"{qual} < {quote_sql_literal(val)}")
+            elif op == "lte":
+                where_parts.append(f"{qual} <= {quote_sql_literal(val)}")
+            elif op == "is_null":
+                where_parts.append(f"{qual} IS NULL")
+            elif op == "is_not_null":
+                where_parts.append(f"{qual} IS NOT NULL")
         elif ftype == "date_range":
             where_parts.append(build_date_where(flt.get("property_ref"), flt.get("operator"), repo))
 
@@ -272,6 +312,18 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
         sql_lines.append("WHERE " + "\n  AND ".join(where_parts))
     if group_parts:
         sql_lines.append("GROUP BY " + ", ".join(group_parts))
+        
+        if metric_filters:
+            having_parts: List[str] = []
+            op_map = {"gt": ">", "gte": ">=", "lt": "<", "lte": "<=", "eq": "=", "neq": "!="}
+            for mf in metric_filters:
+                mf_op = op_map.get(mf.get("operator", ""), ">")
+                mf_val = mf.get("value")
+                if mf_val is not None:
+                    having_parts.append(f"metric_value {mf_op} {quote_sql_literal(mf_val)}")
+            if having_parts:
+                sql_lines.append("HAVING " + " AND ".join(having_parts))
+
     sort = task.get("sort") or {}
     sort_field = sort.get("field")
     sort_dir = (sort.get("direction") or "desc").upper()

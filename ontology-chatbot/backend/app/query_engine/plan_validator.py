@@ -144,7 +144,7 @@ def validate_task(
 
     # Path validation
     for branch in task.get("chosen_path", []):
-        if len(branch) <= 1:
+        if isinstance(branch, str) or len(branch) <= 1:
             continue
         rows = repo.find_preferred_path(branch[0], branch[-1], max_hops=max(2, len(branch)))
         if not rows:
@@ -153,7 +153,7 @@ def validate_task(
     # ── Aggregation safety enforcement ──
     if task.get("task_type") in {"aggregate", "ranking", "trend"}:
         for branch in task.get("chosen_path", []):
-            if len(branch) <= 1:
+            if isinstance(branch, str) or len(branch) <= 1:
                 continue
             for i in range(len(branch) - 1):
                 seg_rows = repo.find_preferred_path(branch[i], branch[i + 1], max_hops=2)
