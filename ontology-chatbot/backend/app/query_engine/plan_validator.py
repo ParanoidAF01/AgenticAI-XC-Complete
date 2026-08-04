@@ -188,7 +188,10 @@ def validate_task(
                         f"Use '{default_dp}' instead"
                     )
 
-    # ── Metric dimension validation ──
+    # ── Metric dimension validation (soft warning, not hard error) ──
+    # The allowed_dimension_entities is an ontology hint, not a database constraint.
+    # If the LLM picks a metric whose allowed dims don't include the target entity,
+    # log a warning but allow the query to proceed — the SQL join is still valid.
     if task.get("metric_name") and task.get("selected_properties"):
         metric = repo.get_metric(profile_name, task["metric_name"])
         if metric and metric.get("allowed_dimension_entities"):
@@ -200,9 +203,10 @@ def validate_task(
                 except Exception:
                     continue
                 if entity_name != fact_entity and entity_name not in allowed:
-                    errs.append(
-                        f"Metric '{task['metric_name']}' does not allow dimension "
-                        f"entity '{entity_name}'. Allowed: {sorted(allowed)}"
+                    logger.warning(
+                        "Metric '%s' does not list '%s' in allowed_dimension_entities %s. "
+                        "Proceeding anyway — join path may still be valid.",
+                        task["metric_name"], entity_name, sorted(allowed),
                     )
 
     return errs

@@ -99,6 +99,11 @@ Relationship Selection Rules (CRITICAL):
 - Check "aggregation_safety" — if "preaggregate_required" or "unsafe", do NOT use this join path for aggregate/ranking/trend queries. Choose an alternative safer path.
 - Prefer relationships with higher "path_priority" when multiple paths exist.
 
+Output Efficiency Rules:
+- Maximum 5 tasks per plan. If the question requires more aspects, consolidate related metrics into fewer tasks or prioritize the most impactful ones.
+- Keep the "notes" array concise — max 3 bullet points per plan.
+- Do not repeat the same path_candidates and chosen_path verbatim across tasks if they are identical.
+
 STOP Conditions — When you MUST set needs_clarification=true:
 - If the user question asks about a metric not in the metrics list, set needs_clarification=true and list available metrics.
 - If the user question asks about an entity not in the entities list, set needs_clarification=true and list available entities.

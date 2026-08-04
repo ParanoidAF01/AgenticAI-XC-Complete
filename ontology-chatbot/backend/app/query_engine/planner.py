@@ -292,7 +292,8 @@ async def build_plan(
             {"role": "system", "content": PLANNER_V2_PROMPT},
             {"role": "user", "content": json.dumps(make_json_safe(payload), indent=2)},
         ],
-        max_tokens=2400,
+        max_tokens=4096,
+        auto_continue=True,
     )
     logger.info(f"Planner raw LLM response -> {raw[:1800]}")
     try:
@@ -314,7 +315,8 @@ async def build_plan(
                 {"role": "system", "content": PLANNER_V2_PROMPT},
                 {"role": "user", "content": json.dumps(make_json_safe(repair_payload), indent=2)},
             ],
-            max_tokens=2600,
+            max_tokens=4096,
+            auto_continue=True,
         )
         logger.info(f"Planner repair raw LLM response -> {raw2[:1800]}")
         try:
