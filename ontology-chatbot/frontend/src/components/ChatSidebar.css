@@ -183,42 +183,49 @@
   color: var(--text-primary);
 }
 
-.session-dropdown {
-  position: absolute;
-  top: 30px;
-  right: 10px;
+.session-dropdown-portal {
+  position: fixed;
   background: #FFFFFF;
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 100;
-  min-width: 150px;
-  padding: 4px 0;
-  animation: fadeIn 0.15s ease;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+  z-index: 9999;
+  min-width: 180px;
+  padding: 6px 0;
+  animation: dropdownIn 0.12s ease-out;
+}
+
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 8px 12px;
-  font-size: 0.8rem;
-  color: var(--text-primary);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #1A1C1B;
   text-align: left;
-  transition: background var(--transition-fast);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s;
 }
 
 .dropdown-item:hover {
-  background: var(--bg-surface-hover);
+  background: #F2F2F0;
 }
 
 .dropdown-item--danger {
-  color: var(--error);
+  color: #e74c3c;
 }
 
 .dropdown-item--danger:hover {
-  background: rgba(231, 76, 60, 0.1);
+  background: #FEF2F2;
 }
 
 /* ── Modal Overlay ─────────────────────────────────────── */

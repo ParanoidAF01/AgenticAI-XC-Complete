@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import type { Session } from '@/types/chat';
 import type { User } from '@/types/auth';
@@ -17,6 +18,103 @@ interface Props {
   user: User | null;
 }
 
+/* ── Floating Dropdown (Portal) ──────────────────────────── */
+function FloatingDropdown({
+  anchorRef,
+  sessionId,
+  onExport,
+  onDelete,
+  onClose,
+}: {
+  anchorRef: HTMLButtonElement | null;
+  sessionId: string;
+  onExport: (id: string) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // Compute position relative to the anchor button
+  useEffect(() => {
+    if (!anchorRef) return;
+    const rect = anchorRef.getBoundingClientRect();
+    const menuHeight = 80; // approximate height of 2-item menu
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const sidebarWidth = anchorRef.closest('.chat-sidebar')?.getBoundingClientRect().width ?? 260;
+
+    // If not enough space below, open above
+    const top = spaceBelow < menuHeight + 8
+      ? rect.top - menuHeight - 4
+      : rect.bottom + 4;
+
+    // Position to the right of the sidebar
+    const left = sidebarWidth + 4;
+
+    setPos({ top, left });
+  }, [anchorRef]);
+
+  // Click outside to close
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        anchorRef &&
+        !anchorRef.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose, anchorRef]);
+
+  if (!pos) return null;
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="session-dropdown-portal"
+      style={{ top: pos.top, left: pos.left }}
+    >
+      <button
+        className="dropdown-item"
+        onClick={(e) => {
+          e.stopPropagation();
+          onExport(sessionId);
+          onClose();
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <line x1="9" y1="15" x2="12" y2="18"></line>
+          <line x1="15" y1="15" x2="12" y2="18"></line>
+        </svg>
+        Export chat as PDF
+      </button>
+      <button
+        className="dropdown-item dropdown-item--danger"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(sessionId);
+          onClose();
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+        Delete chat
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+/* ── Main Sidebar ────────────────────────────────────────── */
 export default function ChatSidebar({
   sessions,
   activeSessionId,
@@ -31,25 +129,29 @@ export default function ChatSidebar({
 }: Props) {
   const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!(e.target as Element).closest('.session-menu-wrapper')) {
-        setActiveDropdown(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
   const handleDeleteConfirm = () => {
     if (sessionToDelete) {
       onDeleteSession(sessionToDelete);
       setSessionToDelete(null);
-      setActiveDropdown(null);
     }
   };
+
+  const openMenu = useCallback((sessionId: string, btnEl: HTMLButtonElement) => {
+    if (activeDropdown === sessionId) {
+      setActiveDropdown(null);
+      setAnchorEl(null);
+    } else {
+      setActiveDropdown(sessionId);
+      setAnchorEl(btnEl);
+    }
+  }, [activeDropdown]);
+
+  const closeMenu = useCallback(() => {
+    setActiveDropdown(null);
+    setAnchorEl(null);
+  }, []);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -74,14 +176,14 @@ export default function ChatSidebar({
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 className="modal-title">Are you sure you want to delete this chat?</h3>
             <div className="modal-actions">
-              <button 
-                className="modal-btn modal-btn--cancel" 
+              <button
+                className="modal-btn modal-btn--cancel"
                 onClick={() => setSessionToDelete(null)}
               >
                 Cancel
               </button>
-              <button 
-                className="modal-btn modal-btn--danger" 
+              <button
+                className="modal-btn modal-btn--danger"
                 onClick={handleDeleteConfirm}
               >
                 Yes, Delete
@@ -91,12 +193,23 @@ export default function ChatSidebar({
         </div>
       )}
 
+      {/* Portal dropdown renders on document.body */}
+      {activeDropdown && anchorEl && (
+        <FloatingDropdown
+          anchorRef={anchorEl}
+          sessionId={activeDropdown}
+          onExport={onExportSession}
+          onDelete={(id) => setSessionToDelete(id)}
+          onClose={closeMenu}
+        />
+      )}
+
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
         {/* Header Logo */}
         <div className="sidebar-header" style={{ padding: '20px 0px 0px 0px', display: 'flex', justifyContent: 'center' }}>
-          <img 
-            src="/nexus-logo.png" 
-            alt="NexusAI" 
+          <img
+            src="/nexus-logo.png"
+            alt="NexusAI"
             style={{ width: '100%', maxWidth: '200px', objectFit: 'contain' }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
@@ -148,60 +261,18 @@ export default function ChatSidebar({
                     </div>
                   </div>
 
-                  <div 
-                    className="session-menu-wrapper"
-                    style={{ position: 'relative' }}
-                    onClick={(e) => e.stopPropagation()}
+                  <button
+                    className={`session-menu-btn ${activeDropdown === session.id ? 'session-menu-btn--open' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openMenu(session.id, e.currentTarget);
+                    }}
+                    title="Menu"
                   >
-                    <button
-                      className={`session-menu-btn ${activeDropdown === session.id ? 'session-menu-btn--open' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveDropdown(activeDropdown === session.id ? null : session.id);
-                      }}
-                      title="Menu"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0-5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
-                      </svg>
-                    </button>
-
-                    {activeDropdown === session.id && (
-                      <div className="session-dropdown">
-                        <button 
-                          className="dropdown-item"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onExportSession(session.id);
-                            setActiveDropdown(null);
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="12" y1="18" x2="12" y2="12"></line>
-                            <line x1="9" y1="15" x2="12" y2="18"></line>
-                            <line x1="15" y1="15" x2="12" y2="18"></line>
-                          </svg>
-                          Export chat as PDF
-                        </button>
-                        <button 
-                          className="dropdown-item dropdown-item--danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSessionToDelete(session.id);
-                            setActiveDropdown(null);
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                          </svg>
-                          Delete chat
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0-5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+                    </svg>
+                  </button>
                 </li>
               ))}
             </ul>

@@ -14,7 +14,6 @@ import {
 } from '@/hooks/useChat';
 import { chatApi } from '@/api/chat';
 import type { Message } from '@/types/chat';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import './ChatPage.css';
 
@@ -26,7 +25,6 @@ export default function ChatPage() {
   const [devPanelOpen, setDevPanelOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [pendingPdfExport, setPendingPdfExport] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -49,51 +47,6 @@ export default function ChatPage() {
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   // Require explicit profile selection
   const activeProfileName = selectedProfile || '';
-
-  // Trigger PDF Export once messages are loaded
-  useEffect(() => {
-    if (pendingPdfExport && activeSessionId === pendingPdfExport && !messagesLoading) {
-      // Small timeout to ensure DOM is fully painted after loading state is removed
-      const timer = setTimeout(async () => {
-        const element = document.getElementById('chat-export-container');
-        if (element) {
-          // Temporarily make container fully expand to capture all scrollable content
-          const originalOverflow = element.style.overflow;
-          const originalHeight = element.style.height;
-          element.style.overflow = 'visible';
-          element.style.height = 'max-content';
-
-          try {
-            const canvas = await html2canvas(element, { 
-              scale: 2, 
-              useCORS: true,
-              windowHeight: element.scrollHeight,
-              y: 0 
-            });
-            const imgData = canvas.toDataURL('image/png');
-            
-            // Create PDF perfectly sized to the canvas
-            const pdf = new jsPDF({
-              orientation: canvas.width > canvas.height ? 'l' : 'p',
-              unit: 'px',
-              format: [canvas.width, canvas.height]
-            });
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-            pdf.save(`Chat_Export_${new Date().toISOString().split('T')[0]}.pdf`);
-          } catch (err) {
-            console.error('Error exporting PDF:', err);
-          } finally {
-            // Restore original styles
-            element.style.overflow = originalOverflow;
-            element.style.height = originalHeight;
-          }
-        }
-        setPendingPdfExport(null);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [activeSessionId, pendingPdfExport, messagesLoading]);
 
   const handleNewChat = async () => {
     try {
@@ -193,12 +146,143 @@ export default function ChatPage() {
     setSelectedMessage(null);
   };
 
-  const handleExportSession = (sessionId: string) => {
-    if (activeSessionId === sessionId) {
-      setPendingPdfExport(sessionId);
-    } else {
-      setActiveSessionId(sessionId);
-      setPendingPdfExport(sessionId);
+  const handleExportSession = async (sessionId: string) => {
+    try {
+      // Fetch messages and session info directly from API
+      const [exportMessages, sessionInfo] = await Promise.all([
+        chatApi.getMessages(sessionId),
+        chatApi.getSession(sessionId),
+      ]);
+
+      if (!exportMessages.length) return;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 18;
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      // ── Colors ──
+      const brandYellow: [number, number, number] = [255, 214, 0];
+      const userBg: [number, number, number] = [235, 245, 255];
+      const userBorder: [number, number, number] = [59, 130, 246];
+      const assistantBg: [number, number, number] = [248, 249, 250];
+      const assistantBorder: [number, number, number] = [200, 200, 200];
+      const darkText: [number, number, number] = [26, 28, 27];
+      const mutedText: [number, number, number] = [107, 107, 107];
+      const userLabelColor: [number, number, number] = [37, 99, 235];
+      const assistantLabelColor: [number, number, number] = [16, 185, 129];
+
+      // ── Helper: check page break ──
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+      };
+
+      // ── Header ──
+      pdf.setFillColor(...brandYellow);
+      pdf.rect(0, 0, pageWidth, 28, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(16);
+      pdf.setTextColor(...darkText);
+      pdf.text(sessionInfo.title || 'Chat Export', margin, 12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(...mutedText);
+      const dateStr = new Date(sessionInfo.created_at).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+      });
+      pdf.text(`Exported on ${dateStr}`, margin, 19);
+      pdf.text(`${exportMessages.length} messages`, margin, 24);
+
+      // Separator line
+      y = 32;
+      pdf.setDrawColor(230, 230, 230);
+      pdf.setLineWidth(0.3);
+      pdf.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      // ── Render each message ──
+      for (const msg of exportMessages) {
+        const isUser = msg.role === 'user';
+        const label = isUser ? (user?.display_name || 'You') : 'NexusAI';
+        const timestamp = new Date(msg.created_at).toLocaleTimeString([], {
+          hour: '2-digit', minute: '2-digit',
+        });
+
+        // Wrap text to fit content width minus padding
+        const textPadding = 8;
+        const textWidth = contentWidth - textPadding * 2;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        const lines = pdf.splitTextToSize(msg.content, textWidth);
+        const blockHeight = lines.length * 5 + 20; // text + label + padding
+
+        ensureSpace(blockHeight + 6);
+
+        // Message card background
+        const bgColor = isUser ? userBg : assistantBg;
+        const borderColor = isUser ? userBorder : assistantBorder;
+        const cardX = margin;
+        const cardWidth = contentWidth;
+        const cardHeight = blockHeight;
+
+        // Rounded rect fill
+        pdf.setFillColor(...bgColor);
+        pdf.roundedRect(cardX, y, cardWidth, cardHeight, 3, 3, 'F');
+
+        // Left accent bar
+        pdf.setFillColor(...borderColor);
+        pdf.rect(cardX, y + 2, 2, cardHeight - 4, 'F');
+
+        // Role label
+        let textY = y + 7;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(...(isUser ? userLabelColor : assistantLabelColor));
+        pdf.text(label, cardX + textPadding + 3, textY);
+
+        // Timestamp
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7.5);
+        pdf.setTextColor(...mutedText);
+        pdf.text(timestamp, cardX + cardWidth - textPadding - pdf.getTextWidth(timestamp), textY);
+
+        // Message text
+        textY += 6;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        pdf.setTextColor(...darkText);
+
+        for (const line of lines) {
+          if (textY > pageHeight - margin - 5) {
+            pdf.addPage();
+            textY = margin + 5;
+          }
+          pdf.text(line, cardX + textPadding + 3, textY);
+          textY += 5;
+        }
+
+        y += cardHeight + 5;
+      }
+
+      // ── Footer on last page ──
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(...mutedText);
+      pdf.text(
+        `Generated by NexusAI • ${new Date().toLocaleString()}`,
+        pageWidth / 2,
+        pageHeight - 8,
+        { align: 'center' }
+      );
+
+      pdf.save(`Chat_Export_${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (err) {
+      console.error('Error exporting PDF:', err);
     }
   };
 

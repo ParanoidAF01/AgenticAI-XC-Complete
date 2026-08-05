@@ -61,7 +61,7 @@ export default function MessageList({
   }
 
   return (
-    <div className="message-list" id="chat-export-container">
+    <div className="message-list">
       {messages.map((msg) => (
         <div
           key={msg.id}
