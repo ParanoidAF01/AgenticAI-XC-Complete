@@ -57,17 +57,36 @@ export default function ChatPage() {
       const timer = setTimeout(async () => {
         const element = document.getElementById('chat-export-container');
         if (element) {
+          // Temporarily make container fully expand to capture all scrollable content
+          const originalOverflow = element.style.overflow;
+          const originalHeight = element.style.height;
+          element.style.overflow = 'visible';
+          element.style.height = 'max-content';
+
           try {
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            const canvas = await html2canvas(element, { 
+              scale: 2, 
+              useCORS: true,
+              windowHeight: element.scrollHeight,
+              y: 0 
+            });
             const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
             
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            // Create PDF perfectly sized to the canvas
+            const pdf = new jsPDF({
+              orientation: canvas.width > canvas.height ? 'l' : 'p',
+              unit: 'px',
+              format: [canvas.width, canvas.height]
+            });
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
             pdf.save(`Chat_Export_${new Date().toISOString().split('T')[0]}.pdf`);
           } catch (err) {
             console.error('Error exporting PDF:', err);
+          } finally {
+            // Restore original styles
+            element.style.overflow = originalOverflow;
+            element.style.height = originalHeight;
           }
         }
         setPendingPdfExport(null);
@@ -216,9 +235,11 @@ export default function ChatPage() {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle sidebar"
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M3 5h14a1 1 0 010 2H3a1 1 0 010-2zm0 4h14a1 1 0 010 2H3a1 1 0 010-2zm0 4h14a1 1 0 010 2H3a1 1 0 010-2z" />
-              </svg>
+              <img 
+                  src= "/sidebar-left-svgrepo-com.svg"
+                  alt=""
+                  style={{width: '18px', height: '18px', marginRight: '8px', display: 'inline-block', verticalAlign: 'middle'}}
+                  />
             </button>
 
             <div className="chat-header-title">
@@ -227,7 +248,7 @@ export default function ChatPage() {
                   <h2 style={{ fontSize: '16px', fontWeight: 600 }}>{activeSession.title || 'New Chat'}</h2>
                 </>
               ) : (
-                <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Ontology Chatbot</h2>
+                <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Nexus AI</h2>
               )}
             </div>
           </div>
@@ -310,17 +331,18 @@ export default function ChatPage() {
           ) : (
             <div className="welcome-screen">
               <div className="welcome-content" style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-                <div className="welcome-icon" style={{ margin: '0 auto 24px auto', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFD600', borderRadius: '12px' }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM11 19.93C7.06 19.43 4 16.05 4 12C4 7.95 7.06 4.57 11 4.07V19.93ZM13 4.07C14.03 4.2 15 4.52 15.87 5H13V4.07ZM13 7H17.24C18.13 8.39 18.76 9.97 18.95 11H13V7ZM13 13H18.95C18.76 14.03 18.13 15.61 17.24 17H13V13ZM13 19.93V19H15.87C15 19.48 14.03 19.8 13 19.93Z" fill="#111111" />
-                  </svg>
+                <div className="welcome-icon" style={{ margin: '0 auto 24px auto', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px' }}>
+                  <img 
+                  src= "/company-logo.png"
+                  alt="Company Logo"
+                  style={{height: '32px', marginLeft: '8px', objectFit: 'contain'}}/>
                 </div>
                 <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '28px', marginBottom: '16px', color: 'var(--text-primary)', fontWeight: 700 }}>
-                  Welcome to Ontology
+                  Welcome to Nexus AI
                 </h2>
                 <p style={{ color: activeProfileName ? 'var(--figma-text-subtle)' : '#000000', marginBottom: '48px', fontSize: '16px' }}>
                   {activeProfileName 
-                    ? `You are connected to ${activeProfileName}. Try asking one of the questions below.` 
+                    ? `You are connected to ${activeProfileName}. Try asking questions from insurance database.` 
                     : 'Insurance Chatbot powered by Xceedance Insurance Data Platform'}
                 </p>
 
@@ -384,7 +406,7 @@ export default function ChatPage() {
                 fontSize: '12px',
                 fontFamily: 'var(--font-sans)',
               }}>
-                Please select a database to start chatting.
+                Please select a database from top-right to start chatting.
               </span>
             </div>
           )}

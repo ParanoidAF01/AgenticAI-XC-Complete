@@ -155,7 +155,10 @@ export default function ChatSidebar({
                   >
                     <button
                       className={`session-menu-btn ${activeDropdown === session.id ? 'session-menu-btn--open' : ''}`}
-                      onClick={() => setActiveDropdown(activeDropdown === session.id ? null : session.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDropdown(activeDropdown === session.id ? null : session.id);
+                      }}
                       title="Menu"
                     >
                       <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -167,7 +170,8 @@ export default function ChatSidebar({
                       <div className="session-dropdown">
                         <button 
                           className="dropdown-item"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             onExportSession(session.id);
                             setActiveDropdown(null);
                           }}
@@ -183,7 +187,8 @@ export default function ChatSidebar({
                         </button>
                         <button 
                           className="dropdown-item dropdown-item--danger"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSessionToDelete(session.id);
                             setActiveDropdown(null);
                           }}
