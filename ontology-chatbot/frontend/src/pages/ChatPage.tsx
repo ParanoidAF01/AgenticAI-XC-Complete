@@ -14,7 +14,7 @@ import {
 } from '@/hooks/useChat';
 import { chatApi } from '@/api/chat';
 import type { Message } from '@/types/chat';
-import { jsPDF } from 'jspdf';
+import { exportChatAsPdf } from '@/utils/pdfExporter';
 import './ChatPage.css';
 
 export default function ChatPage() {
@@ -25,6 +25,9 @@ export default function ChatPage() {
   const [devPanelOpen, setDevPanelOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [exportSessionId, setExportSessionId] = useState<string | null>(null);
+  const [exportIncludeSql, setExportIncludeSql] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -146,143 +149,32 @@ export default function ChatPage() {
     setSelectedMessage(null);
   };
 
-  const handleExportSession = async (sessionId: string) => {
+  const handleExportSession = (sessionId: string) => {
+    setExportSessionId(sessionId);
+    setExportIncludeSql(false);
+  };
+
+  const handleExportConfirm = async () => {
+    if (!exportSessionId) return;
+    setExportLoading(true);
     try {
-      // Fetch messages and session info directly from API
       const [exportMessages, sessionInfo] = await Promise.all([
-        chatApi.getMessages(sessionId),
-        chatApi.getSession(sessionId),
+        chatApi.getMessages(exportSessionId),
+        chatApi.getSession(exportSessionId),
       ]);
-
-      if (!exportMessages.length) return;
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 18;
-      const contentWidth = pageWidth - margin * 2;
-      let y = margin;
-
-      // ── Colors ──
-      const brandYellow: [number, number, number] = [255, 214, 0];
-      const userBg: [number, number, number] = [235, 245, 255];
-      const userBorder: [number, number, number] = [59, 130, 246];
-      const assistantBg: [number, number, number] = [248, 249, 250];
-      const assistantBorder: [number, number, number] = [200, 200, 200];
-      const darkText: [number, number, number] = [26, 28, 27];
-      const mutedText: [number, number, number] = [107, 107, 107];
-      const userLabelColor: [number, number, number] = [37, 99, 235];
-      const assistantLabelColor: [number, number, number] = [16, 185, 129];
-
-      // ── Helper: check page break ──
-      const ensureSpace = (needed: number) => {
-        if (y + needed > pageHeight - margin) {
-          pdf.addPage();
-          y = margin;
-        }
-      };
-
-      // ── Header ──
-      pdf.setFillColor(...brandYellow);
-      pdf.rect(0, 0, pageWidth, 28, 'F');
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(16);
-      pdf.setTextColor(...darkText);
-      pdf.text(sessionInfo.title || 'Chat Export', margin, 12);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(9);
-      pdf.setTextColor(...mutedText);
-      const dateStr = new Date(sessionInfo.created_at).toLocaleDateString('en-US', {
-        year: 'numeric', month: 'long', day: 'numeric',
-      });
-      pdf.text(`Exported on ${dateStr}`, margin, 19);
-      pdf.text(`${exportMessages.length} messages`, margin, 24);
-
-      // Separator line
-      y = 32;
-      pdf.setDrawColor(230, 230, 230);
-      pdf.setLineWidth(0.3);
-      pdf.line(margin, y, pageWidth - margin, y);
-      y += 8;
-
-      // ── Render each message ──
-      for (const msg of exportMessages) {
-        const isUser = msg.role === 'user';
-        const label = isUser ? (user?.display_name || 'You') : 'NexusAI';
-        const timestamp = new Date(msg.created_at).toLocaleTimeString([], {
-          hour: '2-digit', minute: '2-digit',
-        });
-
-        // Wrap text to fit content width minus padding
-        const textPadding = 8;
-        const textWidth = contentWidth - textPadding * 2;
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-        const lines = pdf.splitTextToSize(msg.content, textWidth);
-        const blockHeight = lines.length * 5 + 20; // text + label + padding
-
-        ensureSpace(blockHeight + 6);
-
-        // Message card background
-        const bgColor = isUser ? userBg : assistantBg;
-        const borderColor = isUser ? userBorder : assistantBorder;
-        const cardX = margin;
-        const cardWidth = contentWidth;
-        const cardHeight = blockHeight;
-
-        // Rounded rect fill
-        pdf.setFillColor(...bgColor);
-        pdf.roundedRect(cardX, y, cardWidth, cardHeight, 3, 3, 'F');
-
-        // Left accent bar
-        pdf.setFillColor(...borderColor);
-        pdf.rect(cardX, y + 2, 2, cardHeight - 4, 'F');
-
-        // Role label
-        let textY = y + 7;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        pdf.setTextColor(...(isUser ? userLabelColor : assistantLabelColor));
-        pdf.text(label, cardX + textPadding + 3, textY);
-
-        // Timestamp
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(7.5);
-        pdf.setTextColor(...mutedText);
-        pdf.text(timestamp, cardX + cardWidth - textPadding - pdf.getTextWidth(timestamp), textY);
-
-        // Message text
-        textY += 6;
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-        pdf.setTextColor(...darkText);
-
-        for (const line of lines) {
-          if (textY > pageHeight - margin - 5) {
-            pdf.addPage();
-            textY = margin + 5;
-          }
-          pdf.text(line, cardX + textPadding + 3, textY);
-          textY += 5;
-        }
-
-        y += cardHeight + 5;
-      }
-
-      // ── Footer on last page ──
-      pdf.setFont('helvetica', 'italic');
-      pdf.setFontSize(7.5);
-      pdf.setTextColor(...mutedText);
-      pdf.text(
-        `Generated by NexusAI • ${new Date().toLocaleString()}`,
-        pageWidth / 2,
-        pageHeight - 8,
-        { align: 'center' }
+      await exportChatAsPdf(
+        exportSessionId,
+        sessionInfo.title || 'Chat Export',
+        sessionInfo.created_at,
+        exportMessages,
+        user?.display_name || 'User',
+        exportIncludeSql,
       );
-
-      pdf.save(`Chat_Export_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
       console.error('Error exporting PDF:', err);
+    } finally {
+      setExportLoading(false);
+      setExportSessionId(null);
     }
   };
 
@@ -295,6 +187,49 @@ export default function ChatPage() {
 
   return (
     <div className="chat-page">
+      {/* Export Options Modal */}
+      {exportSessionId && (
+        <div className="modal-overlay" onClick={() => setExportSessionId(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <h3 className="modal-title" style={{ marginBottom: '8px' }}>Export Chat as PDF</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              Choose your export options below.
+            </p>
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '10px 14px', borderRadius: '8px',
+              background: 'var(--bg-tertiary)', cursor: 'pointer',
+              fontSize: '0.85rem', color: 'var(--text-primary)',
+            }}>
+              <input
+                type="checkbox"
+                checked={exportIncludeSql}
+                onChange={(e) => setExportIncludeSql(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: 'var(--accent)' }}
+              />
+              Include SQL queries in export
+            </label>
+            <div className="modal-actions">
+              <button
+                className="modal-btn modal-btn--cancel"
+                onClick={() => setExportSessionId(null)}
+                disabled={exportLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-btn"
+                style={{ background: 'var(--accent)', color: '#000', fontWeight: 600 }}
+                onClick={handleExportConfirm}
+                disabled={exportLoading}
+              >
+                {exportLoading ? 'Generating…' : 'Export PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <ChatSidebar
         sessions={sessions}
