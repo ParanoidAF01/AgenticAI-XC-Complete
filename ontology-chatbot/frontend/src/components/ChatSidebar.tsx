@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import type { Session } from '@/types/chat';
 import type { User } from '@/types/auth';
@@ -12,6 +12,7 @@ interface Props {
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
+  onExportSession: (id: string) => void;
   onToggle: () => void;
   user: User | null;
 }
@@ -24,19 +25,29 @@ export default function ChatSidebar({
   onSelectSession,
   onNewChat,
   onDeleteSession,
+  onExportSession,
   onToggle,
   user,
 }: Props) {
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
-  const handleDelete = (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (deleteConfirm === sessionId) {
-      onDeleteSession(sessionId);
-      setDeleteConfirm(null);
-    } else {
-      setDeleteConfirm(sessionId);
-      setTimeout(() => setDeleteConfirm(null), 3000);
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!(e.target as Element).closest('.session-menu-wrapper')) {
+        setActiveDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleDeleteConfirm = () => {
+    if (sessionToDelete) {
+      onDeleteSession(sessionToDelete);
+      setSessionToDelete(null);
+      setActiveDropdown(null);
     }
   };
 
@@ -57,13 +68,36 @@ export default function ChatSidebar({
       {/* Mobile overlay */}
       {isOpen && <div className="sidebar-overlay" onClick={onToggle} />}
 
+      {/* Delete Confirmation Modal */}
+      {sessionToDelete && (
+        <div className="modal-overlay" onClick={() => setSessionToDelete(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">Are you sure you want to delete this chat?</h3>
+            <div className="modal-actions">
+              <button 
+                className="modal-btn modal-btn--cancel" 
+                onClick={() => setSessionToDelete(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="modal-btn modal-btn--danger" 
+                onClick={handleDeleteConfirm}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className={`chat-sidebar ${isOpen ? 'chat-sidebar--open' : ''}`}>
         {/* Header Logo */}
-        <div className="sidebar-header" style={{ padding: '20px 16px 12px 16px', display: 'flex', justifyContent: 'center' }}>
+        <div className="sidebar-header" style={{ padding: '20px 0px 0px 0px', display: 'flex', justifyContent: 'center' }}>
           <img 
             src="/nexus-logo.png" 
             alt="NexusAI" 
-            style={{ width: '100%', maxWidth: '160px', objectFit: 'contain' }}
+            style={{ width: '100%', maxWidth: '200px', objectFit: 'contain' }}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
             }}
@@ -114,21 +148,55 @@ export default function ChatSidebar({
                     </div>
                   </div>
 
-                  <button
-                    className={`session-delete ${deleteConfirm === session.id ? 'session-delete--confirm' : ''}`}
-                    onClick={(e) => handleDelete(session.id, e)}
-                    title={deleteConfirm === session.id ? 'Click again to confirm' : 'Delete'}
+                  <div 
+                    className="session-menu-wrapper"
+                    style={{ position: 'relative' }}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {deleteConfirm === session.id ? (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                        <path d="M5.5 5.5A.5.5 0 016 6v5a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v5a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3-3.5a.5.5 0 010 1H3a.5.5 0 010-1h2.5l.5-.5h2l.5.5H11zm-7.5 2v8a1 1 0 001 1h5a1 1 0 001-1V4.5h-7z" />
+                    <button
+                      className={`session-menu-btn ${activeDropdown === session.id ? 'session-menu-btn--open' : ''}`}
+                      onClick={() => setActiveDropdown(activeDropdown === session.id ? null : session.id)}
+                      title="Menu"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0-5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm0 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
                       </svg>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                        <path d="M5.5 5.5A.5.5 0 016 6v5a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v5a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3-3.5a.5.5 0 010 1H3a.5.5 0 010-1h2.5l.5-.5h2l.5.5H11zm-7.5 2v8a1 1 0 001 1h5a1 1 0 001-1V4.5h-7z" />
-                      </svg>
+                    </button>
+
+                    {activeDropdown === session.id && (
+                      <div className="session-dropdown">
+                        <button 
+                          className="dropdown-item"
+                          onClick={() => {
+                            onExportSession(session.id);
+                            setActiveDropdown(null);
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="12" y1="18" x2="12" y2="12"></line>
+                            <line x1="9" y1="15" x2="12" y2="18"></line>
+                            <line x1="15" y1="15" x2="12" y2="18"></line>
+                          </svg>
+                          Export chat as PDF
+                        </button>
+                        <button 
+                          className="dropdown-item dropdown-item--danger"
+                          onClick={() => {
+                            setSessionToDelete(session.id);
+                            setActiveDropdown(null);
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          Delete chat
+                        </button>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 </li>
               ))}
             </ul>

@@ -164,7 +164,7 @@
   color: var(--text-tertiary);
 }
 
-.session-delete {
+.session-menu-btn {
   opacity: 0;
   color: var(--text-tertiary);
   padding: 4px;
@@ -173,19 +173,115 @@
   flex-shrink: 0;
 }
 
-.session-item:hover .session-delete {
+.session-item:hover .session-menu-btn,
+.session-menu-btn--open {
   opacity: 1;
 }
 
-.session-delete:hover {
+.session-menu-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.session-dropdown {
+  position: absolute;
+  top: 30px;
+  right: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  min-width: 150px;
+  padding: 4px 0;
+  animation: fadeIn 0.15s ease;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.dropdown-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.dropdown-item--danger {
   color: var(--error);
+}
+
+.dropdown-item--danger:hover {
   background: rgba(231, 76, 60, 0.1);
 }
 
-.session-delete--confirm {
-  opacity: 1 !important;
-  color: var(--error);
-  background: rgba(231, 76, 60, 0.15);
+/* ── Modal Overlay ─────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.modal-content {
+  background: var(--bg-surface);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  animation: slideInUp 0.2s ease forwards;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  color: var(--text-primary);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.modal-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.modal-btn--cancel {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-btn--cancel:hover {
+  background: var(--bg-surface-hover);
+}
+
+.modal-btn--danger {
+  background: var(--error);
+  color: white;
+}
+
+.modal-btn--danger:hover {
+  background: #c0392b;
 }
 
 /* ── Bottom ────────────────────────────────────────────── */

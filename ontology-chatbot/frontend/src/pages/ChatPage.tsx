@@ -14,6 +14,8 @@ import {
 } from '@/hooks/useChat';
 import { chatApi } from '@/api/chat';
 import type { Message } from '@/types/chat';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import './ChatPage.css';
 
 export default function ChatPage() {
@@ -24,6 +26,7 @@ export default function ChatPage() {
   const [devPanelOpen, setDevPanelOpen] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [pendingPdfExport, setPendingPdfExport] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +49,32 @@ export default function ChatPage() {
   const activeSession = sessions.find((s) => s.id === activeSessionId);
   // Require explicit profile selection
   const activeProfileName = selectedProfile || '';
+
+  // Trigger PDF Export once messages are loaded
+  useEffect(() => {
+    if (pendingPdfExport && activeSessionId === pendingPdfExport && !messagesLoading) {
+      // Small timeout to ensure DOM is fully painted after loading state is removed
+      const timer = setTimeout(async () => {
+        const element = document.getElementById('chat-export-container');
+        if (element) {
+          try {
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`Chat_Export_${new Date().toISOString().split('T')[0]}.pdf`);
+          } catch (err) {
+            console.error('Error exporting PDF:', err);
+          }
+        }
+        setPendingPdfExport(null);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeSessionId, pendingPdfExport, messagesLoading]);
 
   const handleNewChat = async () => {
     try {
@@ -145,6 +174,15 @@ export default function ChatPage() {
     setSelectedMessage(null);
   };
 
+  const handleExportSession = (sessionId: string) => {
+    if (activeSessionId === sessionId) {
+      setPendingPdfExport(sessionId);
+    } else {
+      setActiveSessionId(sessionId);
+      setPendingPdfExport(sessionId);
+    }
+  };
+
   const handleMessageSelect = (message: Message) => {
     if (user?.is_admin && message.role === 'assistant') {
       setSelectedMessage(message);
@@ -163,6 +201,7 @@ export default function ChatPage() {
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
         onDeleteSession={handleDeleteSession}
+        onExportSession={handleExportSession}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         user={user}
       />
@@ -266,6 +305,7 @@ export default function ChatPage() {
               error={sendMessageMutation.error?.message || null}
               onMessageSelect={handleMessageSelect}
               selectedMessageId={selectedMessage?.id}
+              user={user}
             />
           ) : (
             <div className="welcome-screen">

@@ -61,7 +61,7 @@ export default function MessageList({
   }
 
   return (
-    <div className="message-list">
+    <div className="message-list" id="chat-export-container">
       {messages.map((msg) => (
         <div
           key={msg.id}
@@ -75,10 +75,16 @@ export default function MessageList({
               <div className="avatar avatar--user">{user?.display_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}</div>
             ) : (
               <div className="avatar avatar--assistant">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                {/* <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
                   <circle cx="9" cy="9" r="8" fill="var(--accent)" opacity="0.2" />
                   <circle cx="9" cy="9" r="4" fill="var(--accent)" />
-                </svg>
+                </svg> */}
+                <img src = "/company-logo.png"
+                alt="Company Logo"
+                width = "18"
+                height = "18"
+                style = {{width: '18px', height: '18px', objectFit: 'contain'}}
+                />
               </div>
             )}
           </div>
