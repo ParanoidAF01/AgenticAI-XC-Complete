@@ -294,7 +294,7 @@ class QueryOrchestrator:
         if plan.get("needs_clarification"):
             reason = plan.get("clarification_reason") or "Please clarify your question."
             return {
-                "answer": f"⚠️ {reason}",
+                "answer": f"! {reason}",
                 "plan": plan,
                 "is_clarification": True,
             }
@@ -313,7 +313,7 @@ class QueryOrchestrator:
             )
             return {
                 "answer": (
-                    f"⚠️ I'm not fully confident I understood your question correctly "
+                    f"I'm not fully confident I understood your question correctly "
                     f"(confidence: {plan_confidence:.0%}). Could you rephrase or provide more detail?"
                 ),
                 "plan": plan,
@@ -323,51 +323,76 @@ class QueryOrchestrator:
         # Execute plan tasks
         task_outputs: List[Dict[str, Any]] = []
         task_contexts: Dict[str, Dict[str, Any]] = {}
+        skipped_tasks: List[Dict[str, Any]] = []
         tasks = await asyncio.to_thread(augment_tasks_for_placeholders, plan.get("tasks", []), repo)
 
         for task in tasks:
-            resolved = resolve_task_placeholders(task, task_contexts)
+            try:
+                resolved = resolve_task_placeholders(task, task_contexts)
 
-            # Build SQL (sync)
-            raw_sql = await asyncio.to_thread(build_task_sql, resolved, profile, repo)
+                # Build SQL (sync)
+                raw_sql = await asyncio.to_thread(build_task_sql, resolved, profile, repo)
 
-            # Validate and repair (async — calls LLM for repair)
-            final_sql, vtrace = await validate_and_repair_sql(
-                engine=engine,
-                question=question,
-                profile_name=profile,
-                task=resolved,
-                sql=raw_sql,
-                repo=repo,
-                schema_cache=schema_cache,
-            )
+                # Validate and repair (async — calls LLM for repair)
+                final_sql, vtrace = await validate_and_repair_sql(
+                    engine=engine,
+                    question=question,
+                    profile_name=profile,
+                    task=resolved,
+                    sql=raw_sql,
+                    repo=repo,
+                    schema_cache=schema_cache,
+                )
 
-            # Execute (sync)
-            result = await asyncio.to_thread(execute_sql, engine, final_sql)
+                # Execute (sync)
+                result = await asyncio.to_thread(execute_sql, engine, final_sql)
 
-            # ── Result verification ────────────────────────
-            verification_warnings = _verify_result(resolved, result)
-            if verification_warnings:
-                logger.warning("Result verification warnings for task %s: %s", resolved.get("task_id"), verification_warnings)
-                result["verification_warnings"] = verification_warnings
+                # ── Result verification ────────────────────────
+                verification_warnings = _verify_result(resolved, result)
+                if verification_warnings:
+                    logger.warning("Result verification warnings for task %s: %s", resolved.get("task_id"), verification_warnings)
+                    result["verification_warnings"] = verification_warnings
 
-            task_outputs.append({
-                "task": resolved,
-                "sql": final_sql,
-                "raw_sql": raw_sql,
-                "validation_trace": vtrace,
-                "result": result,
-            })
+                task_outputs.append({
+                    "task": resolved,
+                    "sql": final_sql,
+                    "raw_sql": raw_sql,
+                    "validation_trace": vtrace,
+                    "result": result,
+                })
 
-            task_id = resolved.get("task_id")
-            if task_id:
-                task_contexts[task_id] = build_task_result_context(resolved, result)
+                task_id = resolved.get("task_id")
+                if task_id:
+                    task_contexts[task_id] = build_task_result_context(resolved, result)
+
+            except Exception as exc:
+                task_id = task.get("task_id", "unknown")
+                logger.warning(
+                    "Task %s failed during execution, skipping: %s",
+                    task_id, str(exc),
+                )
+                skipped_tasks.append({"task_id": task_id, "error": str(exc)})
+                continue
+
+        if not task_outputs:
+            raise AppError("All tasks failed during execution")
 
         # Merge results
         merged: Dict[str, Any] = {
             "task_outputs": task_outputs,
             "combine_strategy": plan.get("combine_strategy", "none"),
         }
+
+        # Track dropped/skipped counts for the answer generator
+        dropped_count = len(plan.get("_dropped_tasks", []))
+        if dropped_count or skipped_tasks:
+            merged["dropped_task_count"] = dropped_count
+            merged["skipped_task_count"] = len(skipped_tasks)
+            merged["total_planned_tasks"] = len(tasks) + dropped_count
+            logger.info(
+                "Pipeline summary: %d executed, %d dropped at plan, %d skipped at execution",
+                len(task_outputs), dropped_count, len(skipped_tasks),
+            )
 
         if (plan.get("combine_strategy") == "compare_on_dimension"
                 and len(task_outputs) >= 2
@@ -488,7 +513,7 @@ def _merge_clarification(user_reply: str, context_text: str) -> str:
     for line in reversed(lines):
         if not found_clarification:
             if line.startswith("assistant:") and (
-                "⚠️" in line or "clarif" in line.lower()
+                "!" in line or "clarif" in line.lower()
             ):
                 found_clarification = True
         else:

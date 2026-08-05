@@ -256,3 +256,68 @@ def validate_plan(
     except Exception:
         errs.append("confidence not numeric")
     return len(errs) == 0, errs
+
+
+def validate_plan_per_task(
+    plan: Dict[str, Any],
+    profile_name: str,
+    repo: Neo4jRepo,
+    schema_cache: Dict[str, List[str]],
+) -> Tuple[List[str], List[Dict[str, Any]], List[Dict[str, Any]]]:
+    """Validate each task independently.
+
+    Returns:
+        (plan_level_errors, valid_tasks, failed_tasks)
+        where failed_tasks = [{"task": dict, "errors": [str]}]
+
+    Plan-level errors (missing keys, profile mismatch, etc.) are returned
+    separately because they cannot be fixed by per-task repair.
+    """
+    required = [
+        "question_type", "user_question", "database_profile", "intent",
+        "requires_multi_task", "tasks", "combine_strategy",
+        "comparison_dimension", "confidence", "needs_clarification",
+        "clarification_reason", "notes",
+    ]
+    plan_errs: List[str] = [f"Missing key: {k}" for k in required if k not in plan]
+    if plan["database_profile"] != profile_name:
+        plan_errs.append(f"Plan profile mismatch: {plan['database_profile']}")
+    if plan_errs:
+        return plan_errs, [], []
+
+    # Quick-exit paths that don't involve per-task validation
+    if plan.get("question_type") == "general_chat":
+        return [], list(plan.get("tasks") or []), []
+    if plan.get("needs_clarification") is True:
+        return [], list(plan.get("tasks") or []), []
+
+    tasks = plan.get("tasks") or []
+    if not tasks:
+        return ["Planner returned no tasks"], [], []
+
+    # Import here to avoid circular dependency at module level
+    from app.query_engine.planner import normalize_task_filters
+
+    valid_tasks: List[Dict[str, Any]] = []
+    failed_tasks: List[Dict[str, Any]] = []
+
+    for task in tasks:
+        normalize_task_filters(task)
+        task_errs = validate_task(task, profile_name, repo, schema_cache)
+        if task_errs:
+            failed_tasks.append({"task": task, "errors": task_errs})
+        else:
+            valid_tasks.append(task)
+
+    # Plan-level checks (non-task)
+    if plan.get("comparison_dimension"):
+        if not validate_property_ref(plan["comparison_dimension"], repo, schema_cache):
+            plan_errs.append(f"Invalid comparison_dimension: {plan['comparison_dimension']}")
+    try:
+        c = float(plan.get("confidence", 0.0))
+        if c < 0 or c > 1:
+            plan_errs.append("confidence must be between 0 and 1")
+    except Exception:
+        plan_errs.append("confidence not numeric")
+
+    return plan_errs, valid_tasks, failed_tasks

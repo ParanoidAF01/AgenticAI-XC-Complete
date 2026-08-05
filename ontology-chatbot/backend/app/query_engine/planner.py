@@ -21,7 +21,7 @@ from app.query_engine.helpers import (
     normalize_text,
 )
 from app.query_engine.llm_client import call_llm
-from app.query_engine.plan_validator import validate_plan
+from app.query_engine.plan_validator import validate_plan, validate_plan_per_task
 from app.query_engine.prompts import PLANNER_V2_PROMPT
 from app.query_engine.router import extract_candidate_terms
 
@@ -256,6 +256,28 @@ def normalize_task_filters(task: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # ------------------------------------------------------------------
+# Task repair prompt (used for per-task surgical fixes)
+# ------------------------------------------------------------------
+
+TASK_REPAIR_PROMPT = """You are a plan repair assistant for an ontology-driven query planner.
+
+You will receive one or more tasks that failed validation, along with the specific errors and ontology context.
+Fix ONLY the failed tasks. Return them as a JSON array of corrected tasks.
+
+Rules:
+- Keep task_id values unchanged.
+- Follow the ontology context strictly — do not invent entity names, column names, or metric names.
+- If a task is fundamentally impossible given the ontology (e.g., no valid join path or dimension exists), set "unfixable": true on that task so the system can drop it gracefully.
+- Return JSON array only. No explanation."""
+
+# ------------------------------------------------------------------
+# Per-task retry constants
+# ------------------------------------------------------------------
+
+MAX_TASK_RETRIES = 3
+
+
+# ------------------------------------------------------------------
 # Plan builder (async – calls LLM)
 # ------------------------------------------------------------------
 
@@ -304,31 +326,114 @@ async def build_plan(
         plan = json.loads(extract_json_text(raw))
     except Exception as e:
         raise PlannerError(f"Planner returned invalid JSON: {raw}") from e
-    ok, errs = validate_plan(plan, profile_name, repo, schema_cache)
-    if not ok:
+
+    # ── Phase 1: Per-task validation ──────────────────────────────
+    plan_errs, valid_tasks, failed_tasks = validate_plan_per_task(
+        plan, profile_name, repo, schema_cache
+    )
+    if plan_errs:
+        # Plan-level errors (missing keys, profile mismatch) are not retryable
+        raise PlannerError("Planner plan-level validation failed: " + "; ".join(plan_errs))
+
+    # ── Phase 2: Per-task surgical retry (up to MAX_TASK_RETRIES) ─
+    for attempt in range(1, MAX_TASK_RETRIES + 1):
+        if not failed_tasks:
+            break
+
+        logger.info(
+            "Task repair attempt %d/%d for %d failed task(s): %s",
+            attempt, MAX_TASK_RETRIES,
+            len(failed_tasks),
+            [ft["task"].get("task_id") for ft in failed_tasks],
+        )
+
         repair_payload = {
             "original_question": question,
-            "route": route,
             "ontology_context": context,
-            "invalid_plan": plan,
-            "validation_errors": errs,
-            "instruction": "Fix the JSON plan. Keep only schema-valid values allowed by ontology context. Return JSON only.",
-        }
-        raw2 = await call_llm(
-            [
-                {"role": "system", "content": PLANNER_V2_PROMPT},
-                {"role": "user", "content": json.dumps(make_json_safe(repair_payload), indent=2)},
+            "failed_tasks": [
+                {"task": ft["task"], "errors": ft["errors"]}
+                for ft in failed_tasks
             ],
-            max_tokens=4096,
-            auto_continue=True,
-        )
-        logger.info(f"Planner repair raw LLM response -> {raw2[:1800]}")
+            "instruction": (
+                "Fix ONLY the failed tasks listed above. "
+                "Return them as a JSON array. Keep task_id values unchanged. "
+                "If a task is impossible to fix, set \"unfixable\": true on it."
+            ),
+        }
         try:
-            plan = json.loads(extract_json_text(raw2))
-        except Exception as e:
-            raise PlannerError(f"Planner repair returned invalid JSON: {raw2}") from e
-        ok, errs = validate_plan(plan, profile_name, repo, schema_cache)
-        if not ok:
-            raise PlannerError("Planner validation failed: " + "; ".join(errs))
-    logger.info("Planner V2 JSON validated successfully")
+            raw_repair = await call_llm(
+                [
+                    {"role": "system", "content": TASK_REPAIR_PROMPT},
+                    {"role": "user", "content": json.dumps(make_json_safe(repair_payload), indent=2)},
+                ],
+                max_tokens=4096,
+                auto_continue=True,
+            )
+            logger.info(f"Task repair response (attempt {attempt}) -> {raw_repair[:1200]}")
+            repaired = json.loads(extract_json_text(raw_repair))
+            # Normalise: if the LLM returns a dict with a "tasks" key, unwrap it
+            if isinstance(repaired, dict) and "tasks" in repaired:
+                repaired = repaired["tasks"]
+            if not isinstance(repaired, list):
+                repaired = [repaired]
+        except Exception as exc:
+            logger.warning("Task repair attempt %d returned invalid JSON, skipping: %s", attempt, exc)
+            continue
+
+        # Re-validate each repaired task
+        still_failing: List[Dict[str, Any]] = []
+        for repaired_task in repaired:
+            if not isinstance(repaired_task, dict):
+                continue
+            # LLM signalled this task is unfixable
+            if repaired_task.get("unfixable"):
+                logger.warning(
+                    "Task %s marked unfixable by LLM, dropping",
+                    repaired_task.get("task_id"),
+                )
+                continue
+            normalize_task_filters(repaired_task)
+            from app.query_engine.plan_validator import validate_task
+            task_errs = validate_task(repaired_task, profile_name, repo, schema_cache)
+            if task_errs:
+                still_failing.append({"task": repaired_task, "errors": task_errs})
+            else:
+                valid_tasks.append(repaired_task)
+                logger.info("Task %s repaired successfully on attempt %d", repaired_task.get("task_id"), attempt)
+
+        failed_tasks = still_failing
+
+    # ── Phase 3: Drop remaining failures with warnings ───────────
+    dropped_tasks: List[Dict[str, Any]] = []
+    for ft in failed_tasks:
+        logger.warning(
+            "Dropping task %s after %d retries. Errors: %s",
+            ft["task"].get("task_id"),
+            MAX_TASK_RETRIES,
+            ft["errors"],
+        )
+        dropped_tasks.append(ft)
+
+    # ── Phase 4: Assemble final plan or error ────────────────────
+    if not valid_tasks:
+        all_errors = []
+        for ft in dropped_tasks:
+            all_errors.extend(ft["errors"])
+        raise PlannerError(
+            "All tasks failed validation after retries: " + "; ".join(all_errors)
+        )
+
+    plan["tasks"] = valid_tasks
+    plan["_dropped_tasks"] = dropped_tasks
+
+    if dropped_tasks:
+        logger.info(
+            "Plan proceeding with %d/%d tasks (%d dropped)",
+            len(valid_tasks),
+            len(valid_tasks) + len(dropped_tasks),
+            len(dropped_tasks),
+        )
+    else:
+        logger.info("Planner V2 JSON validated successfully — all %d tasks passed", len(valid_tasks))
+
     return plan
