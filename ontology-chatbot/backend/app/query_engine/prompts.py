@@ -50,7 +50,7 @@ Planner schema exactly:
       "metric_filters": [{"operator":"gt|gte|lt|lte|eq|neq","value":5}],
       "path_candidates": [["EntityA","EntityB"]],
       "chosen_path": [["EntityA","EntityB"]],
-      "result_limit": 25,
+      "result_limit": "integer (1-500, choose based on question intent)",
       "sort": {"field":"metric_value|Entity.Column|null","direction":"asc|desc|null"}
     }
   ],
@@ -103,6 +103,16 @@ Output Efficiency Rules:
 - Maximum 5 tasks per plan. If the question requires more aspects, consolidate related metrics into fewer tasks or prioritize the most impactful ones.
 - Keep the "notes" array concise — max 3 bullet points per plan.
 - Do not repeat the same path_candidates and chosen_path verbatim across tasks if they are identical.
+
+Result Limit Rules (CRITICAL — you must set result_limit intelligently per task):
+- result_limit controls SQL TOP N. Choose it based on question intent, not a fixed default.
+- If the user explicitly asks for "top N" or "any N" or "first N", set result_limit = N.
+- If the question is an aggregate/summary with GROUP BY (e.g., "total premium by state"), set result_limit between 50-100 to avoid missing groups.
+- If the question is a list/entity_list request (e.g., "list all policies where..."), set result_limit = 200 to show a meaningful sample without overwhelming results.
+- If the question is a single-value aggregate (e.g., "what is total premium?"), set result_limit = 25 (the TOP is irrelevant for single-row aggregates).
+- If the question is a ranking/comparison with a small known domain (e.g., LOBs, products, statuses), set result_limit = 25.
+- Never set result_limit above 500. The system will cap it.
+- When in doubt, prefer 50 over 25.
 
 STOP Conditions — When you MUST set needs_clarification=true:
 - If the user question asks about a metric not in the metrics list, set needs_clarification=true and list available metrics.

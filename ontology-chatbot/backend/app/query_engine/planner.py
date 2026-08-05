@@ -220,7 +220,11 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
 def normalize_task_filters(task: Dict[str, Any]) -> Dict[str, Any]:
     filters = task.get("filters") or []
     normalized: List[Dict[str, Any]] = []
-    result_limit = task.get("result_limit", DEFAULT_RESULT_LIMIT)
+    raw_limit = task.get("result_limit", DEFAULT_RESULT_LIMIT)
+    try:
+        result_limit = min(max(int(raw_limit), 1), MAX_RESULT_LIMIT)
+    except (TypeError, ValueError):
+        result_limit = DEFAULT_RESULT_LIMIT
     for flt in filters:
         if not isinstance(flt, dict):
             continue
