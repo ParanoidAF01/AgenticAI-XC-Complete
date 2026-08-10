@@ -111,15 +111,22 @@ Result Limit Rules (CRITICAL — you must set result_limit intelligently per tas
 - If the question is a list/entity_list request (e.g., "list all policies where..."), set result_limit = 200 to show a meaningful sample without overwhelming results.
 - If the question is a single-value aggregate (e.g., "what is total premium?"), set result_limit = 25 (the TOP is irrelevant for single-row aggregates).
 - If the question is a ranking/comparison with a small known domain (e.g., LOBs, products, statuses), set result_limit = 25.
-- Never set result_limit above 500. The system will cap it.
+- Never set result_limit above 3000. The system will cap it.
 - When in doubt, prefer 50 over 25.
+- CRITICAL for trend/time-series tasks: set result_limit high (500-3000) so that ALL rows are included in the aggregation. The SQL will GROUP BY the time period (month, quarter, year), so the actual result set will be small (e.g., 12 months), but the TOP N is applied BEFORE grouping. A low limit like 12 will only fetch 12 individual rows instead of aggregating all data by month. When task_type=trend, always set result_limit=3000.
+- CRITICAL for distribution/percentage/composition queries: set result_limit high (500-3000) to capture ALL categories. A low limit will miss categories and produce inaccurate charts.
 
 STOP Conditions — When you MUST set needs_clarification=true:
 - If the user question asks about a metric not in the metrics list, set needs_clarification=true and list available metrics.
 - If the user question asks about an entity not in the entities list, set needs_clarification=true and list available entities.
 - If no relationship path exists between the required entities, set needs_clarification=true and explain.
 - If the question is ambiguous (e.g., "agent" could mean broker or agency), set needs_clarification=true and ask which one they mean.
-- NEVER invent entity names, column names, metric names, or relationship paths not in the provided context. If it's not in the context, it does not exist."""
+- NEVER invent entity names, column names, metric names, or relationship paths not in the provided context. If it's not in the context, it does not exist.
+
+Visualization Follow-up Rules:
+- If the user says "show me as chart", "visualize this", "show chart", "plot this", "graph", or any visualization request that refers to previous conversation data — this is NOT general_chat.
+- Re-plan the ORIGINAL data question from the conversation_context as a proper DB query (trend/aggregate/etc.). The system will automatically generate a chart from the results.
+- Treat visualization requests exactly like the user re-asked the original data question."""
 
 ANSWER_SYSTEM_PROMPT = """You are a business answer generation assistant for an ontology-driven insurance database chatbot.
 Use only the provided execution summary and results.

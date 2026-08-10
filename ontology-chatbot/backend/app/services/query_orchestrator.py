@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import re
 import time
 import uuid as uuid_mod
 from typing import Any, Dict, List, Optional, Tuple
@@ -58,6 +59,74 @@ class QueryOrchestrator:
         self._neo4j = neo4j_repo
         self._profile_manager = profile_manager
         self._context_service = ContextService(cache_service)
+
+    # Regex for detecting visualization follow-up requests
+    _VIZ_PATTERN = re.compile(
+        r'\b(chart|graph|plot|visuali[zs]e?|pie\s*chart|bar\s*chart|line\s*chart)',
+        re.IGNORECASE,
+    )
+
+    async def _handle_viz_followup(
+        self,
+        message: str,
+        sid: UUID,
+        profile: str,
+        db: AsyncSession,
+        context_text: str,
+    ) -> Optional[Dict[str, Any]]:
+        """Detect visualization follow-ups and re-use previous query results.
+
+        When the user says 'show me as chart' or 'visualize this', we skip
+        the planner/SQL pipeline entirely and re-use the most recent
+        assistant message that has query results.
+        """
+        # Only trigger for short messages that mention charts/visualization
+        if not self._VIZ_PATTERN.search(message) or len(message.split()) > 15:
+            return None
+
+        # Find the most recent assistant message with results
+        messages = await message_repository.get_messages(db, session_id=sid)
+        prev_msg = None
+        for msg in reversed(messages):
+            if msg.role == "assistant" and msg.metadata_ and msg.metadata_.get("results"):
+                prev_msg = msg
+                break
+
+        if not prev_msg:
+            return None
+
+        prev_results = prev_msg.metadata_["results"]
+        prev_chart = prev_msg.metadata_.get("chart_config")
+
+        # If previous message already had a chart, re-use everything
+        if prev_chart and prev_chart.get("show"):
+            logger.info("Visualization follow-up: re-using previous chart config")
+            return {
+                "answer": prev_msg.content,
+                "chart_config": prev_chart,
+                "results": prev_results,
+                "sql": prev_msg.metadata_.get("sql"),
+            }
+
+        # Previous message had results but no chart — regenerate with chart emphasis
+        logger.info("Visualization follow-up: generating chart from previous results")
+        prev_route = prev_msg.metadata_.get("route") or {}
+        minimal_plan = {
+            "question_type": prev_route.get("route", "trend"),
+            "intent": prev_route.get("route", "trend"),
+            "requires_multi_task": False,
+            "combine_strategy": "none",
+            "comparison_dimension": None,
+        }
+        answer_text, chart_config = await build_answer(
+            message, profile, minimal_plan, prev_results, context_text
+        )
+        return {
+            "answer": answer_text,
+            "chart_config": chart_config,
+            "results": prev_results,
+            "sql": prev_msg.metadata_.get("sql"),
+        }
 
     async def process_chat_message(
         self,
@@ -133,49 +202,58 @@ class QueryOrchestrator:
                 result_summary = cached.get("results")
                 validation_trace_list = cached.get("validation_trace")
             else:
-                # ── 6. Route ────────────────────────────────────
-                route_info = await route_question(message, context_text)
-
-                if route_info["route"] == "general_chat":
-                    # ── General chat path ───────────────────────
-                    answer_text = await build_general_llm_answer(message, context_text)
-                elif route_info["route"] == "clarification_response":
-                    # ── Clarification follow-up path ────────────
-                    # Merge the user's clarification with the original
-                    # question from context so the planner gets full intent.
-                    merged = _merge_clarification(message, context_text)
-                    logger.info("Clarification merged question: %s", merged)
-                    route_info["route"] = "complex_db"
-                    result = await self._execute_db_pipeline(
-                        question=merged,
-                        profile=profile,
-                        route=route_info,
-                        context_text=context_text,
-                    )
-                    answer_text = result["answer"]
-                    planner_json = result.get("plan")
-                    raw_sql_list = result.get("raw_sql")
-                    final_sql_list = result.get("sql")
-                    validation_trace_list = result.get("validation_trace")
-                    result_summary = result.get("results")
-                    is_clarification = result.get("is_clarification", False)
-                    chart_config = result.get("chart_config")
+                # ── 5b. Check for visualization follow-up ────────
+                viz_result = await self._handle_viz_followup(
+                    message, sid, profile, db, context_text
+                )
+                if viz_result is not None:
+                    answer_text = viz_result["answer"]
+                    chart_config = viz_result.get("chart_config")
+                    result_summary = viz_result.get("results")
+                    final_sql_list = viz_result.get("sql")
+                    route_info = {"route": "visualization_followup"}
                 else:
-                    # ── DB query path ───────────────────────────
-                    result = await self._execute_db_pipeline(
-                        question=message,
-                        profile=profile,
-                        route=route_info,
-                        context_text=context_text,
-                    )
-                    answer_text = result["answer"]
-                    planner_json = result.get("plan")
-                    raw_sql_list = result.get("raw_sql")
-                    final_sql_list = result.get("sql")
-                    validation_trace_list = result.get("validation_trace")
-                    result_summary = result.get("results")
-                    is_clarification = result.get("is_clarification", False)
-                    chart_config = result.get("chart_config")
+                    # ── 6. Route ────────────────────────────────────
+                    route_info = await route_question(message, context_text)
+
+                    if route_info["route"] == "general_chat":
+                        # ── General chat path ───────────────────────
+                        answer_text = await build_general_llm_answer(message, context_text)
+                    elif route_info["route"] == "clarification_response":
+                        # ── Clarification follow-up path ────────────
+                        merged = _merge_clarification(message, context_text)
+                        logger.info("Clarification merged question: %s", merged)
+                        route_info["route"] = "complex_db"
+                        result = await self._execute_db_pipeline(
+                            question=merged,
+                            profile=profile,
+                            route=route_info,
+                            context_text=context_text,
+                        )
+                        answer_text = result["answer"]
+                        planner_json = result.get("plan")
+                        raw_sql_list = result.get("raw_sql")
+                        final_sql_list = result.get("sql")
+                        validation_trace_list = result.get("validation_trace")
+                        result_summary = result.get("results")
+                        is_clarification = result.get("is_clarification", False)
+                        chart_config = result.get("chart_config")
+                    else:
+                        # ── DB query path ───────────────────────────
+                        result = await self._execute_db_pipeline(
+                            question=message,
+                            profile=profile,
+                            route=route_info,
+                            context_text=context_text,
+                        )
+                        answer_text = result["answer"]
+                        planner_json = result.get("plan")
+                        raw_sql_list = result.get("raw_sql")
+                        final_sql_list = result.get("sql")
+                        validation_trace_list = result.get("validation_trace")
+                        result_summary = result.get("results")
+                        is_clarification = result.get("is_clarification", False)
+                        chart_config = result.get("chart_config")
 
                 # ── 7. Cache result ─────────────────────────────
                 await self._cache.cache_query_result(

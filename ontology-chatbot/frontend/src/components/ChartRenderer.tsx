@@ -65,10 +65,50 @@ const ChartRenderer: React.FC<ChartRendererProps> = ({ config, results }) => {
         const yIndex = cols.indexOf(config.y_axis.column);
 
         if (xIndex !== -1 && yIndex !== -1) {
-          return output.result.rows.map((row: any[]) => ({
-            name: row[xIndex],
-            value: row[yIndex],
+          // ── Step 1: Extract raw data points ──────────────────
+          const rawData = output.result.rows.map((row: any[]) => ({
+            name: String(row[xIndex] ?? 'Unknown'),
+            value: Number(row[yIndex]) || 0,
           }));
+
+          // ── Step 2: Aggregate — group by x-axis, sum y-axis ──
+          // This is critical: if the SQL returns individual rows
+          // (e.g., one per policy), we need to group them by
+          // category (status, month, LOB, etc.) for the chart.
+          const aggregationMap = new Map<string, number>();
+          const insertionOrder: string[] = [];
+          for (const point of rawData) {
+            if (!aggregationMap.has(point.name)) {
+              insertionOrder.push(point.name);
+              aggregationMap.set(point.name, 0);
+            }
+            aggregationMap.set(
+              point.name,
+              aggregationMap.get(point.name)! + point.value
+            );
+          }
+
+          let aggregated = insertionOrder.map(name => ({
+            name,
+            value: aggregationMap.get(name)!,
+          }));
+
+          // ── Step 3: Sort for time-series charts ──────────────
+          // For line/area charts, dates should be chronological.
+          if (
+            (config.type === 'line' || config.type === 'area') &&
+            aggregated.length > 1
+          ) {
+            const firstParsed = Date.parse(aggregated[0].name);
+            if (!isNaN(firstParsed)) {
+              aggregated.sort(
+                (a, b) =>
+                  new Date(a.name).getTime() - new Date(b.name).getTime()
+              );
+            }
+          }
+
+          return aggregated;
         }
       }
       return null;

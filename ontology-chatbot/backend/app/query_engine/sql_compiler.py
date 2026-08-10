@@ -154,24 +154,55 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
         is_agg = True
 
     # Intelligent Granularity: Ensure primary keys of selected entities are included
+    # BUT skip this for aggregate/trend/ranking tasks — adding PKs to GROUP BY
+    # defeats aggregation (e.g., grouping by date + transaction_pk = no aggregation).
     final_selected = list(task.get("selected_properties", []))
-    selected_entities = {parse_property_ref(prop)[0] for prop in final_selected}
-    
-    for entity_name in selected_entities:
-        entity_data = repo.get_entity(entity_name)
-        if entity_data and entity_data.get("primary_key"):
-            pk_ref = f"{entity_name}.{entity_data['primary_key']}"
-            if pk_ref not in final_selected:
-                final_selected.append(pk_ref)
+    task_type = task.get("task_type", "")
+    skip_pk_injection = task_type in {"aggregate", "ranking", "trend"}
+
+    if not skip_pk_injection:
+        selected_entities = {parse_property_ref(prop)[0] for prop in final_selected}
+        for entity_name in selected_entities:
+            entity_data = repo.get_entity(entity_name)
+            if entity_data and entity_data.get("primary_key"):
+                pk_ref = f"{entity_name}.{entity_data['primary_key']}"
+                if pk_ref not in final_selected:
+                    final_selected.append(pk_ref)
 
     select_parts: List[str] = []
     group_parts: List[str] = []
+
+    # Determine if we need to truncate dates to month level for trend queries
+    date_prop = task.get("date_property")
+    trend_date_entity = None
+    trend_date_column = None
+    if task_type == "trend" and date_prop:
+        try:
+            trend_date_entity, trend_date_column = parse_property_ref(date_prop)
+        except Exception:
+            pass
+
     for prop in final_selected:
         entity_name, column_name = parse_property_ref(prop)
         alias = f"{entity_name}_{column_name}".lower()
-        select_parts.append(f"{qf(entity_name, column_name)} AS [{alias}]")
-        if is_agg:
-            group_parts.append(qf(entity_name, column_name))
+        raw_expr = qf(entity_name, column_name)
+
+        # For trend tasks, truncate the date_property to month level
+        # so GROUP BY produces one row per month, not one per day.
+        if (
+            task_type == "trend"
+            and trend_date_entity
+            and entity_name == trend_date_entity
+            and column_name == trend_date_column
+        ):
+            month_expr = f"FORMAT({raw_expr}, 'yyyy-MM')"
+            select_parts.append(f"{month_expr} AS [{alias}]")
+            if is_agg:
+                group_parts.append(month_expr)
+        else:
+            select_parts.append(f"{raw_expr} AS [{alias}]")
+            if is_agg:
+                group_parts.append(raw_expr)
 
     metric_expr = ""
     if metric:
@@ -329,10 +360,24 @@ def build_task_sql(task: Dict[str, Any], profile_name: str, repo: Neo4jRepo) -> 
     sort_dir = (sort.get("direction") or "desc").upper()
     if task.get("metric_name") or task.get("task_type") in {"aggregate", "ranking", "trend"}:
         if sort_field == "metric_value" or not sort_field:
-            sql_lines.append(f"ORDER BY metric_value {sort_dir}")
+            # For trend tasks, default sort by the date column (first column), not metric
+            if task_type == "trend" and not sort_field:
+                sql_lines.append(f"ORDER BY 1 ASC")
+            else:
+                sql_lines.append(f"ORDER BY metric_value {sort_dir}")
         elif sort_field and "." in str(sort_field):
             se, sc = parse_property_ref(sort_field)
-            sql_lines.append(f"ORDER BY {qf(se, sc)} {sort_dir}")
+            # If sort field is the date_property that was FORMAT()-wrapped,
+            # use ORDER BY 1 (the formatted month column)
+            if (
+                task_type == "trend"
+                and trend_date_entity
+                and se == trend_date_entity
+                and sc == trend_date_column
+            ):
+                sql_lines.append(f"ORDER BY 1 {sort_dir}")
+            else:
+                sql_lines.append(f"ORDER BY {qf(se, sc)} {sort_dir}")
     else:
         if sort_field and "." in str(sort_field):
             se, sc = parse_property_ref(sort_field)
