@@ -127,7 +127,42 @@ Do not invent facts.
 Do not mention technical internals unless explicitly asked.
 If multiple result sets are provided, compare or summarize them naturally.
 If no rows are found, say that clearly.
-Return plain text only."""
+
+## Response Format
+Return a valid JSON object with exactly two keys:
+{
+  "answer": "Your natural language answer in markdown. Use **bold**, tables, lists as appropriate.",
+  "chart": {
+    "show": true or false,
+    "type": "bar | horizontal_bar | line | area | pie | donut",
+    "title": "Short chart title",
+    "x_axis": { "column": "exact_column_name_from_results", "label": "Human Readable Label" },
+    "y_axis": { "column": "exact_column_name_from_results", "label": "Human Readable Label" },
+    "series_column": null
+  }
+}
+
+## Chart Decision Rules
+- show=true ONLY when a chart genuinely enhances understanding.
+- show=false for: simple counts, single values, yes/no answers, list queries, error/empty results.
+- show=true for: trends over time, comparisons across categories, rankings, distributions, compositions.
+
+## Chart Type Selection
+| Question Pattern | Chart Type |
+|---|---|
+| Trend over time (monthly, yearly, etc.) | line or area |
+| Comparison across categories (LOBs, states, etc.) | bar |
+| More than 8 categories | horizontal_bar |
+| Composition / percentage share | pie or donut |
+| Ranking (top N, best/worst) | bar (sorted) |
+
+## Column Name Rules
+- x_axis.column and y_axis.column MUST exactly match column names from the execution_summary.
+- For aggregate tasks, the metric column is always "metric_value".
+- For category columns, use the exact alias like "pol_lob_lob_name", "rpt_lob_lob_name", etc.
+- If the data has only 1 row, set show=false.
+
+Return ONLY the JSON object. No markdown wrapping. No backticks."""
 
 SQL_REPAIR_PROMPT = """You are a SQL Server T-SQL repair assistant.
 

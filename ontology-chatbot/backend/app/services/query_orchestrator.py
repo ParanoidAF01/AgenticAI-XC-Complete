@@ -77,6 +77,7 @@ class QueryOrchestrator:
         result_summary: Optional[Dict[str, Any]] = None
         answer_text: str = ""
         is_clarification = False
+        chart_config: Optional[Dict[str, Any]] = None
 
         uid = UUID(user_id)
         sid = UUID(session_id)
@@ -158,6 +159,7 @@ class QueryOrchestrator:
                     validation_trace_list = result.get("validation_trace")
                     result_summary = result.get("results")
                     is_clarification = result.get("is_clarification", False)
+                    chart_config = result.get("chart_config")
                 else:
                     # ── DB query path ───────────────────────────
                     result = await self._execute_db_pipeline(
@@ -173,6 +175,7 @@ class QueryOrchestrator:
                     validation_trace_list = result.get("validation_trace")
                     result_summary = result.get("results")
                     is_clarification = result.get("is_clarification", False)
+                    chart_config = result.get("chart_config")
 
                 # ── 7. Cache result ─────────────────────────────
                 await self._cache.cache_query_result(
@@ -206,6 +209,8 @@ class QueryOrchestrator:
                 "is_clarification": is_clarification,
                 "has_error": error_text is not None,
                 "sql": final_sql_list,
+                "chart_config": chart_config,
+                "results": result_summary,
             },
         )
 
@@ -255,6 +260,7 @@ class QueryOrchestrator:
             validation_trace=validation_trace_list,
             results=result_summary,
             is_clarification=is_clarification,
+            chart_config=chart_config,
         )
 
     async def _execute_db_pipeline(
@@ -422,16 +428,17 @@ class QueryOrchestrator:
             )
 
         # Generate answer (async — calls LLM)
-        answer = await build_answer(question, profile, plan, merged, context_text)
+        answer_text, chart_config = await build_answer(question, profile, plan, merged, context_text)
 
         return {
-            "answer": answer,
+            "answer": answer_text,
             "plan": plan,
             "raw_sql": [o["raw_sql"] for o in task_outputs],
             "sql": [o["sql"] for o in task_outputs],
             "validation_trace": [o["validation_trace"] for o in task_outputs],
             "results": make_json_safe(merged),
             "is_clarification": False,
+            "chart_config": chart_config,
         }
 
 

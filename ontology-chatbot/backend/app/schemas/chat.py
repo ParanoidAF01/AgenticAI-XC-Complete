@@ -64,3 +64,4 @@ class ChatResponse(BaseModel):
     validation_trace: List[Any] | None = None
     results: Dict[str, Any] | None = None
     is_clarification: bool = False
+    chart_config: Dict[str, Any] | None = None

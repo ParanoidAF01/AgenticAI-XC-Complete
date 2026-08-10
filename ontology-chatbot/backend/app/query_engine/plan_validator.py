@@ -248,13 +248,19 @@ def validate_plan(
         errs.extend(validate_task(task, profile_name, repo, schema_cache))
     if plan.get("comparison_dimension"):
         if not validate_property_ref(plan["comparison_dimension"], repo, schema_cache):
-            errs.append(f"Invalid comparison_dimension: {plan['comparison_dimension']}")
+            logger.warning(
+                "Invalid comparison_dimension '%s' — nullifying.",
+                plan["comparison_dimension"],
+            )
+            plan["comparison_dimension"] = None
     try:
         c = float(plan.get("confidence", 0.0))
         if c < 0 or c > 1:
-            errs.append("confidence must be between 0 and 1")
+            logger.warning("confidence value %s out of range, clamping to [0,1]", c)
+            plan["confidence"] = max(0.0, min(1.0, c))
     except Exception:
-        errs.append("confidence not numeric")
+        logger.warning("confidence not numeric, defaulting to 0.5")
+        plan["confidence"] = 0.5
     return len(errs) == 0, errs
 
 
@@ -309,15 +315,22 @@ def validate_plan_per_task(
         else:
             valid_tasks.append(task)
 
-    # Plan-level checks (non-task)
+    # Plan-level soft checks (non-blocking — auto-heal with warnings)
     if plan.get("comparison_dimension"):
         if not validate_property_ref(plan["comparison_dimension"], repo, schema_cache):
-            plan_errs.append(f"Invalid comparison_dimension: {plan['comparison_dimension']}")
+            logger.warning(
+                "Invalid comparison_dimension '%s' — nullifying. "
+                "Tasks will execute independently without cross-task merging.",
+                plan["comparison_dimension"],
+            )
+            plan["comparison_dimension"] = None
     try:
         c = float(plan.get("confidence", 0.0))
         if c < 0 or c > 1:
-            plan_errs.append("confidence must be between 0 and 1")
+            logger.warning("confidence value %s out of range, clamping to [0,1]", c)
+            plan["confidence"] = max(0.0, min(1.0, c))
     except Exception:
-        plan_errs.append("confidence not numeric")
+        logger.warning("confidence not numeric, defaulting to 0.5")
+        plan["confidence"] = 0.5
 
     return plan_errs, valid_tasks, failed_tasks

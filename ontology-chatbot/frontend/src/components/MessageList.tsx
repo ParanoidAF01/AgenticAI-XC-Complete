@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ChartRenderer from './ChartRenderer';
+import type { ChartConfig } from '@/types/chat';
 import type { Message } from '@/types/chat';
 import type { User } from '@/types/auth';
 import './MessageList.css';
@@ -98,6 +100,12 @@ export default function MessageList({
                 msg.content
               )}
             </div>
+            {msg.role === 'assistant' && msg.metadata_?.chart_config && (msg.metadata_.chart_config as ChartConfig).show && msg.metadata_?.results ? (
+              <ChartRenderer
+                config={msg.metadata_.chart_config as ChartConfig}
+                results={msg.metadata_.results as Record<string, unknown>}
+              />
+            ) : null}
             {msg.role === 'assistant' && !!msg.metadata_?.sql && (
               <div className="message-sql-container">
                 <button 

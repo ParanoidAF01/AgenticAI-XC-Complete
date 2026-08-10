@@ -327,6 +327,16 @@ async def build_plan(
     except Exception as e:
         raise PlannerError(f"Planner returned invalid JSON: {raw}") from e
 
+    # ── Early exit for non-executable plans ───────────────────────
+    # These plan types have no tasks to validate/execute — return
+    # them directly so the orchestrator can handle them.
+    if plan.get("needs_clarification") is True:
+        logger.info("Planner requested clarification — skipping task validation")
+        return plan
+    if plan.get("question_type") == "general_chat":
+        logger.info("Planner returned general_chat — skipping task validation")
+        return plan
+
     # ── Phase 1: Per-task validation ──────────────────────────────
     plan_errs, valid_tasks, failed_tasks = validate_plan_per_task(
         plan, profile_name, repo, schema_cache
