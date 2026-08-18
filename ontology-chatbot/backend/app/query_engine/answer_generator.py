@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from app.query_engine.helpers import make_json_safe
 from app.query_engine.llm_client import call_llm
-from app.query_engine.prompts import ANSWER_SYSTEM_PROMPT, GENERAL_CHAT_SYSTEM_PROMPT
+from app.query_engine.prompts import GENERAL_CHAT_SYSTEM_PROMPT, get_answer_prompt, get_current_ist_context
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +197,10 @@ async def build_general_llm_answer(question: str, context: str = "") -> str:
     Generate a natural language response for a general (non-DB) question.
     Optionally includes conversation context.
     """
-    payload: Dict[str, Any] = {"user_message": question}
+    payload: Dict[str, Any] = {
+        "user_message": question,
+        "current_datetime": get_current_ist_context(),
+    }
     if context:
         payload["conversation_context"] = context
 
@@ -231,6 +234,7 @@ async def build_answer(
     payload: Dict[str, Any] = {
         "user_question": question,
         "database_profile": profile_name,
+        "current_datetime": get_current_ist_context(),
         "plan_summary": {
             "question_type": plan.get("question_type"),
             "intent": plan.get("intent"),
@@ -250,7 +254,7 @@ async def build_answer(
     )
 
     messages = [
-        {"role": "system", "content": ANSWER_SYSTEM_PROMPT},
+        {"role": "system", "content": get_answer_prompt()},
         {"role": "user", "content": serialized},
     ]
     raw = (await call_llm(messages, max_tokens=1500)).strip()

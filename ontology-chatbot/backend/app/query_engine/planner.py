@@ -22,7 +22,7 @@ from app.query_engine.helpers import (
 )
 from app.query_engine.llm_client import call_llm
 from app.query_engine.plan_validator import validate_plan, validate_plan_per_task
-from app.query_engine.prompts import PLANNER_V2_PROMPT
+from app.query_engine.prompts import get_planner_prompt, get_current_ist_context, PLANNER_V2_PROMPT
 from app.query_engine.router import extract_candidate_terms
 
 logger = logging.getLogger(__name__)
@@ -115,6 +115,20 @@ def build_planner_context(profile_name: str, question: str, repo: Neo4jRepo) -> 
         if r["to_entity"] in relevant_entity_names:
             neighbors.add(r["from_entity"])
     relevant_entity_names.update(neighbors)
+
+    # Fallback: check all entities for direct synonym/canonical name matches
+    # against candidate_terms so they aren't stripped of their columns.
+    for e in entities:
+        names_to_check = {e["entity_name"].lower()}
+        if e.get("canonical_name"):
+            names_to_check.add(e["canonical_name"].lower())
+        for syn in e.get("synonyms", []):
+            names_to_check.add(syn.lower())
+            
+        for term in candidate_terms:
+            if term in names_to_check or term.rstrip('s') in names_to_check or (term + 's') in names_to_check:
+                relevant_entity_names.add(e["entity_name"])
+                break
 
     # Bulk-fetch all column metadata for the profile (single Cypher query)
     all_columns = repo.get_all_entity_columns(profile_name)
@@ -310,12 +324,13 @@ async def build_plan(
         "user_question": question,
         "database_profile": profile_name,
         "ontology_context": context,
+        "current_datetime": get_current_ist_context(),
     }
     if conversation_context:
         payload["conversation_context"] = conversation_context
     raw = await call_llm(
         [
-            {"role": "system", "content": PLANNER_V2_PROMPT},
+            {"role": "system", "content": get_planner_prompt()},
             {"role": "user", "content": json.dumps(make_json_safe(payload), indent=2)},
         ],
         max_tokens=4096,

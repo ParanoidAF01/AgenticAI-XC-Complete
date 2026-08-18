@@ -1,6 +1,35 @@
-"""Prompt constants extracted verbatim from the legacy app."""
+"""Prompt constants extracted verbatim from the legacy app.
+
+Includes dynamic timestamp injection so the LLM always knows the
+current date/time in IST (the company's LLM has no internet or tool access).
+"""
 
 from __future__ import annotations
+
+from datetime import datetime, timezone, timedelta
+
+# IST offset: UTC+5:30
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def get_current_ist_context() -> str:
+    """Return a block of text describing the current date/time in IST.
+
+    This is injected into every LLM prompt so the model can resolve
+    relative time expressions like 'active policies', 'this month',
+    'last quarter', 'current year', etc.
+    """
+    now = datetime.now(_IST)
+    return (
+        f"CURRENT DATETIME CONTEXT (use this to resolve any time-relative queries):\n"
+        f"  Current Date      : {now.strftime('%Y-%m-%d')}\n"
+        f"  Current Time (IST): {now.strftime('%H:%M:%S')}\n"
+        f"  Day of Week       : {now.strftime('%A')}\n"
+        f"  Current Month     : {now.strftime('%B %Y')}\n"
+        f"  Current Quarter   : Q{(now.month - 1) // 3 + 1} {now.year}\n"
+        f"  Current Year      : {now.year}\n"
+        f"  Timezone          : IST (UTC+05:30)\n"
+    )
 
 ROUTER_PROMPT = """You are a router for a business database chatbot.
 Classify the message into one of these routes:
@@ -126,7 +155,13 @@ STOP Conditions — When you MUST set needs_clarification=true:
 Visualization Follow-up Rules:
 - If the user says "show me as chart", "visualize this", "show chart", "plot this", "graph", or any visualization request that refers to previous conversation data — this is NOT general_chat.
 - Re-plan the ORIGINAL data question from the conversation_context as a proper DB query (trend/aggregate/etc.). The system will automatically generate a chart from the results.
-- Treat visualization requests exactly like the user re-asked the original data question."""
+- Treat visualization requests exactly like the user re-asked the original data question.
+
+IMPORTANT — Time-Aware Planning:
+- The current date/time is provided in the user payload under "current_datetime".
+- When the user asks about "active" policies, "current" month, "this year", "today", "last quarter", "recent", etc., use the provided current date to determine the correct date_range operator or filter value.
+- For example, if today is 2026-08-17 and the user asks for "active policies", filter by expiry_date >= '2026-08-17' or effective_date <= '2026-08-17' as appropriate.
+- NEVER guess the current date. ALWAYS use the value from "current_datetime" in the payload."""
 
 ANSWER_SYSTEM_PROMPT = """You are a business answer generation assistant for an ontology-driven insurance database chatbot.
 Use only the provided execution summary and results.
@@ -169,7 +204,12 @@ Return a valid JSON object with exactly two keys:
 - For category columns, use the exact alias like "pol_lob_lob_name", "rpt_lob_lob_name", etc.
 - If the data has only 1 row, set show=false.
 
-Return ONLY the JSON object. No markdown wrapping. No backticks."""
+Return ONLY the JSON object. No markdown wrapping. No backticks.
+
+IMPORTANT — Time Awareness:
+- The current date/time is provided in the user payload under "current_datetime".
+- Use it to give contextually accurate answers (e.g., "As of August 2026...", "In the current quarter...").
+- NEVER guess the current date. ALWAYS use the value from "current_datetime" in the payload."""
 
 SQL_REPAIR_PROMPT = """You are a SQL Server T-SQL repair assistant.
 
@@ -187,3 +227,17 @@ Rules:
 - Preserve TOP clause.
 - Preserve filters and joins unless they are the direct source of compilation failure.
 - Output a single valid SQL Server SELECT statement only."""
+
+
+# ------------------------------------------------------------------
+# Dynamic prompt builders (inject current IST timestamp)
+# ------------------------------------------------------------------
+
+def get_planner_prompt() -> str:
+    """Return the planner system prompt with current IST datetime injected."""
+    return f"{PLANNER_V2_PROMPT}\n\n{get_current_ist_context()}"
+
+
+def get_answer_prompt() -> str:
+    """Return the answer system prompt with current IST datetime injected."""
+    return f"{ANSWER_SYSTEM_PROMPT}\n\n{get_current_ist_context()}"
