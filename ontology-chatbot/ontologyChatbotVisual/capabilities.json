@@ -1,0 +1,28 @@
+{
+  "privileges": [
+    {
+      "name": "WebAccess",
+      "essential": true,
+      "parameters": [
+        "https://ppfhvdck-8000.asse.devtunnels.ms"
+      ]
+    }
+  ],
+  "dataRoles": [],
+  "dataViewMappings": [],
+  "objects": {
+    "chatbotSettings": {
+      "displayName": "Chatbot Settings",
+      "properties": {
+        "apiBaseUrl": {
+          "type": { "text": true },
+          "displayName": "API Base URL"
+        },
+        "apiKey": {
+          "type": { "text": true },
+          "displayName": "API Key"
+        }
+      }
+    }
+  }
+}

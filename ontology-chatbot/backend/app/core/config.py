@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     NEO4J_URI: str = ""
     NEO4J_USERNAME: str = ""
     NEO4J_PASSWORD: str = ""
+    NEO4J_DATABASE: str = "neo4j"
 
     # ── MSSQL Profile: IDP Reporting ─────────────────────────────
     MSSQL_IDP_REPORTING_URL: str = ""
@@ -55,7 +56,15 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = ""
 
     # ── CORS ────────────────────────────────────────────────────
-    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "https://app.powerbi.com",
+        "https://app.fabric.microsoft.com",
+    ]
+
+    # ── Power BI Integration ───────────────────────────────────
+    POWERBI_API_KEY: str = ""              # Shared secret for Power BI visual auth
+    POWERBI_DEFAULT_PROFILE: str = ""      # Fallback profile when PBI visual doesn't specify
 
 
 @lru_cache()

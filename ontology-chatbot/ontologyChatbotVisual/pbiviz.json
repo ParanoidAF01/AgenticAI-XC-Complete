@@ -1,0 +1,21 @@
+{
+  "visual": {
+    "name": "ontologyChatbotVisual",
+    "displayName": "Ontology Chatbot",
+    "guid": "ontologyChatbotVisualXCEEDANCE",
+    "visualClassName": "Visual",
+    "version": "1.0.0",
+    "description": "Ontology-driven insurance database chatbot for Power BI reports",
+    "supportUrl": "",
+    "gitHubUrl": ""
+  },
+  "author": {
+    "name": "Xceedance",
+    "email": ""
+  },
+  "apiVersion": "5.3.0",
+  "style": "style/visual.less",
+  "assets": {
+    "icon": "assets/icon.png"
+  }
+}
